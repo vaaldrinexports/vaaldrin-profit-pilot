@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   compute, defaultState, fmtINR, fmtUSD, fmtEUR, fmtNum,
-  profitColor, applyScenario, type CalculatorState, type Incoterm,
+  applyScenario, type CalculatorState, type Incoterm,
 } from "@/lib/calc";
 import { generateQuotationPDF } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
@@ -12,25 +12,50 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   LineChart, Line, CartesianGrid,
 } from "recharts";
 import {
   FileDown, Printer, Save, Upload, Copy, RotateCcw, ShieldCheck, AlertTriangle,
-  TrendingUp, Lock, Sparkles,
+  TrendingUp, Lock, Sparkles, MoreHorizontal, HelpCircle, Package, Truck, FileText,
+  Ship, Anchor, Landmark, Wallet, Coins, Globe2, Info,
 } from "lucide-react";
 
 const STORAGE_KEY = "vaaldrin.calc.v1";
 
-type FieldProps = {
+/* ---------- Tiny field primitives — bigger, friendlier ---------- */
+
+function FieldLabel({ children, hint }: { children: React.ReactNode; hint?: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <Label className="text-sm font-medium text-foreground/80">{children}</Label>
+      {hint && (
+        <span className="group relative inline-flex">
+          <HelpCircle className="w-3.5 h-3.5 text-muted-foreground/60" />
+          <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 z-50 hidden group-hover:block whitespace-nowrap rounded-md bg-foreground text-background text-xs px-2 py-1 shadow-lg">
+            {hint}
+          </span>
+        </span>
+      )}
+    </div>
+  );
+}
+
+function NumField({
+  label, value, onChange, step = 1, suffix, readOnly, hint, placeholder,
+}: {
   label: string; value: number; onChange: (n: number) => void;
-  step?: number; suffix?: string; readOnly?: boolean;
-};
-function NumField({ label, value, onChange, step = 1, suffix, readOnly }: FieldProps) {
+  step?: number; suffix?: string; readOnly?: boolean; hint?: string; placeholder?: string;
+}) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</Label>
+      <FieldLabel hint={hint}>{label}</FieldLabel>
       <div className="relative">
         <Input
           type="number"
@@ -38,31 +63,46 @@ function NumField({ label, value, onChange, step = 1, suffix, readOnly }: FieldP
           step={step}
           value={Number.isFinite(value) ? value : 0}
           readOnly={readOnly}
+          placeholder={placeholder}
           onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-          className={readOnly ? "bg-muted font-semibold" : ""}
+          className={"h-10 text-base " + (readOnly ? "bg-muted/60 font-semibold cursor-not-allowed" : "")}
         />
-        {suffix && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{suffix}</span>}
+        {suffix && (
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">{suffix}</span>
+        )}
       </div>
-    </div>
-  );
-}
-function TextField({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (s: string) => void; type?: string }) {
-  return (
-    <div className="space-y-1.5">
-      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</Label>
-      <Input type={type} value={value} onChange={(e) => onChange(e.target.value)} />
     </div>
   );
 }
 
-function Section({ title, num, children, accent }: { title: string; num: number; children: React.ReactNode; accent?: boolean }) {
+function TextField({ label, value, onChange, type = "text", placeholder, hint }: {
+  label: string; value: string; onChange: (s: string) => void; type?: string; placeholder?: string; hint?: string;
+}) {
   return (
-    <Card className={"p-6 " + (accent ? "border-gold/40" : "")}>
-      <div className="flex items-baseline gap-3 mb-4">
-        <span className="text-xs font-bold text-gold tracking-widest">MODULE {String(num).padStart(2, "0")}</span>
-        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+    <div className="space-y-1.5">
+      <FieldLabel hint={hint}>{label}</FieldLabel>
+      <Input type={type} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} className="h-10 text-base" />
+    </div>
+  );
+}
+
+function GroupCard({ icon: Icon, title, subtitle, children }: {
+  icon?: React.ComponentType<{ className?: string }>;
+  title: string; subtitle?: string; children: React.ReactNode;
+}) {
+  return (
+    <Card className="p-6 shadow-sm">
+      <div className="flex items-start gap-3 mb-5">
+        {Icon && (
+          <div className="shrink-0 mt-0.5 grid place-items-center w-9 h-9 rounded-lg bg-gold/15 text-gold">
+            <Icon className="w-4.5 h-4.5" />
+          </div>
+        )}
+        <div className="min-w-0">
+          <h3 className="text-base font-semibold text-foreground leading-tight">{title}</h3>
+          {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+        </div>
       </div>
-      <div className="gold-bar mb-5 opacity-40" />
       {children}
     </Card>
   );
@@ -76,12 +116,14 @@ function KPI({ label, value, sub, tone }: { label: string; value: string; sub?: 
     tone === "warn" ? "border-warning/50 bg-warning/5" : "";
   return (
     <div className={"rounded-lg border bg-card p-4 " + toneCls}>
-      <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">{label}</div>
+      <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">{label}</div>
       <div className="mt-1.5 text-xl font-bold tabular-nums">{value}</div>
       {sub && <div className="text-xs text-muted-foreground mt-0.5">{sub}</div>}
     </div>
   );
 }
+
+/* ---------- Main component ---------- */
 
 export default function Calculator() {
   const [s, setS] = useState<CalculatorState>(defaultState);
@@ -103,20 +145,14 @@ export default function Calculator() {
   const minIncotermPrice = s.incoterm === "EXW" ? c.minExw : s.incoterm === "FOB" ? c.minFob : s.incoterm === "CFR" ? c.minCfr : c.minCif;
   const walkPrice = s.incoterm === "FOB" ? c.walkFob : s.incoterm === "CFR" ? c.walkCfr : s.incoterm === "CIF" ? c.walkCif : c.walkFob;
 
-  // Buyer counter offer in INR
   const counterINR = s.buyerCounterCurrency === "INR" ? s.buyerCounterOffer :
     s.buyerCounterCurrency === "USD" ? s.buyerCounterOffer * s.actualBankUsdRate :
     s.buyerCounterOffer * s.actualBankEurRate;
   const counterAcceptable = counterINR >= minIncotermPrice;
-
-  // Discount preview
   const discountedPrice = incotermPrice * (1 - s.requestedDiscountPct / 100);
   const discountAcceptable = discountedPrice >= minIncotermPrice;
-
-  // Margin lock check
   const lockTriggered = s.marginLock && (c.profitPct < s.minProfitPct || c.netProfit < s.minProfitAmount);
 
-  // Scenario simulation
   const [scenario, setScenario] = useState<string>("base");
   const scenarioState = scenario === "base" ? s : applyScenario(s, scenario);
   const sc = useMemo(() => compute(scenarioState), [scenarioState]);
@@ -135,10 +171,7 @@ export default function Calculator() {
     { name: "= Profit", value: c.profitPerUnit, color: "var(--success)" },
   ];
 
-  const save = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-    toast.success("Calculation saved");
-  };
+  const save = () => { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); toast.success("Calculation saved"); };
   const exportJSON = () => {
     const blob = new Blob([JSON.stringify(s, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -160,279 +193,327 @@ export default function Calculator() {
     setS({ ...s, quotationNumber: `${base}-${String(n).padStart(4, "0")}` });
     toast.success("Quotation duplicated");
   };
-  const reset = () => { setS(defaultState); toast.success("Reset"); };
-
+  const reset = () => {
+    if (confirm("Reset all fields to defaults? This cannot be undone.")) {
+      setS(defaultState); toast.success("Reset");
+    }
+  };
   const generatePDF = () => {
     if (lockTriggered) { toast.error("Margin lock active — adjust pricing first"); return; }
     generateQuotationPDF(s);
   };
 
+  // Quality summary
+  const dq = c.dealQualityScore;
+  const dqLabel = dq >= 90 ? "Excellent" : dq >= 75 ? "Good" : dq >= 60 ? "Acceptable" : "High Risk";
+  const dqTone = dq >= 75 ? "text-success" : dq >= 60 ? "text-warning" : "text-deep-red";
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="no-print sticky top-0 z-30 bg-primary text-primary-foreground border-b border-gold/30">
-        <div className="max-w-[1400px] mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
+    <div className="min-h-screen bg-muted/30">
+      {/* Header — cleaner, fewer buttons */}
+      <header className="no-print sticky top-0 z-30 bg-primary text-primary-foreground border-b border-gold/30 shadow-sm">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+          <div className="min-w-0">
             <div className="flex items-baseline gap-3">
-              <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--gold)" }}>VAALDRIN EXPORTS</h1>
-              <span className="text-xs text-gold/70 tracking-widest hidden sm:inline">PRICING & PROFIT CONTROL</span>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate" style={{ color: "var(--gold)" }}>VAALDRIN EXPORTS</h1>
+              <span className="text-[11px] text-gold/70 tracking-widest hidden md:inline">PRICING & PROFIT CONTROL</span>
             </div>
-            <p className="text-xs text-primary-foreground/60 mt-0.5">Executive export costing system · CFO-grade financial control</p>
+            <p className="text-xs text-primary-foreground/60 mt-0.5 hidden sm:block">Export costing & quotation system</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="secondary" onClick={save}><Save className="w-4 h-4 mr-1.5" />Save</Button>
-            <Button size="sm" variant="secondary" onClick={exportJSON}>Export JSON</Button>
-            <Button size="sm" variant="secondary" onClick={importJSON}><Upload className="w-4 h-4 mr-1.5" />Import</Button>
-            <Button size="sm" variant="secondary" onClick={duplicate}><Copy className="w-4 h-4 mr-1.5" />Duplicate</Button>
-            <Button size="sm" variant="secondary" onClick={reset}><RotateCcw className="w-4 h-4 mr-1.5" />Reset</Button>
-            <Button size="sm" onClick={generatePDF} className="bg-gold hover:bg-gold/90 text-gold-foreground"><FileDown className="w-4 h-4 mr-1.5" />PDF</Button>
-            <Button size="sm" variant="outline" onClick={() => window.print()} className="bg-transparent border-gold/40 text-gold hover:bg-gold/10"><Printer className="w-4 h-4 mr-1.5" />Print</Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button size="sm" onClick={generatePDF} className="bg-gold hover:bg-gold/90 text-gold-foreground font-semibold">
+              <FileDown className="w-4 h-4 mr-1.5" />
+              <span className="hidden sm:inline">Generate PDF</span>
+              <span className="sm:hidden">PDF</span>
+            </Button>
+            <Button size="sm" variant="secondary" onClick={save}>
+              <Save className="w-4 h-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Save</span>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="secondary"><MoreHorizontal className="w-4 h-4" /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => window.print()}><Printer className="w-4 h-4 mr-2" />Print</DropdownMenuItem>
+                <DropdownMenuItem onClick={duplicate}><Copy className="w-4 h-4 mr-2" />Duplicate quotation</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={exportJSON}><FileDown className="w-4 h-4 mr-2" />Export JSON</DropdownMenuItem>
+                <DropdownMenuItem onClick={importJSON}><Upload className="w-4 h-4 mr-2" />Import JSON</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={reset} className="text-deep-red focus:text-deep-red">
+                  <RotateCcw className="w-4 h-4 mr-2" />Reset all
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
 
-      <main className="max-w-[1400px] mx-auto px-6 py-6 space-y-6">
-        {/* Executive Director View */}
-        <Card className="p-6 bg-gradient-to-br from-primary to-primary/90 text-primary-foreground border-gold/30">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-xs tracking-widest font-bold" style={{ color: "var(--gold)" }}>EXPORT DIRECTOR VIEW</div>
-              <h2 className="text-xl font-semibold mt-0.5">Decision Summary · {s.incoterm}</h2>
-            </div>
-            <div className="text-right">
-              <div className="text-xs text-primary-foreground/60 uppercase tracking-widest">Deal Quality</div>
-              <div className="text-3xl font-bold" style={{ color: "var(--gold)" }}>{c.dealQualityScore}<span className="text-base text-primary-foreground/50">/100</span></div>
-              <div className="text-xs text-primary-foreground/60">
-                {c.dealQualityScore >= 90 ? "Excellent" : c.dealQualityScore >= 75 ? "Good" : c.dealQualityScore >= 60 ? "Acceptable" : "High Risk"}
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-6">
+        {/* Executive Summary — simpler, more spacious */}
+        <Card className="overflow-hidden border-gold/30 shadow-md">
+          <div className="bg-gradient-to-br from-primary to-primary/95 text-primary-foreground p-6">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 mb-5">
+              <div className="min-w-0">
+                <div className="text-[11px] tracking-widest font-bold" style={{ color: "var(--gold)" }}>EXECUTIVE SUMMARY</div>
+                <h2 className="text-xl sm:text-2xl font-semibold mt-1">
+                  {s.productName || "New quotation"} <span className="text-primary-foreground/50 font-normal">· {s.incoterm}</span>
+                </h2>
+                <p className="text-xs text-primary-foreground/60 mt-1">
+                  {s.buyerCompany || "No buyer set"} · {s.quantity || 0} {s.uom} · Quote {s.quotationNumber}
+                </p>
               </div>
+              <div className="text-right shrink-0">
+                <div className="text-[10px] text-primary-foreground/60 uppercase tracking-widest">Deal Quality</div>
+                <div className="text-4xl font-bold leading-none mt-1" style={{ color: "var(--gold)" }}>
+                  {dq}<span className="text-base text-primary-foreground/50">/100</span>
+                </div>
+                <Badge className={"mt-1.5 bg-primary-foreground/10 hover:bg-primary-foreground/10 border-0 " + dqTone}>
+                  {dqLabel}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <DirectorCell label="Recommended price" inr={incotermPrice} usd={usd(incotermPrice)} tone="gold" big />
+              <DirectorCell label="Expected profit" inr={c.netProfit} usd={usd(c.netProfit)} pct={c.profitPct} big />
+              <DirectorCell label="Minimum acceptable" inr={minIncotermPrice} usd={usd(minIncotermPrice)} tone="warn" big />
+              <DirectorCell label="Walk-away price" inr={walkPrice} usd={usd(walkPrice)} tone="danger" big />
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm">
-            <DirectorCell label="EXW" inr={c.exwPrice} usd={usd(c.exwPrice)} />
-            <DirectorCell label="FOB" inr={c.fobPrice} usd={usd(c.fobPrice)} />
-            <DirectorCell label="CFR" inr={c.cfrPrice} usd={usd(c.cfrPrice)} />
-            <DirectorCell label="CIF" inr={c.cifPrice} usd={usd(c.cifPrice)} />
-            <DirectorCell label="Break-even" inr={c.breakEvenPrice} usd={usd(c.breakEvenPrice)} />
-            <DirectorCell label="Min Acceptable" inr={minIncotermPrice} usd={usd(minIncotermPrice)} tone="warn" />
-            <DirectorCell label="Walk Away" inr={walkPrice} usd={usd(walkPrice)} tone="danger" />
-            <DirectorCell label="Recommended" inr={incotermPrice} usd={usd(incotermPrice)} tone="gold" />
-            <div className="rounded border border-primary-foreground/10 bg-primary-foreground/5 p-3">
-              <div className="text-[10px] uppercase tracking-widest text-primary-foreground/60">Expected Profit</div>
-              <div className="text-base font-bold mt-1">{fmtINR(c.netProfit)}</div>
-              <div className={"text-xs font-semibold " + (c.profitPct > 15 ? "text-success" : c.profitPct >= 8 ? "text-warning" : "text-deep-red")}>{fmtNum(c.profitPct)}%</div>
-            </div>
-            <div className="rounded border border-primary-foreground/10 bg-primary-foreground/5 p-3">
-              <div className="text-[10px] uppercase tracking-widest text-primary-foreground/60">Risk Level</div>
-              <div className={"text-base font-bold mt-1 " + (c.riskLevel === "Low" ? "text-success" : c.riskLevel === "Medium" ? "text-warning" : "text-deep-red")}>{c.riskLevel}</div>
-              <div className="text-xs text-primary-foreground/60">Safety {fmtNum(c.marginSafetyScore, 0)}</div>
-            </div>
-            <div className="rounded border border-primary-foreground/10 bg-primary-foreground/5 p-3">
-              <div className="text-[10px] uppercase tracking-widest text-primary-foreground/60">Forex Exposure</div>
-              <div className="text-base font-bold mt-1">{fmtINR(c.forexExposure)}</div>
-              <div className="text-xs text-primary-foreground/60">Bank vs Market</div>
-            </div>
-            <div className="rounded border border-primary-foreground/10 bg-primary-foreground/5 p-3">
-              <div className="text-[10px] uppercase tracking-widest text-primary-foreground/60">Negotiation</div>
-              <div className={"text-base font-bold mt-1 " + (lockTriggered ? "text-deep-red" : "text-success")}>
-                {lockTriggered ? "LOCKED" : "OPEN"}
-              </div>
-              <div className="text-xs text-primary-foreground/60">{s.marginLock ? "Protection on" : "Protection off"}</div>
-            </div>
+
+          <div className="bg-card p-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 text-sm border-t">
+            <MiniStat label="EXW" value={fmtINR(c.exwPrice)} />
+            <MiniStat label="FOB" value={fmtINR(c.fobPrice)} />
+            <MiniStat label="CFR" value={fmtINR(c.cfrPrice)} />
+            <MiniStat label="CIF" value={fmtINR(c.cifPrice)} />
+            <MiniStat label="Break-even" value={fmtINR(c.breakEvenPrice)} />
+            <MiniStat
+              label="Risk"
+              value={c.riskLevel}
+              tone={c.riskLevel === "Low" ? "green" : c.riskLevel === "Medium" ? "warn" : "red"}
+            />
+            <MiniStat
+              label="Status"
+              value={lockTriggered ? "Locked" : "Open"}
+              tone={lockTriggered ? "red" : "green"}
+            />
           </div>
         </Card>
 
         {lockTriggered && (
           <div className="rounded-lg border-2 border-deep-red bg-deep-red/10 p-4 flex items-start gap-3">
-            <Lock className="w-5 h-5 text-deep-red mt-0.5" />
-            <div>
-              <div className="font-bold text-deep-red">Quotation Locked — Margin Protection Triggered</div>
-              <div className="text-sm text-foreground/80">Current profit {fmtNum(c.profitPct)}% / {fmtINR(c.netProfit)} is below your minimum threshold of {fmtNum(s.minProfitPct)}% / {fmtINR(s.minProfitAmount)}. Adjust pricing or disable margin lock.</div>
+            <Lock className="w-5 h-5 text-deep-red mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <div className="font-bold text-deep-red">Quotation locked — margin protection triggered</div>
+              <div className="text-sm text-foreground/80 mt-0.5">
+                Current profit {fmtNum(c.profitPct)}% / {fmtINR(c.netProfit)} is below your minimum threshold of {fmtNum(s.minProfitPct)}% / {fmtINR(s.minProfitAmount)}. Adjust pricing or disable margin lock.
+              </div>
             </div>
           </div>
         )}
 
-        <Tabs defaultValue="inputs" className="space-y-4">
-          <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full bg-secondary">
-            <TabsTrigger value="inputs">Inputs</TabsTrigger>
-            <TabsTrigger value="profit">Profit Engine</TabsTrigger>
-            <TabsTrigger value="incoterms">Incoterm Pricing</TabsTrigger>
-            <TabsTrigger value="negotiation">Negotiation</TabsTrigger>
-            <TabsTrigger value="scenario">Scenarios</TabsTrigger>
+        {/* Quick-start hint when empty */}
+        {!s.productName && !s.quantity && (
+          <Card className="p-4 border-gold/30 bg-gold/5 flex items-start gap-3">
+            <Info className="w-5 h-5 text-gold mt-0.5 shrink-0" />
+            <div className="text-sm text-foreground/80">
+              <span className="font-semibold">Getting started:</span> open the <span className="font-semibold">Inputs</span> tab below and fill in shipment details, supplier price and quantity. The other sections (logistics, freight, etc.) are collapsed — expand only the ones you need.
+            </div>
+          </Card>
+        )}
+
+        <Tabs defaultValue="inputs" className="space-y-5">
+          <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full h-auto p-1 bg-secondary">
+            <TabsTrigger value="inputs" className="py-2.5">1. Inputs</TabsTrigger>
+            <TabsTrigger value="profit" className="py-2.5">2. Profit</TabsTrigger>
+            <TabsTrigger value="incoterms" className="py-2.5">3. Incoterms</TabsTrigger>
+            <TabsTrigger value="negotiation" className="py-2.5">4. Negotiation</TabsTrigger>
+            <TabsTrigger value="scenario" className="py-2.5">5. Scenarios</TabsTrigger>
           </TabsList>
 
-          {/* INPUTS */}
+          {/* INPUTS — accordion grouping */}
           <TabsContent value="inputs" className="space-y-5">
-            <Section num={1} title="Shipment Details">
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <TextField label="Quotation Number" value={s.quotationNumber} onChange={(v) => set("quotationNumber", v)} />
-                <TextField label="Quotation Date" value={s.quotationDate} onChange={(v) => set("quotationDate", v)} type="date" />
-                <TextField label="Buyer Name" value={s.buyerName} onChange={(v) => set("buyerName", v)} />
-                <TextField label="Buyer Company" value={s.buyerCompany} onChange={(v) => set("buyerCompany", v)} />
-                <TextField label="Buyer Country" value={s.buyerCountry} onChange={(v) => set("buyerCountry", v)} />
-                <TextField label="Buyer Email" value={s.buyerEmail} onChange={(v) => set("buyerEmail", v)} type="email" />
-                <TextField label="Product Name" value={s.productName} onChange={(v) => set("productName", v)} />
-                <TextField label="Product Grade" value={s.productGrade} onChange={(v) => set("productGrade", v)} />
-                <TextField label="HS Code" value={s.hsCode} onChange={(v) => set("hsCode", v)} />
-                <NumField label="Quantity" value={s.quantity} onChange={(v) => set("quantity", v)} />
-                <TextField label="Unit of Measure" value={s.uom} onChange={(v) => set("uom", v)} />
+            {/* Always-visible essentials */}
+            <GroupCard icon={Package} title="Shipment details" subtitle="Start here — buyer and product information">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <TextField label="Quotation number" value={s.quotationNumber} onChange={(v) => set("quotationNumber", v)} />
+                <TextField label="Quotation date" value={s.quotationDate} onChange={(v) => set("quotationDate", v)} type="date" />
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Incoterm</Label>
+                  <FieldLabel hint="Trade term that defines who pays for what">Incoterm</FieldLabel>
                   <Select value={s.incoterm} onValueChange={(v) => set("incoterm", v as Incoterm)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {(["EXW", "FOB", "CFR", "CIF"] as const).map((i) => <SelectItem key={i} value={i}>{i}</SelectItem>)}
+                      <SelectItem value="EXW">EXW — Ex Works</SelectItem>
+                      <SelectItem value="FOB">FOB — Free on Board</SelectItem>
+                      <SelectItem value="CFR">CFR — Cost & Freight</SelectItem>
+                      <SelectItem value="CIF">CIF — Cost, Insurance & Freight</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+                <TextField label="Buyer company" value={s.buyerCompany} onChange={(v) => set("buyerCompany", v)} placeholder="ABC Trading Ltd." />
+                <TextField label="Buyer contact name" value={s.buyerName} onChange={(v) => set("buyerName", v)} />
+                <TextField label="Buyer country" value={s.buyerCountry} onChange={(v) => set("buyerCountry", v)} placeholder="Germany" />
+                <TextField label="Buyer email" value={s.buyerEmail} onChange={(v) => set("buyerEmail", v)} type="email" />
+                <TextField label="Product name" value={s.productName} onChange={(v) => set("productName", v)} placeholder="Basmati Rice 1121" />
+                <TextField label="Product grade" value={s.productGrade} onChange={(v) => set("productGrade", v)} />
+                <TextField label="HS code" value={s.hsCode} onChange={(v) => set("hsCode", v)} placeholder="1006.30.20" />
+                <NumField label="Quantity" value={s.quantity} onChange={(v) => set("quantity", v)} hint="Total quantity in selected UoM" />
+                <TextField label="Unit of measure" value={s.uom} onChange={(v) => set("uom", v)} placeholder="KG" />
               </div>
-            </Section>
+            </GroupCard>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <Section num={2} title="Product Costing">
-                <div className="grid grid-cols-2 gap-4">
-                  <NumField label="Supplier Price / Unit" value={s.supplierPricePerUnit} onChange={(v) => set("supplierPricePerUnit", v)} suffix="₹" />
-                  <NumField label="Quantity" value={s.quantity} onChange={(v) => set("quantity", v)} />
-                  <div className="col-span-2"><NumField label="Total Supplier Cost" value={c.supplierTotal} onChange={() => {}} readOnly suffix="₹" /></div>
-                </div>
-              </Section>
+            <GroupCard icon={Coins} title="Product cost" subtitle="What you pay your supplier — the foundation of pricing">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <NumField label="Supplier price / unit" value={s.supplierPricePerUnit} onChange={(v) => set("supplierPricePerUnit", v)} suffix="₹" hint="Cost per unit from your supplier" />
+                <NumField label="Quantity" value={s.quantity} onChange={(v) => set("quantity", v)} />
+                <NumField label="Total supplier cost" value={c.supplierTotal} onChange={() => {}} readOnly suffix="₹" />
+              </div>
+            </GroupCard>
 
-              <Section num={3} title="Packaging Cost">
-                <div className="grid grid-cols-2 gap-4">
-                  <NumField label="Pouch Cost" value={s.pouchCost} onChange={(v) => set("pouchCost", v)} suffix="₹" />
-                  <NumField label="Label Cost" value={s.labelCost} onChange={(v) => set("labelCost", v)} suffix="₹" />
-                  <NumField label="Carton Cost" value={s.cartonCost} onChange={(v) => set("cartonCost", v)} suffix="₹" />
-                  <NumField label="Pallet Cost" value={s.palletCost} onChange={(v) => set("palletCost", v)} suffix="₹" />
-                  <NumField label="Other Packaging" value={s.otherPackaging} onChange={(v) => set("otherPackaging", v)} suffix="₹" />
-                  <NumField label="Total Packaging" value={c.packagingTotal} onChange={() => {}} readOnly suffix="₹" />
-                </div>
-              </Section>
+            {/* Optional cost groups — collapsed by default */}
+            <Card className="p-2 sm:p-3 shadow-sm">
+              <div className="px-3 py-2 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Additional cost categories</span> — expand only the ones relevant to your shipment
+              </div>
+              <Accordion type="multiple" className="w-full">
+                <AccItem value="packaging" icon={Package} title="Packaging" summary={fmtINR(c.packagingTotal)}>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <NumField label="Pouch cost" value={s.pouchCost} onChange={(v) => set("pouchCost", v)} suffix="₹" />
+                    <NumField label="Label cost" value={s.labelCost} onChange={(v) => set("labelCost", v)} suffix="₹" />
+                    <NumField label="Carton cost" value={s.cartonCost} onChange={(v) => set("cartonCost", v)} suffix="₹" />
+                    <NumField label="Pallet cost" value={s.palletCost} onChange={(v) => set("palletCost", v)} suffix="₹" />
+                    <NumField label="Other packaging" value={s.otherPackaging} onChange={(v) => set("otherPackaging", v)} suffix="₹" />
+                    <NumField label="Total packaging" value={c.packagingTotal} onChange={() => {}} readOnly suffix="₹" />
+                  </div>
+                </AccItem>
 
-              <Section num={4} title="Inland Logistics">
-                <div className="grid grid-cols-2 gap-4">
-                  <NumField label="Factory → Warehouse" value={s.factoryToWarehouse} onChange={(v) => set("factoryToWarehouse", v)} suffix="₹" />
-                  <NumField label="Warehouse → Port" value={s.warehouseToPort} onChange={(v) => set("warehouseToPort", v)} suffix="₹" />
-                  <NumField label="Loading Charges" value={s.loadingCharges} onChange={(v) => set("loadingCharges", v)} suffix="₹" />
-                  <NumField label="Unloading Charges" value={s.unloadingCharges} onChange={(v) => set("unloadingCharges", v)} suffix="₹" />
-                  <div className="col-span-2"><NumField label="Total Inland Logistics" value={c.inlandTotal} onChange={() => {}} readOnly suffix="₹" /></div>
-                </div>
-              </Section>
+                <AccItem value="inland" icon={Truck} title="Inland logistics" summary={fmtINR(c.inlandTotal)}>
+                  <div className="grid grid-cols-2 gap-4">
+                    <NumField label="Factory → warehouse" value={s.factoryToWarehouse} onChange={(v) => set("factoryToWarehouse", v)} suffix="₹" />
+                    <NumField label="Warehouse → port" value={s.warehouseToPort} onChange={(v) => set("warehouseToPort", v)} suffix="₹" />
+                    <NumField label="Loading charges" value={s.loadingCharges} onChange={(v) => set("loadingCharges", v)} suffix="₹" />
+                    <NumField label="Unloading charges" value={s.unloadingCharges} onChange={(v) => set("unloadingCharges", v)} suffix="₹" />
+                  </div>
+                </AccItem>
 
-              <Section num={5} title="Documentation & Certification">
-                <div className="grid grid-cols-2 gap-4">
-                  <NumField label="Certificate of Origin" value={s.certificateOfOrigin} onChange={(v) => set("certificateOfOrigin", v)} suffix="₹" />
-                  <NumField label="Phytosanitary" value={s.phytosanitary} onChange={(v) => set("phytosanitary", v)} suffix="₹" />
-                  <NumField label="Fumigation" value={s.fumigation} onChange={(v) => set("fumigation", v)} suffix="₹" />
-                  <NumField label="Lab Testing" value={s.labTesting} onChange={(v) => set("labTesting", v)} suffix="₹" />
-                  <NumField label="Export Documentation" value={s.exportDocs} onChange={(v) => set("exportDocs", v)} suffix="₹" />
-                  <NumField label="Other Certification" value={s.otherCertification} onChange={(v) => set("otherCertification", v)} suffix="₹" />
-                  <div className="col-span-2"><NumField label="Total Documentation" value={c.documentationTotal} onChange={() => {}} readOnly suffix="₹" /></div>
-                </div>
-              </Section>
+                <AccItem value="docs" icon={FileText} title="Documentation & certification" summary={fmtINR(c.documentationTotal)}>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <NumField label="Certificate of origin" value={s.certificateOfOrigin} onChange={(v) => set("certificateOfOrigin", v)} suffix="₹" />
+                    <NumField label="Phytosanitary" value={s.phytosanitary} onChange={(v) => set("phytosanitary", v)} suffix="₹" />
+                    <NumField label="Fumigation" value={s.fumigation} onChange={(v) => set("fumigation", v)} suffix="₹" />
+                    <NumField label="Lab testing" value={s.labTesting} onChange={(v) => set("labTesting", v)} suffix="₹" />
+                    <NumField label="Export docs" value={s.exportDocs} onChange={(v) => set("exportDocs", v)} suffix="₹" />
+                    <NumField label="Other certification" value={s.otherCertification} onChange={(v) => set("otherCertification", v)} suffix="₹" />
+                  </div>
+                </AccItem>
 
-              <Section num={6} title="Customs & Port Charges">
-                <div className="grid grid-cols-2 gap-4">
-                  <NumField label="CHA Charges" value={s.chaCharges} onChange={(v) => set("chaCharges", v)} suffix="₹" />
-                  <NumField label="Port Handling" value={s.portHandling} onChange={(v) => set("portHandling", v)} suffix="₹" />
-                  <NumField label="Terminal Handling" value={s.terminalHandling} onChange={(v) => set("terminalHandling", v)} suffix="₹" />
-                  <NumField label="Customs Clearance" value={s.customsClearance} onChange={(v) => set("customsClearance", v)} suffix="₹" />
-                  <NumField label="Container Handling" value={s.containerHandling} onChange={(v) => set("containerHandling", v)} suffix="₹" />
-                  <NumField label="Total Customs & Port" value={c.customsTotal} onChange={() => {}} readOnly suffix="₹" />
-                </div>
-              </Section>
+                <AccItem value="port" icon={Anchor} title="Customs & port charges" summary={fmtINR(c.customsTotal)}>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <NumField label="CHA charges" value={s.chaCharges} onChange={(v) => set("chaCharges", v)} suffix="₹" />
+                    <NumField label="Port handling" value={s.portHandling} onChange={(v) => set("portHandling", v)} suffix="₹" />
+                    <NumField label="Terminal handling" value={s.terminalHandling} onChange={(v) => set("terminalHandling", v)} suffix="₹" />
+                    <NumField label="Customs clearance" value={s.customsClearance} onChange={(v) => set("customsClearance", v)} suffix="₹" />
+                    <NumField label="Container handling" value={s.containerHandling} onChange={(v) => set("containerHandling", v)} suffix="₹" />
+                  </div>
+                </AccItem>
 
-              <Section num={7} title="Freight Forwarding">
-                <div className="grid grid-cols-2 gap-4">
-                  <NumField label="Ocean Freight" value={s.oceanFreight} onChange={(v) => set("oceanFreight", v)} suffix="₹" />
-                  <NumField label="Air Freight" value={s.airFreight} onChange={(v) => set("airFreight", v)} suffix="₹" />
-                  <NumField label="Forwarder Fee" value={s.freightForwarderFee} onChange={(v) => set("freightForwarderFee", v)} suffix="₹" />
-                  <NumField label="Local Destination" value={s.localDestination} onChange={(v) => set("localDestination", v)} suffix="₹" />
-                  <div className="col-span-2"><NumField label="Total Freight" value={c.freightTotal} onChange={() => {}} readOnly suffix="₹" /></div>
-                </div>
-              </Section>
+                <AccItem value="freight" icon={Ship} title="Freight forwarding" summary={fmtINR(c.freightTotal)}>
+                  <div className="grid grid-cols-2 gap-4">
+                    <NumField label="Ocean freight" value={s.oceanFreight} onChange={(v) => set("oceanFreight", v)} suffix="₹" />
+                    <NumField label="Air freight" value={s.airFreight} onChange={(v) => set("airFreight", v)} suffix="₹" />
+                    <NumField label="Forwarder fee" value={s.freightForwarderFee} onChange={(v) => set("freightForwarderFee", v)} suffix="₹" />
+                    <NumField label="Local destination" value={s.localDestination} onChange={(v) => set("localDestination", v)} suffix="₹" />
+                  </div>
+                </AccItem>
 
-              <Section num={8} title="Insurance">
-                <div className="grid grid-cols-2 gap-4">
-                  <NumField label="Cargo Insurance" value={s.cargoInsurance} onChange={(v) => set("cargoInsurance", v)} suffix="₹" />
-                  <NumField label="Insurance Total" value={c.insuranceTotal} onChange={() => {}} readOnly suffix="₹" />
-                </div>
-              </Section>
+                <AccItem value="insurance" icon={ShieldCheck} title="Insurance" summary={fmtINR(c.insuranceTotal)}>
+                  <div className="grid grid-cols-2 gap-4">
+                    <NumField label="Cargo insurance" value={s.cargoInsurance} onChange={(v) => set("cargoInsurance", v)} suffix="₹" />
+                  </div>
+                </AccItem>
 
-              <Section num={9} title="Banking Costs">
-                <div className="grid grid-cols-2 gap-4">
-                  <NumField label="SWIFT Charges" value={s.swiftCharges} onChange={(v) => set("swiftCharges", v)} suffix="₹" />
-                  <NumField label="Bank Charges" value={s.bankCharges} onChange={(v) => set("bankCharges", v)} suffix="₹" />
-                  <NumField label="Export Realization" value={s.exportRealization} onChange={(v) => set("exportRealization", v)} suffix="₹" />
-                  <NumField label="Currency Conversion" value={s.currencyConversion} onChange={(v) => set("currencyConversion", v)} suffix="₹" />
-                  <NumField label="Other Banking" value={s.otherBanking} onChange={(v) => set("otherBanking", v)} suffix="₹" />
-                  <NumField label="Total Banking" value={c.bankingTotal} onChange={() => {}} readOnly suffix="₹" />
-                </div>
-              </Section>
+                <AccItem value="banking" icon={Landmark} title="Banking costs" summary={fmtINR(c.bankingTotal)}>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <NumField label="SWIFT charges" value={s.swiftCharges} onChange={(v) => set("swiftCharges", v)} suffix="₹" />
+                    <NumField label="Bank charges" value={s.bankCharges} onChange={(v) => set("bankCharges", v)} suffix="₹" />
+                    <NumField label="Export realization" value={s.exportRealization} onChange={(v) => set("exportRealization", v)} suffix="₹" />
+                    <NumField label="Currency conversion" value={s.currencyConversion} onChange={(v) => set("currencyConversion", v)} suffix="₹" />
+                    <NumField label="Other banking" value={s.otherBanking} onChange={(v) => set("otherBanking", v)} suffix="₹" />
+                  </div>
+                </AccItem>
 
-              <Section num={10} title="Miscellaneous & Contingency">
-                <div className="grid grid-cols-2 gap-4">
-                  <NumField label="Miscellaneous Cost" value={s.miscCost} onChange={(v) => set("miscCost", v)} suffix="₹" />
-                  <NumField label="Contingency Buffer" value={s.contingencyPct} onChange={(v) => set("contingencyPct", v)} suffix="%" step={0.1} />
-                  <div className="col-span-2"><NumField label="Contingency Amount" value={c.contingencyAmount} onChange={() => {}} readOnly suffix="₹" /></div>
-                </div>
-              </Section>
+                <AccItem value="misc" icon={Wallet} title="Miscellaneous & contingency" summary={fmtINR(c.miscTotal + c.contingencyAmount)}>
+                  <div className="grid grid-cols-2 gap-4">
+                    <NumField label="Miscellaneous cost" value={s.miscCost} onChange={(v) => set("miscCost", v)} suffix="₹" />
+                    <NumField label="Contingency buffer" value={s.contingencyPct} onChange={(v) => set("contingencyPct", v)} suffix="%" step={0.1} hint="Safety margin added to total cost" />
+                    <NumField label="Contingency amount" value={c.contingencyAmount} onChange={() => {}} readOnly suffix="₹" />
+                  </div>
+                </AccItem>
 
-              <Section num={11} title="Export Incentives">
-                <div className="grid grid-cols-2 gap-4">
-                  <NumField label="RoDTEP %" value={s.rodtepPct} onChange={(v) => set("rodtepPct", v)} suffix="%" step={0.1} />
-                  <NumField label="Duty Drawback %" value={s.dutyDrawbackPct} onChange={(v) => set("dutyDrawbackPct", v)} suffix="%" step={0.1} />
-                  <NumField label="Other Incentives" value={s.otherIncentives} onChange={(v) => set("otherIncentives", v)} suffix="₹" />
-                  <NumField label="Total Incentive Value" value={c.incentiveValue} onChange={() => {}} readOnly suffix="₹" />
-                </div>
-              </Section>
+                <AccItem value="incentives" icon={Sparkles} title="Export incentives" summary={`− ${fmtINR(c.incentiveValue)}`}>
+                  <div className="grid grid-cols-2 gap-4">
+                    <NumField label="RoDTEP %" value={s.rodtepPct} onChange={(v) => set("rodtepPct", v)} suffix="%" step={0.1} hint="Remission of Duties and Taxes on Exported Products" />
+                    <NumField label="Duty drawback %" value={s.dutyDrawbackPct} onChange={(v) => set("dutyDrawbackPct", v)} suffix="%" step={0.1} />
+                    <NumField label="Other incentives" value={s.otherIncentives} onChange={(v) => set("otherIncentives", v)} suffix="₹" />
+                    <NumField label="Total incentive value" value={c.incentiveValue} onChange={() => {}} readOnly suffix="₹" />
+                  </div>
+                </AccItem>
 
-              <Section num={12} title="Currency & Forex Protection" accent>
-                <div className="grid grid-cols-2 gap-4">
-                  <NumField label="Market USD Rate" value={s.marketUsdRate} onChange={(v) => set("marketUsdRate", v)} step={0.01} suffix="₹" />
-                  <NumField label="Actual Bank USD Rate" value={s.actualBankUsdRate} onChange={(v) => set("actualBankUsdRate", v)} step={0.01} suffix="₹" />
-                  <NumField label="Market EUR Rate" value={s.marketEurRate} onChange={(v) => set("marketEurRate", v)} step={0.01} suffix="₹" />
-                  <NumField label="Actual Bank EUR Rate" value={s.actualBankEurRate} onChange={(v) => set("actualBankEurRate", v)} step={0.01} suffix="₹" />
-                  <NumField label="Forex Risk Buffer" value={s.forexBufferPct} onChange={(v) => set("forexBufferPct", v)} step={0.1} suffix="%" />
-                  <NumField label="Forex Buffer Amount" value={c.forexBufferAmount} onChange={() => {}} readOnly suffix="₹" />
-                </div>
-                <div className="mt-3 text-xs text-muted-foreground italic">Profit is always computed using the actual bank conversion rate.</div>
-              </Section>
-            </div>
+                <AccItem value="forex" icon={Globe2} title="Currency & forex protection" summary={`${fmtNum(s.forexBufferPct)}% buffer`}>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <NumField label="Market USD rate" value={s.marketUsdRate} onChange={(v) => set("marketUsdRate", v)} step={0.01} suffix="₹" />
+                    <NumField label="Actual bank USD rate" value={s.actualBankUsdRate} onChange={(v) => set("actualBankUsdRate", v)} step={0.01} suffix="₹" hint="Used for actual profit calculation" />
+                    <NumField label="Market EUR rate" value={s.marketEurRate} onChange={(v) => set("marketEurRate", v)} step={0.01} suffix="₹" />
+                    <NumField label="Actual bank EUR rate" value={s.actualBankEurRate} onChange={(v) => set("actualBankEurRate", v)} step={0.01} suffix="₹" />
+                    <NumField label="Forex risk buffer" value={s.forexBufferPct} onChange={(v) => set("forexBufferPct", v)} step={0.1} suffix="%" />
+                    <NumField label="Forex buffer amount" value={c.forexBufferAmount} onChange={() => {}} readOnly suffix="₹" />
+                  </div>
+                  <p className="mt-3 text-xs text-muted-foreground italic">Profit is always computed using the actual bank conversion rate.</p>
+                </AccItem>
+              </Accordion>
+            </Card>
           </TabsContent>
 
           {/* PROFIT ENGINE */}
           <TabsContent value="profit" className="space-y-5">
-            <Section num={13} title="Profit Control Engine" accent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">
-                <NumField label="Target Profit %" value={s.targetProfitPct} onChange={(v) => set("targetProfitPct", v)} suffix="%" step={0.5} />
-                <NumField label="Minimum Profit Amount" value={s.minProfitAmount} onChange={(v) => set("minProfitAmount", v)} suffix="₹" />
-                <NumField label="Minimum Profit %" value={s.minProfitPct} onChange={(v) => set("minProfitPct", v)} suffix="%" step={0.5} />
-                <NumField label="Container Size" value={s.containerKg} onChange={(v) => set("containerKg", v)} suffix="kg" />
+            <GroupCard icon={ShieldCheck} title="Profit control" subtitle="Set your target and minimum margins — the engine protects you">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <NumField label="Target profit %" value={s.targetProfitPct} onChange={(v) => set("targetProfitPct", v)} suffix="%" step={0.5} hint="The margin you'd like to achieve" />
+                <NumField label="Minimum profit %" value={s.minProfitPct} onChange={(v) => set("minProfitPct", v)} suffix="%" step={0.5} hint="The lowest margin you'll accept" />
+                <NumField label="Minimum profit amount" value={s.minProfitAmount} onChange={(v) => set("minProfitAmount", v)} suffix="₹" />
+                <NumField label="Container size" value={s.containerKg} onChange={(v) => set("containerKg", v)} suffix="kg" />
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                <KPI label="Total Cost" value={fmtINR(c.totalCost)} />
-                <KPI label="Effective Cost" value={fmtINR(c.effectiveCost)} sub={`− ${fmtINR(c.incentiveValue)} incentives`} />
-                <KPI label="Protected Cost" value={fmtINR(c.protectedCost)} sub={`+ buffers ${fmtINR(c.contingencyAmount + c.forexBufferAmount)}`} />
-                <KPI label="Break-even Price" value={fmtINR(c.breakEvenPrice)} sub={`${fmtUSD(usd(c.breakEvenPrice))} / unit`} />
-                <KPI label="Target Selling Price" value={fmtINR(c.targetSellingPrice)} sub={`${fmtUSD(usd(c.targetSellingPrice))} / unit`} tone="gold" />
-                <KPI label="Net Profit" value={fmtINR(c.netProfit)} tone={c.profitPct > 15 ? "green" : c.profitPct >= 8 ? "warn" : "red"} />
+
+              <div className="rounded-lg border bg-secondary/40 p-4 flex items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-3 min-w-0">
+                  <ShieldCheck className="w-5 h-5 text-gold shrink-0" />
+                  <div className="min-w-0">
+                    <div className="font-semibold text-sm">Margin Protection Lock</div>
+                    <div className="text-xs text-muted-foreground">Blocks PDF generation if profit falls below your minimum</div>
+                  </div>
+                </div>
+                <Switch checked={s.marginLock} onCheckedChange={(v) => set("marginLock", v)} />
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <KPI label="Total cost" value={fmtINR(c.totalCost)} />
+                <KPI label="Effective cost" value={fmtINR(c.effectiveCost)} sub={`− ${fmtINR(c.incentiveValue)} incentives`} />
+                <KPI label="Protected cost" value={fmtINR(c.protectedCost)} sub={`+ ${fmtINR(c.contingencyAmount + c.forexBufferAmount)} buffers`} />
+                <KPI label="Break-even price" value={fmtINR(c.breakEvenPrice)} sub={`${fmtUSD(usd(c.breakEvenPrice))} / unit`} />
+                <KPI label="Target selling price" value={fmtINR(c.targetSellingPrice)} sub={`${fmtUSD(usd(c.targetSellingPrice))} / unit`} tone="gold" />
+                <KPI label="Net profit" value={fmtINR(c.netProfit)} tone={c.profitPct > 15 ? "green" : c.profitPct >= 8 ? "warn" : "red"} />
                 <KPI label="Profit %" value={`${fmtNum(c.profitPct)}%`} tone={c.profitPct > 15 ? "green" : c.profitPct >= 8 ? "warn" : "red"} />
-                <KPI label="Profit / Unit" value={fmtINR(c.profitPerUnit)} />
-                <KPI label="Profit / KG" value={fmtINR(c.profitPerKg)} />
-                <KPI label="Profit / Container" value={fmtINR(c.profitPerContainer)} sub={`${s.containerKg} kg`} />
-                <KPI label="Margin Safety" value={`${fmtNum(c.marginSafetyScore, 0)} / 100`} />
-                <KPI label="Risk Level" value={c.riskLevel} tone={c.riskLevel === "Low" ? "green" : c.riskLevel === "Medium" ? "warn" : "red"} />
+                <KPI label="Profit / unit" value={fmtINR(c.profitPerUnit)} />
+                <KPI label="Profit / kg" value={fmtINR(c.profitPerKg)} />
+                <KPI label="Profit / container" value={fmtINR(c.profitPerContainer)} sub={`${s.containerKg} kg`} />
+                <KPI label="Margin safety" value={`${fmtNum(c.marginSafetyScore, 0)} / 100`} />
+                <KPI label="Risk level" value={c.riskLevel} tone={c.riskLevel === "Low" ? "green" : c.riskLevel === "Medium" ? "warn" : "red"} />
               </div>
+            </GroupCard>
 
-              <div className="mt-4 flex items-center gap-3">
-                <Switch checked={s.marginLock} onCheckedChange={(v) => set("marginLock", v)} id="margin-lock" />
-                <Label htmlFor="margin-lock" className="cursor-pointer flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-gold" />
-                  Margin Protection Lock — block quotations below minimum thresholds
-                </Label>
-              </div>
-            </Section>
-
-            <Section num={16} title="Profit Waterfall (per unit)">
+            <GroupCard title="Profit waterfall (per unit)" subtitle="How your selling price breaks down into costs and profit">
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={waterfall}>
@@ -446,21 +527,21 @@ export default function Calculator() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </Section>
+            </GroupCard>
           </TabsContent>
 
           {/* INCOTERMS */}
           <TabsContent value="incoterms" className="space-y-5">
-            <Section num={14} title="Incoterm Pricing Engine">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+            <GroupCard icon={Ship} title="Incoterm pricing" subtitle="Selling prices across all four common Incoterms">
+              <div className="overflow-x-auto -mx-2 sm:mx-0">
+                <table className="w-full text-sm min-w-[640px]">
                   <thead>
                     <tr className="border-b border-gold/30 bg-gold/5">
                       <th className="text-left p-3 font-semibold">Incoterm</th>
-                      <th className="text-right p-3 font-semibold">Per Unit (INR)</th>
-                      <th className="text-right p-3 font-semibold">Per Unit (USD)</th>
-                      <th className="text-right p-3 font-semibold">Per Unit (EUR)</th>
-                      <th className="text-right p-3 font-semibold">Total Shipment (INR)</th>
+                      <th className="text-right p-3 font-semibold">Per unit (INR)</th>
+                      <th className="text-right p-3 font-semibold">Per unit (USD)</th>
+                      <th className="text-right p-3 font-semibold">Per unit (EUR)</th>
+                      <th className="text-right p-3 font-semibold">Total (INR)</th>
                       <th className="text-right p-3 font-semibold">Total (USD)</th>
                       <th className="text-right p-3 font-semibold">Total (EUR)</th>
                     </tr>
@@ -488,38 +569,39 @@ export default function Calculator() {
                   </tbody>
                 </table>
               </div>
-            </Section>
+            </GroupCard>
 
-            <Section num={17} title="Professional Quotation Preview">
+            <GroupCard icon={FileText} title="Quotation preview" subtitle="What your buyer will see in the PDF">
               <QuotationPreview s={s} priceINR={incotermPrice} />
-            </Section>
+            </GroupCard>
           </TabsContent>
 
           {/* NEGOTIATION */}
           <TabsContent value="negotiation" className="space-y-5">
-            <Section num={22} title="Negotiation & Profit Protection Engine" accent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-5">
-                <KPI label={`Min Acceptable EXW`} value={fmtINR(c.minExw)} sub={fmtUSD(usd(c.minExw))} tone="warn" />
-                <KPI label={`Min Acceptable FOB`} value={fmtINR(c.minFob)} sub={fmtUSD(usd(c.minFob))} tone="warn" />
-                <KPI label={`Min Acceptable CFR`} value={fmtINR(c.minCfr)} sub={fmtUSD(usd(c.minCfr))} tone="warn" />
-                <KPI label={`Min Acceptable CIF`} value={fmtINR(c.minCif)} sub={fmtUSD(usd(c.minCif))} tone="warn" />
-                <KPI label={`Walk Away FOB`} value={fmtINR(c.walkFob)} sub={fmtUSD(usd(c.walkFob))} tone="red" />
-                <KPI label={`Walk Away CFR`} value={fmtINR(c.walkCfr)} sub={fmtUSD(usd(c.walkCfr))} tone="red" />
-                <KPI label={`Walk Away CIF`} value={fmtINR(c.walkCif)} sub={fmtUSD(usd(c.walkCif))} tone="red" />
+            <GroupCard icon={TrendingUp} title="Negotiation thresholds" subtitle="Know exactly when to say yes, push back, or walk away">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <KPI label="Min EXW" value={fmtINR(c.minExw)} sub={fmtUSD(usd(c.minExw))} tone="warn" />
+                <KPI label="Min FOB" value={fmtINR(c.minFob)} sub={fmtUSD(usd(c.minFob))} tone="warn" />
+                <KPI label="Min CFR" value={fmtINR(c.minCfr)} sub={fmtUSD(usd(c.minCfr))} tone="warn" />
+                <KPI label="Min CIF" value={fmtINR(c.minCif)} sub={fmtUSD(usd(c.minCif))} tone="warn" />
+                <KPI label="Walk-away FOB" value={fmtINR(c.walkFob)} sub={fmtUSD(usd(c.walkFob))} tone="red" />
+                <KPI label="Walk-away CFR" value={fmtINR(c.walkCfr)} sub={fmtUSD(usd(c.walkCfr))} tone="red" />
+                <KPI label="Walk-away CIF" value={fmtINR(c.walkCif)} sub={fmtUSD(usd(c.walkCif))} tone="red" />
                 <KPI label={`Recommended ${s.incoterm}`} value={fmtINR(incotermPrice)} sub={fmtUSD(usd(incotermPrice))} tone="gold" />
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 <div className="rounded-lg border p-5 space-y-4">
-                  <div className="flex items-center gap-2 font-semibold"><TrendingUp className="w-4 h-4 text-gold" />Live Buyer Counter-Offer Simulator</div>
+                  <div className="flex items-center gap-2 font-semibold"><TrendingUp className="w-4 h-4 text-gold" />Counter-offer check</div>
+                  <p className="text-xs text-muted-foreground -mt-2">Enter what the buyer is proposing — we'll tell you if it's acceptable.</p>
                   <div className="grid grid-cols-3 gap-3">
                     <div className="col-span-2">
-                      <NumField label="Buyer Counter Offer (per unit)" value={s.buyerCounterOffer} onChange={(v) => set("buyerCounterOffer", v)} step={0.01} />
+                      <NumField label="Buyer counter offer (per unit)" value={s.buyerCounterOffer} onChange={(v) => set("buyerCounterOffer", v)} step={0.01} />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Currency</Label>
+                      <FieldLabel>Currency</FieldLabel>
                       <Select value={s.buyerCounterCurrency} onValueChange={(v) => set("buyerCounterCurrency", v as "INR" | "USD" | "EUR")}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="INR">INR</SelectItem>
                           <SelectItem value="USD">USD</SelectItem>
@@ -541,8 +623,9 @@ export default function Calculator() {
                 </div>
 
                 <div className="rounded-lg border p-5 space-y-4">
-                  <div className="flex items-center gap-2 font-semibold"><Sparkles className="w-4 h-4 text-gold" />Discount Control</div>
-                  <NumField label="Requested Discount %" value={s.requestedDiscountPct} onChange={(v) => set("requestedDiscountPct", v)} step={0.5} suffix="%" />
+                  <div className="flex items-center gap-2 font-semibold"><Sparkles className="w-4 h-4 text-gold" />Discount check</div>
+                  <p className="text-xs text-muted-foreground -mt-2">Test how a percentage discount affects your profit.</p>
+                  <NumField label="Requested discount %" value={s.requestedDiscountPct} onChange={(v) => set("requestedDiscountPct", v)} step={0.5} suffix="%" />
                   <div className="space-y-2 text-sm">
                     <Row label={`Original ${s.incoterm}`} value={fmtINR(incotermPrice)} />
                     <Row label={`Discounted ${s.incoterm}`} value={fmtINR(discountedPrice)} tone={discountAcceptable ? "green" : "red"} />
@@ -551,14 +634,14 @@ export default function Calculator() {
                   </div>
                   <div className={"rounded-md p-3 text-sm " + (discountAcceptable ? "bg-success/10 text-success" : "bg-deep-red/10 text-deep-red")}>
                     {discountAcceptable
-                      ? `Discount acceptable. Projected profit remains above minimum.`
-                      : `Discount not recommended. Profit falls below required threshold.`}
+                      ? "Discount acceptable. Projected profit remains above minimum."
+                      : "Discount not recommended. Profit falls below required threshold."}
                   </div>
                 </div>
               </div>
 
               <div className="mt-5 rounded-lg border bg-secondary/30 p-5">
-                <div className="font-semibold mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-deep-red" />Negotiation Summary Card</div>
+                <div className="font-semibold mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-deep-red" />Decision summary</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                   <Row label="Recommended" value={fmtINR(incotermPrice)} />
                   <Row label="Target" value={fmtINR(c.targetSellingPrice)} />
@@ -567,27 +650,26 @@ export default function Calculator() {
                   <Row label="Expected profit" value={fmtINR(c.netProfit)} tone={c.profitPct > 15 ? "green" : c.profitPct >= 8 ? "warn" : "red"} />
                   <Row label="Profit %" value={`${fmtNum(c.profitPct)}%`} />
                   <Row label="Risk level" value={c.riskLevel} />
-                  <Row label="Forex exposure" value={fmtINR(c.forexExposure)} />
-                  <Row label="Deal quality score" value={`${c.dealQualityScore} / 100`} tone={c.dealQualityScore >= 75 ? "green" : c.dealQualityScore >= 60 ? "warn" : "red"} />
+                  <Row label="Deal quality" value={`${c.dealQualityScore} / 100`} tone={c.dealQualityScore >= 75 ? "green" : c.dealQualityScore >= 60 ? "warn" : "red"} />
                 </div>
               </div>
-            </Section>
+            </GroupCard>
           </TabsContent>
 
           {/* SCENARIOS */}
           <TabsContent value="scenario" className="space-y-5">
-            <Section num={15} title="Scenario Simulator">
-              <div className="flex flex-wrap gap-2 mb-5">
+            <GroupCard icon={Sparkles} title="What-if scenarios" subtitle="See how profit changes when costs or rates move">
+              <div className="flex flex-wrap gap-2 mb-6">
                 {[
-                  { id: "base", label: "Base Case" },
+                  { id: "base", label: "Base case" },
                   { id: "freight+10", label: "Freight +10%" },
                   { id: "freight+20", label: "Freight +20%" },
-                  { id: "usd-2", label: "USD Drops 2%" },
-                  { id: "usd-5", label: "USD Drops 5%" },
+                  { id: "usd-2", label: "USD drops 2%" },
+                  { id: "usd-5", label: "USD drops 5%" },
                   { id: "packaging+5", label: "Packaging +5%" },
-                  { id: "bank-2", label: "Bank Rate Drops 2%" },
+                  { id: "bank-2", label: "Bank rate −2%" },
                 ].map((b) => (
-                  <Button key={b.id} variant={scenario === b.id ? "default" : "outline"}
+                  <Button key={b.id} size="sm" variant={scenario === b.id ? "default" : "outline"}
                     onClick={() => setScenario(b.id)}
                     className={scenario === b.id ? "bg-primary text-primary-foreground" : ""}>
                     {b.label}
@@ -595,13 +677,13 @@ export default function Calculator() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 <KPI label="Profit (scenario)" value={fmtINR(sc.netProfit)} tone={sc.profitPct > 15 ? "green" : sc.profitPct >= 8 ? "warn" : "red"} />
                 <KPI label="Margin %" value={`${fmtNum(sc.profitPct)}%`} tone={sc.profitPct > 15 ? "green" : sc.profitPct >= 8 ? "warn" : "red"} />
                 <KPI label="Break-even" value={fmtINR(sc.breakEvenPrice)} />
                 <KPI label="FOB" value={fmtINR(sc.fobPrice)} />
                 <KPI label="CIF" value={fmtINR(sc.cifPrice)} />
-                <KPI label="Δ vs Base profit" value={fmtINR(sc.netProfit - c.netProfit)} tone={sc.netProfit >= c.netProfit ? "green" : "red"} />
+                <KPI label="Δ vs base" value={fmtINR(sc.netProfit - c.netProfit)} tone={sc.netProfit >= c.netProfit ? "green" : "red"} />
               </div>
 
               <div className="mt-6 h-72">
@@ -620,7 +702,7 @@ export default function Calculator() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-            </Section>
+            </GroupCard>
           </TabsContent>
         </Tabs>
 
@@ -629,7 +711,6 @@ export default function Calculator() {
           <div className="mt-1">Export Pricing & Profit Control · CFO-grade financial control</div>
         </footer>
 
-        {/* Hidden print area */}
         <div className="print-area hidden print:block">
           <QuotationPreview s={s} priceINR={incotermPrice} forPrint />
         </div>
@@ -638,17 +719,60 @@ export default function Calculator() {
   );
 }
 
-function DirectorCell({ label, inr, usd, tone }: { label: string; inr: number; usd: number; tone?: "gold" | "warn" | "danger" }) {
+/* ---------- Smaller helpers ---------- */
+
+function AccItem({ value, icon: Icon, title, summary, children }: {
+  value: string; icon: React.ComponentType<{ className?: string }>;
+  title: string; summary?: string; children: React.ReactNode;
+}) {
+  return (
+    <AccordionItem value={value} className="border-b last:border-0 px-2">
+      <AccordionTrigger className="hover:no-underline py-4">
+        <div className="flex items-center gap-3 flex-1 min-w-0 pr-2">
+          <div className="grid place-items-center w-8 h-8 rounded-md bg-secondary text-foreground/70 shrink-0">
+            <Icon className="w-4 h-4" />
+          </div>
+          <span className="font-medium text-sm truncate">{title}</span>
+          {summary && (
+            <span className="ml-auto text-xs text-muted-foreground tabular-nums shrink-0">{summary}</span>
+          )}
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="px-2 pb-5 pt-1">{children}</AccordionContent>
+    </AccordionItem>
+  );
+}
+
+function DirectorCell({ label, inr, usd, tone, big, pct }: {
+  label: string; inr: number; usd: number; tone?: "gold" | "warn" | "danger"; big?: boolean; pct?: number;
+}) {
   const cls =
-    tone === "gold" ? "border-gold/60 bg-gold/10" :
+    tone === "gold" ? "border-gold/60 bg-gold/15" :
     tone === "warn" ? "border-warning/40 bg-warning/10" :
     tone === "danger" ? "border-deep-red/50 bg-deep-red/10" :
-    "border-primary-foreground/10 bg-primary-foreground/5";
+    "border-primary-foreground/15 bg-primary-foreground/5";
   return (
-    <div className={"rounded border p-3 " + cls}>
-      <div className="text-[10px] uppercase tracking-widest text-primary-foreground/70">{label}</div>
-      <div className="text-base font-bold mt-1 tabular-nums">{fmtINR(inr)}</div>
-      <div className="text-xs text-primary-foreground/60 tabular-nums">{fmtUSD(usd)}</div>
+    <div className={"rounded-lg border p-4 " + cls}>
+      <div className="text-[10px] uppercase tracking-widest text-primary-foreground/70 font-semibold">{label}</div>
+      <div className={"font-bold mt-1.5 tabular-nums " + (big ? "text-xl sm:text-2xl" : "text-base")}>{fmtINR(inr)}</div>
+      <div className="text-xs text-primary-foreground/60 tabular-nums mt-0.5">
+        {fmtUSD(usd)}
+        {pct !== undefined && (
+          <span className={"ml-2 font-semibold " + (pct > 15 ? "text-success" : pct >= 8 ? "text-warning" : "text-deep-red")}>
+            {fmtNum(pct)}%
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, tone }: { label: string; value: string; tone?: "green" | "red" | "warn" }) {
+  const toneCls = tone === "green" ? "text-success" : tone === "red" ? "text-deep-red" : tone === "warn" ? "text-warning" : "";
+  return (
+    <div className="min-w-0">
+      <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">{label}</div>
+      <div className={"text-sm font-semibold tabular-nums mt-0.5 truncate " + toneCls}>{value}</div>
     </div>
   );
 }
@@ -656,9 +780,9 @@ function DirectorCell({ label, inr, usd, tone }: { label: string; inr: number; u
 function Row({ label, value, tone }: { label: string; value: string; tone?: "green" | "red" | "warn" }) {
   const cls = tone === "green" ? "text-success" : tone === "red" ? "text-deep-red" : tone === "warn" ? "text-warning" : "";
   return (
-    <div className="flex justify-between items-center py-1 border-b border-border/40 last:border-0">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={"font-semibold tabular-nums " + cls}>{value}</span>
+    <div className="flex justify-between items-center py-1 border-b border-border/40 last:border-0 gap-3">
+      <span className="text-muted-foreground text-sm">{label}</span>
+      <span className={"font-semibold tabular-nums text-sm " + cls}>{value}</span>
     </div>
   );
 }
