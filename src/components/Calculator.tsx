@@ -132,6 +132,8 @@ export default function Calculator() {
     const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
     if (raw) {
       try { setS({ ...defaultState, ...JSON.parse(raw) }); } catch {}
+    } else {
+      setS((current) => ({ ...current, quotationDate: new Date().toISOString().slice(0, 10) }));
     }
   }, []);
 
@@ -143,7 +145,7 @@ export default function Calculator() {
 
   const incotermPrice = s.incoterm === "EXW" ? c.exwPrice : s.incoterm === "FOB" ? c.fobPrice : s.incoterm === "CFR" ? c.cfrPrice : c.cifPrice;
   const minIncotermPrice = s.incoterm === "EXW" ? c.minExw : s.incoterm === "FOB" ? c.minFob : s.incoterm === "CFR" ? c.minCfr : c.minCif;
-  const walkPrice = s.incoterm === "FOB" ? c.walkFob : s.incoterm === "CFR" ? c.walkCfr : s.incoterm === "CIF" ? c.walkCif : c.walkFob;
+  const walkPrice = s.incoterm === "EXW" ? c.walkExw : s.incoterm === "FOB" ? c.walkFob : s.incoterm === "CFR" ? c.walkCfr : c.walkCif;
 
   const counterINR = s.buyerCounterCurrency === "INR" ? s.buyerCounterOffer :
     s.buyerCounterCurrency === "USD" ? s.buyerCounterOffer * s.actualBankUsdRate :
