@@ -246,15 +246,14 @@ export function compute(s: CalculatorState): Computed {
   // Walk-away is a protected negotiation floor, never the loss-making break-even.
   // Keep a 2% safety gap above the fully loaded break-even while never exceeding
   // the configured minimum acceptable price.
-  const walkBase = (cost: number, minimum: number) => {
+  const walkBase = (cost: number) => {
     const incotermBreakEven = (cost * (1 - incentiveRatio) * bufferMult) / q;
-    const protectedFloor = Math.max(breakEvenPrice, incotermBreakEven) * 1.02;
-    return Math.min(protectedFloor, minimum);
+    return Math.max(breakEvenPrice, incotermBreakEven) * 1.02;
   };
-  const walkExw = walkBase(exwCostTotal, minExw);
-  const walkFob = walkBase(fobCostTotal, minFob);
-  const walkCfr = walkBase(cfrCostTotal, minCfr);
-  const walkCif = walkBase(cifCostTotal, minCif);
+  const walkExw = walkBase(exwCostTotal);
+  const walkFob = walkBase(fobCostTotal);
+  const walkCfr = walkBase(cfrCostTotal);
+  const walkCif = walkBase(cifCostTotal);
 
   // Net profit at target selling price (using FOB target as representative shipment)
   const revenue = targetSellingPrice * q;
