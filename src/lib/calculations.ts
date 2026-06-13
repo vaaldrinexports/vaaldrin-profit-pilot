@@ -126,6 +126,23 @@ export const defaultState: CalculatorState = {
 
 const num = (n: number) => (isFinite(n) ? n : 0);
 
+export interface AuditRow {
+  section: "Input" | "Intermediate" | "Final";
+  name: string;
+  formula: string;
+  result: number;
+  unit: "INR" | "INR/unit" | "%" | "quantity";
+}
+
+export interface PriceEvaluation {
+  price: number;
+  revenue: number;
+  profit: number;
+  profitPct: number;
+  profitPerUnit: number;
+  acceptable: boolean;
+}
+
 export interface Computed {
   supplierTotal: number;
   packagingTotal: number;
@@ -145,12 +162,15 @@ export interface Computed {
   protectedCost: number;
 
   breakEvenPrice: number; // per unit INR
-  targetSellingPrice: number; // per unit INR
+  targetSellingPrice: number; // selected Incoterm, per unit INR
+  recommendedPrice: number; // selected Incoterm, per unit INR
+  expectedRevenue: number;
   netProfit: number;
   profitPct: number;
   profitPerUnit: number;
   profitPerKg: number;
-  profitPerContainer: number;
+  projectedProfitAtFullContainer: number;
+  showFullContainerProjection: boolean;
 
   // Incoterm prices (per unit INR)
   exwPrice: number;
@@ -182,10 +202,16 @@ export interface Computed {
   dealQualityScore: number;
 
   forexExposure: number; // diff (market - bank) * value
+  selectedMinimumPrice: number;
+  selectedWalkAwayPrice: number;
+  isConsistent: boolean;
+  validationErrors: string[];
+  auditRows: AuditRow[];
 }
 
 export function compute(s: CalculatorState): Computed {
-  const q = num(s.quantity) || 1;
+  const q = Math.max(0, num(s.quantity));
+  const divisor = q || 1;
 
   const supplierTotal = num(s.supplierPricePerUnit) * num(s.quantity);
   const packagingTotal = num(s.pouchCost) + num(s.labelCost) + num(s.cartonCost) + num(s.palletCost) + num(s.otherPackaging);
@@ -197,12 +223,22 @@ export function compute(s: CalculatorState): Computed {
   const bankingTotal = num(s.swiftCharges) + num(s.bankCharges) + num(s.exportRealization) + num(s.currencyConversion) + num(s.otherBanking);
   const miscTotal = num(s.miscCost);
 
-  const totalCost =
-    supplierTotal + packagingTotal + inlandTotal + documentationTotal +
-    customsTotal + freightTotal + insuranceTotal + bankingTotal + miscTotal;
+  const exwDirectCost = supplierTotal + packagingTotal;
+  const fobDirectCost = exwDirectCost + inlandTotal + documentationTotal + customsTotal;
+  const cfrDirectCost = fobDirectCost + freightTotal;
+  const cifDirectCost = cfrDirectCost + insuranceTotal;
+  const sharedCost = bankingTotal + miscTotal;
+  const directCostByIncoterm: Record<Incoterm, number> = {
+    EXW: exwDirectCost,
+    FOB: fobDirectCost,
+    CFR: cfrDirectCost,
+    CIF: cifDirectCost,
+  };
+  // Only costs applicable to the selected Incoterm enter the quoted deal.
+  const totalCost = directCostByIncoterm[s.incoterm] + sharedCost;
 
-  const incentiveValue =
-    (supplierTotal * (num(s.rodtepPct) + num(s.dutyDrawbackPct)) / 100) + num(s.otherIncentives);
+  const incentiveValue = Math.min(totalCost,
+    (supplierTotal * (num(s.rodtepPct) + num(s.dutyDrawbackPct)) / 100) + num(s.otherIncentives));
 
   const effectiveCost = totalCost - incentiveValue;
 
@@ -210,74 +246,69 @@ export function compute(s: CalculatorState): Computed {
   const forexBufferAmount = effectiveCost * num(s.forexBufferPct) / 100;
   const protectedCost = effectiveCost + contingencyAmount + forexBufferAmount;
 
-  const breakEvenPrice = protectedCost / q;
-  const targetSellingPrice = breakEvenPrice * (1 + num(s.targetProfitPct) / 100);
-
-  // EXW = supplier + packaging (factory-gate)
-  const exwCostTotal = supplierTotal + packagingTotal;
-  // FOB = product + packaging + logistics + docs + cha + ports
-  const fobCostTotal = exwCostTotal + inlandTotal + documentationTotal + customsTotal;
-  const cfrCostTotal = fobCostTotal + freightTotal;
-  const cifCostTotal = cfrCostTotal + insuranceTotal;
-
-  // Apply profit margin and buffers proportionally for selling prices
-  const marginMult = 1 + num(s.targetProfitPct) / 100;
-  const bufferMult = 1 + (num(s.contingencyPct) + num(s.forexBufferPct)) / 100;
+  const bufferRate = (num(s.contingencyPct) + num(s.forexBufferPct)) / 100;
   const incentiveRatio = totalCost > 0 ? incentiveValue / totalCost : 0;
-
-  const exwPrice = (exwCostTotal * (1 - incentiveRatio) * bufferMult * marginMult) / q;
-  const fobPrice = (fobCostTotal * (1 - incentiveRatio) * bufferMult * marginMult) / q;
-  const cfrPrice = (cfrCostTotal * (1 - incentiveRatio) * bufferMult * marginMult) / q;
-  const cifPrice = (cifCostTotal * (1 - incentiveRatio) * bufferMult * marginMult) / q;
-
-  // Minimum acceptable: meets minProfitPct AND minProfitAmount
-  const minPctMult = 1 + num(s.minProfitPct) / 100;
-  const minBase = (cost: number) => {
-    const protectedC = cost * (1 - incentiveRatio) * bufferMult;
-    const byPct = (protectedC / q) * minPctMult;
-    const byAmt = (protectedC + num(s.minProfitAmount)) / q;
-    return Math.max(byPct, byAmt);
+  const protectedFor = (directCost: number) => {
+    const applicableTotal = directCost + sharedCost;
+    const applicableEffective = applicableTotal * (1 - incentiveRatio);
+    return applicableEffective * (1 + bufferRate);
   };
-  const minExw = minBase(exwCostTotal);
-  const minFob = minBase(fobCostTotal);
-  const minCfr = minBase(cfrCostTotal);
-  const minCif = minBase(cifCostTotal);
-
-  // Walk-away is a protected negotiation floor, never the loss-making break-even.
-  // Keep a 2% safety gap above the fully loaded break-even while never exceeding
-  // the configured minimum acceptable price.
-  const walkBase = (cost: number) => {
-    const incotermBreakEven = (cost * (1 - incentiveRatio) * bufferMult) / q;
-    return Math.max(breakEvenPrice, incotermBreakEven) * 1.02;
+  const protectedByIncoterm: Record<Incoterm, number> = {
+    EXW: protectedFor(exwDirectCost),
+    FOB: protectedFor(fobDirectCost),
+    CFR: protectedFor(cfrDirectCost),
+    CIF: protectedFor(cifDirectCost),
   };
-  const walkExw = walkBase(exwCostTotal);
-  const walkFob = walkBase(fobCostTotal);
-  const walkCfr = walkBase(cfrCostTotal);
-  const walkCif = walkBase(cifCostTotal);
+  // Override the selected value with the exact audited path to avoid drift.
+  protectedByIncoterm[s.incoterm] = protectedCost;
 
-  // Net profit at target selling price (using FOB target as representative shipment)
-  const revenue = targetSellingPrice * q;
-  const netProfit = revenue - protectedCost;
+  const breakEvenFor = (term: Incoterm) => protectedByIncoterm[term] / divisor;
+  const walkFor = (term: Incoterm) => breakEvenFor(term) * 1.02;
+  const minimumFor = (term: Incoterm) => Math.max(
+    breakEvenFor(term) * (1 + num(s.minProfitPct) / 100),
+    (protectedByIncoterm[term] + num(s.minProfitAmount)) / divisor,
+  );
+  const targetFor = (term: Incoterm) => breakEvenFor(term) * (1 + num(s.targetProfitPct) / 100);
+
+  const breakEvenPrice = breakEvenFor(s.incoterm);
+  const walkExw = walkFor("EXW");
+  const walkFob = walkFor("FOB");
+  const walkCfr = walkFor("CFR");
+  const walkCif = walkFor("CIF");
+  const minExw = minimumFor("EXW");
+  const minFob = minimumFor("FOB");
+  const minCfr = minimumFor("CFR");
+  const minCif = minimumFor("CIF");
+  const exwPrice = targetFor("EXW");
+  const fobPrice = targetFor("FOB");
+  const cfrPrice = targetFor("CFR");
+  const cifPrice = targetFor("CIF");
+  const targetSellingPrice = targetFor(s.incoterm);
+  // Recommendation equals the approved target: no undocumented discount is applied.
+  const recommendedPrice = targetSellingPrice;
+  const expectedRevenue = recommendedPrice * q;
+  const netProfit = expectedRevenue - protectedCost;
   const profitPct = protectedCost > 0 ? (netProfit / protectedCost) * 100 : 0;
-  const profitPerUnit = netProfit / q;
-  const profitPerKg = s.uom.toUpperCase().includes("KG") ? profitPerUnit : profitPerUnit;
-  const profitPerContainer = profitPerKg * num(s.containerKg);
+  const profitPerUnit = netProfit / divisor;
+  const profitPerKg = profitPerUnit;
+  const projectedProfitAtFullContainer = profitPerUnit * num(s.containerKg);
+  const showFullContainerProjection = q > 0 && num(s.containerKg) > 0 && q !== num(s.containerKg);
 
   const perUnit = {
-    supplier: supplierTotal / q,
-    packaging: packagingTotal / q,
-    inland: inlandTotal / q,
-    docs: documentationTotal / q,
-    customs: customsTotal / q,
-    freight: freightTotal / q,
-    insurance: insuranceTotal / q,
-    banking: bankingTotal / q,
-    misc: miscTotal / q,
-    buffers: (contingencyAmount + forexBufferAmount) / q,
+    supplier: supplierTotal / divisor,
+    packaging: packagingTotal / divisor,
+    inland: inlandTotal / divisor,
+    docs: documentationTotal / divisor,
+    customs: customsTotal / divisor,
+    freight: freightTotal / divisor,
+    insurance: insuranceTotal / divisor,
+    banking: bankingTotal / divisor,
+    misc: miscTotal / divisor,
+    buffers: (contingencyAmount + forexBufferAmount) / divisor,
   };
 
   // Forex exposure: gap between market and bank rates applied to revenue
-  const forexExposure = Math.abs(num(s.marketUsdRate) - num(s.actualBankUsdRate)) * (revenue / num(s.actualBankUsdRate || 1));
+  const forexExposure = Math.abs(num(s.marketUsdRate) - num(s.actualBankUsdRate)) * (expectedRevenue / num(s.actualBankUsdRate || 1));
 
   // Margin safety: how far above min profit % we are
   const marginSafetyScore = Math.max(0, Math.min(100,
@@ -297,20 +328,84 @@ export function compute(s: CalculatorState): Computed {
     profitPct >= 15 && (num(s.forexBufferPct) + num(s.contingencyPct)) >= 3 ? "Low" :
     profitPct >= 8 ? "Medium" : "High";
 
+  const selectedMinimumPrice = minimumFor(s.incoterm);
+  const selectedWalkAwayPrice = walkFor(s.incoterm);
+  const tolerance = Math.max(Math.abs(expectedRevenue), Math.abs(protectedCost), 1) * 0.001;
+  const reconciliationProfit = expectedRevenue - protectedCost;
+  const reconciliationPct = protectedCost > 0 ? reconciliationProfit / protectedCost * 100 : 0;
+  const validationErrors: string[] = [];
+  if (q <= 0) validationErrors.push("Shipment quantity must be greater than zero.");
+  if (Math.abs(netProfit - reconciliationProfit) > tolerance || Math.abs(profitPct - reconciliationPct) > 0.1) {
+    validationErrors.push("Calculation Inconsistency Detected");
+  }
+  if (q > 0 && protectedCost > 0 && !(
+    breakEvenPrice < selectedWalkAwayPrice &&
+    selectedWalkAwayPrice < selectedMinimumPrice &&
+    selectedMinimumPrice < recommendedPrice &&
+    recommendedPrice <= targetSellingPrice
+  )) validationErrors.push("Pricing hierarchy violation: Break-even < Walk-away < Minimum Acceptable < Recommended ≤ Target.");
+  const isConsistent = !validationErrors.includes("Calculation Inconsistency Detected");
+
+  const auditRows: AuditRow[] = [
+    { section: "Input", name: "Shipment Quantity", formula: "User input", result: q, unit: "quantity" },
+    { section: "Input", name: "Supplier Cost", formula: "Supplier price/unit × Quantity", result: supplierTotal, unit: "INR" },
+    { section: "Input", name: "Applicable Shipment Costs", formula: `${s.incoterm} direct costs + Banking + Miscellaneous`, result: totalCost, unit: "INR" },
+    { section: "Intermediate", name: "Total Cost", formula: "Sum of costs applicable to selected Incoterm", result: totalCost, unit: "INR" },
+    { section: "Intermediate", name: "Effective Cost", formula: "Total Cost − Export Incentives", result: effectiveCost, unit: "INR" },
+    { section: "Intermediate", name: "Contingency", formula: "Effective Cost × Contingency %", result: contingencyAmount, unit: "INR" },
+    { section: "Intermediate", name: "Forex Buffer", formula: "Effective Cost × Forex Buffer %", result: forexBufferAmount, unit: "INR" },
+    { section: "Intermediate", name: "Protected Cost", formula: "Effective Cost + Contingency + Forex Buffer", result: protectedCost, unit: "INR" },
+    { section: "Final", name: "Break-even Price", formula: "Protected Cost ÷ Quantity", result: breakEvenPrice, unit: "INR/unit" },
+    { section: "Final", name: "Walk-away Price", formula: "Break-even Price × 1.02", result: selectedWalkAwayPrice, unit: "INR/unit" },
+    { section: "Final", name: "Minimum Acceptable Price", formula: "max(Break-even × (1 + Minimum %), (Protected Cost + Minimum Amount) ÷ Quantity)", result: selectedMinimumPrice, unit: "INR/unit" },
+    { section: "Final", name: "Target Price", formula: "Break-even Price × (1 + Target Profit %)", result: targetSellingPrice, unit: "INR/unit" },
+    { section: "Final", name: "Recommended Price", formula: "Target Price (no hidden discount)", result: recommendedPrice, unit: "INR/unit" },
+    { section: "Final", name: "Expected Revenue", formula: "Recommended Price × Quantity", result: expectedRevenue, unit: "INR" },
+    { section: "Final", name: "Net Profit", formula: "Expected Revenue − Protected Cost", result: netProfit, unit: "INR" },
+    { section: "Final", name: "Profit %", formula: "Net Profit ÷ Protected Cost × 100", result: profitPct, unit: "%" },
+    { section: "Final", name: "Profit per Unit", formula: "Net Profit ÷ Shipment Quantity", result: profitPerUnit, unit: "INR/unit" },
+    { section: "Final", name: "Projected Profit at Full Container Load", formula: "Profit per Unit × Container Size", result: projectedProfitAtFullContainer, unit: "INR" },
+  ];
+
   return {
     supplierTotal, packagingTotal, inlandTotal, documentationTotal,
     customsTotal, freightTotal, insuranceTotal, bankingTotal, miscTotal,
     contingencyAmount, incentiveValue,
     totalCost, effectiveCost, forexBufferAmount, protectedCost,
-    breakEvenPrice, targetSellingPrice, netProfit, profitPct,
-    profitPerUnit, profitPerKg, profitPerContainer,
+    breakEvenPrice, targetSellingPrice, recommendedPrice, expectedRevenue, netProfit, profitPct,
+    profitPerUnit, profitPerKg, projectedProfitAtFullContainer, showFullContainerProjection,
     exwPrice, fobPrice, cfrPrice, cifPrice,
     minExw, minFob, minCfr, minCif,
     walkExw, walkFob, walkCfr, walkCif,
     perUnit,
     riskLevel, marginSafetyScore, dealQualityScore,
-    forexExposure,
+    forexExposure, selectedMinimumPrice, selectedWalkAwayPrice,
+    isConsistent, validationErrors, auditRows,
   };
+}
+
+export function evaluatePrice(c: Computed, price: number): PriceEvaluation {
+  const quantityRow = c.auditRows.find((row) => row.name === "Shipment Quantity");
+  const quantity = quantityRow?.result ?? 0;
+  const revenue = price * quantity;
+  const profit = revenue - c.protectedCost;
+  const profitPct = c.protectedCost > 0 ? profit / c.protectedCost * 100 : 0;
+  return {
+    price, revenue, profit, profitPct,
+    profitPerUnit: quantity > 0 ? profit / quantity : 0,
+    acceptable: price >= c.selectedMinimumPrice,
+  };
+}
+
+export function convertToINR(amount: number, currency: "INR" | "USD" | "EUR", s: CalculatorState) {
+  if (currency === "USD") return amount * num(s.actualBankUsdRate);
+  if (currency === "EUR") return amount * num(s.actualBankEurRate);
+  return amount;
+}
+
+export function convertFromINR(amount: number, currency: "USD" | "EUR", s: CalculatorState) {
+  const rate = currency === "USD" ? num(s.actualBankUsdRate) : num(s.actualBankEurRate);
+  return amount / (rate || 1);
 }
 
 export function fmtINR(n: number) {
