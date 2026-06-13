@@ -379,24 +379,27 @@ export default function Calculator() {
               <div className="px-3 py-2 text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">Additional cost categories</span> — expand only the ones relevant to your shipment
               </div>
+              <div className="mx-3 mb-2 rounded-md border border-gold/30 bg-gold/5 px-3 py-2 text-xs text-foreground/80">
+                <strong>Cost basis:</strong> supplier price is per {s.uom || "unit"}. Every field below is a <strong>total for the entire shipment</strong> and is divided by {fmtNum(s.quantity, 0)} {s.uom || "units"} automatically.
+              </div>
               <Accordion type="multiple" className="w-full">
                 <AccItem value="packaging" icon={Package} title="Packaging" summary={fmtINR(c.packagingTotal)}>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <NumField label="Pouch cost" value={s.pouchCost} onChange={(v) => set("pouchCost", v)} suffix="₹" />
-                    <NumField label="Label cost" value={s.labelCost} onChange={(v) => set("labelCost", v)} suffix="₹" />
-                    <NumField label="Carton cost" value={s.cartonCost} onChange={(v) => set("cartonCost", v)} suffix="₹" />
-                    <NumField label="Pallet cost" value={s.palletCost} onChange={(v) => set("palletCost", v)} suffix="₹" />
-                    <NumField label="Other packaging" value={s.otherPackaging} onChange={(v) => set("otherPackaging", v)} suffix="₹" />
-                    <NumField label="Total packaging" value={c.packagingTotal} onChange={() => {}} readOnly suffix="₹" />
+                    <NumField label="Pouches — shipment total" value={s.pouchCost} onChange={(v) => set("pouchCost", v)} suffix="₹" />
+                    <NumField label="Labels — shipment total" value={s.labelCost} onChange={(v) => set("labelCost", v)} suffix="₹" />
+                    <NumField label="Cartons — shipment total" value={s.cartonCost} onChange={(v) => set("cartonCost", v)} suffix="₹" />
+                    <NumField label="Pallets — shipment total" value={s.palletCost} onChange={(v) => set("palletCost", v)} suffix="₹" />
+                    <NumField label="Other — shipment total" value={s.otherPackaging} onChange={(v) => set("otherPackaging", v)} suffix="₹" />
+                    <NumField label="Packaging — shipment total" value={c.packagingTotal} onChange={() => {}} readOnly suffix="₹" />
                   </div>
                 </AccItem>
 
                 <AccItem value="inland" icon={Truck} title="Inland logistics" summary={fmtINR(c.inlandTotal)}>
                   <div className="grid grid-cols-2 gap-4">
-                    <NumField label="Factory → warehouse" value={s.factoryToWarehouse} onChange={(v) => set("factoryToWarehouse", v)} suffix="₹" />
-                    <NumField label="Warehouse → port" value={s.warehouseToPort} onChange={(v) => set("warehouseToPort", v)} suffix="₹" />
-                    <NumField label="Loading charges" value={s.loadingCharges} onChange={(v) => set("loadingCharges", v)} suffix="₹" />
-                    <NumField label="Unloading charges" value={s.unloadingCharges} onChange={(v) => set("unloadingCharges", v)} suffix="₹" />
+                    <NumField label="Factory → warehouse — total" value={s.factoryToWarehouse} onChange={(v) => set("factoryToWarehouse", v)} suffix="₹" />
+                    <NumField label="Warehouse → port — total" value={s.warehouseToPort} onChange={(v) => set("warehouseToPort", v)} suffix="₹" />
+                    <NumField label="Loading — shipment total" value={s.loadingCharges} onChange={(v) => set("loadingCharges", v)} suffix="₹" />
+                    <NumField label="Unloading — shipment total" value={s.unloadingCharges} onChange={(v) => set("unloadingCharges", v)} suffix="₹" />
                   </div>
                 </AccItem>
 
@@ -437,12 +440,15 @@ export default function Calculator() {
                 </AccItem>
 
                 <AccItem value="banking" icon={Landmark} title="Banking costs" summary={fmtINR(c.bankingTotal)}>
+                  <div className="mb-4 rounded-md bg-warning/10 px-3 py-2 text-xs text-foreground/80">
+                    Enter shipment totals. Include the expected FX spread under currency conversion; it is often the largest hidden bank cost.
+                  </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <NumField label="SWIFT charges" value={s.swiftCharges} onChange={(v) => set("swiftCharges", v)} suffix="₹" />
-                    <NumField label="Bank charges" value={s.bankCharges} onChange={(v) => set("bankCharges", v)} suffix="₹" />
-                    <NumField label="Export realization" value={s.exportRealization} onChange={(v) => set("exportRealization", v)} suffix="₹" />
-                    <NumField label="Currency conversion" value={s.currencyConversion} onChange={(v) => set("currencyConversion", v)} suffix="₹" />
-                    <NumField label="Other banking" value={s.otherBanking} onChange={(v) => set("otherBanking", v)} suffix="₹" />
+                    <NumField label="SWIFT — shipment total" value={s.swiftCharges} onChange={(v) => set("swiftCharges", v)} suffix="₹" hint="Typical test range: ₹1,000–₹3,000" />
+                    <NumField label="Bank fees — shipment total" value={s.bankCharges} onChange={(v) => set("bankCharges", v)} suffix="₹" hint="Typical test range: ₹1,000–₹5,000" />
+                    <NumField label="Export realization — total" value={s.exportRealization} onChange={(v) => set("exportRealization", v)} suffix="₹" />
+                    <NumField label="FX spread — shipment total" value={s.currencyConversion} onChange={(v) => set("currencyConversion", v)} suffix="₹" hint="Bank rate spread across the full invoice; often ₹10,000–₹50,000+" />
+                    <NumField label="Other banking — total" value={s.otherBanking} onChange={(v) => set("otherBanking", v)} suffix="₹" />
                   </div>
                 </AccItem>
 
