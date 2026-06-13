@@ -194,7 +194,7 @@ export interface Computed {
   perUnit: {
     supplier: number; packaging: number; inland: number; docs: number;
     customs: number; freight: number; insurance: number; banking: number;
-    misc: number; buffers: number;
+    misc: number; incentives: number; buffers: number;
   };
 
   riskLevel: "Low" | "Medium" | "High";
@@ -297,13 +297,14 @@ export function compute(s: CalculatorState): Computed {
   const perUnit = {
     supplier: supplierTotal / divisor,
     packaging: packagingTotal / divisor,
-    inland: inlandTotal / divisor,
-    docs: documentationTotal / divisor,
-    customs: customsTotal / divisor,
-    freight: freightTotal / divisor,
-    insurance: insuranceTotal / divisor,
+    inland: s.incoterm === "EXW" ? 0 : inlandTotal / divisor,
+    docs: s.incoterm === "EXW" ? 0 : documentationTotal / divisor,
+    customs: s.incoterm === "EXW" ? 0 : customsTotal / divisor,
+    freight: s.incoterm === "CFR" || s.incoterm === "CIF" ? freightTotal / divisor : 0,
+    insurance: s.incoterm === "CIF" ? insuranceTotal / divisor : 0,
     banking: bankingTotal / divisor,
     misc: miscTotal / divisor,
+    incentives: incentiveValue / divisor,
     buffers: (contingencyAmount + forexBufferAmount) / divisor,
   };
 

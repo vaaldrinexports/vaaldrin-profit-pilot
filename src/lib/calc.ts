@@ -1,4 +1,4 @@
-export type Incoterm = "EXW" | "FOB" | "CFR" | "CIF";
+export * from "./calculations";
 
 export interface CalculatorState {
   // Shipment
