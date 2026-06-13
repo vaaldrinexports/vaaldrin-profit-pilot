@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   compute, defaultState, fmtINR, fmtUSD, fmtEUR, fmtNum,
-  applyScenario, type CalculatorState, type Incoterm,
-} from "@/lib/calc";
+  applyScenario, evaluatePrice, convertToINR, convertFromINR,
+  type CalculatorState, type Incoterm,
+} from "@/lib/calculations";
 import { generateQuotationPDF } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
