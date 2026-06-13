@@ -95,7 +95,8 @@ export interface CalculatorState {
 
 export const defaultState: CalculatorState = {
   quotationNumber: `VX-${new Date().getFullYear()}-0001`,
-  quotationDate: new Date().toISOString().slice(0, 10),
+  // Filled on the client to keep the server-rendered markup deterministic.
+  quotationDate: "",
   buyerName: "",
   buyerCompany: "",
   buyerCountry: "",
@@ -164,6 +165,7 @@ export interface Computed {
   minCif: number;
 
   // Walk away (break-even based, per unit INR)
+  walkExw: number;
   walkFob: number;
   walkCfr: number;
   walkCif: number;
@@ -241,8 +243,14 @@ export function compute(s: CalculatorState): Computed {
   const minCfr = minBase(cfrCostTotal);
   const minCif = minBase(cifCostTotal);
 
-  // Walk away: break-even (cost only, no profit)
-  const walkBase = (cost: number) => (cost * (1 - incentiveRatio) * bufferMult) / q;
+  // Walk-away is a protected negotiation floor, never the loss-making break-even.
+  // Keep a 2% safety gap above the fully loaded break-even while never exceeding
+  // the configured minimum acceptable price.
+  const walkBase = (cost: number) => {
+    const incotermBreakEven = (cost * (1 - incentiveRatio) * bufferMult) / q;
+    return Math.max(breakEvenPrice, incotermBreakEven) * 1.02;
+  };
+  const walkExw = walkBase(exwCostTotal);
   const walkFob = walkBase(fobCostTotal);
   const walkCfr = walkBase(cfrCostTotal);
   const walkCif = walkBase(cifCostTotal);
@@ -298,7 +306,7 @@ export function compute(s: CalculatorState): Computed {
     profitPerUnit, profitPerKg, profitPerContainer,
     exwPrice, fobPrice, cfrPrice, cifPrice,
     minExw, minFob, minCfr, minCif,
-    walkFob, walkCfr, walkCif,
+    walkExw, walkFob, walkCfr, walkCif,
     perUnit,
     riskLevel, marginSafetyScore, dealQualityScore,
     forexExposure,
