@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   compute, defaultState, fmtINR, fmtUSD, fmtEUR, fmtNum,
-  applyScenario, type CalculatorState, type Incoterm,
-} from "@/lib/calc";
+  applyScenario, evaluatePrice, evaluateDiscount, profitVariance, convertToINR, convertFromINR,
+  type CalculatorState, type Incoterm,
+} from "@/lib/calculations";
 import { generateQuotationPDF } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -140,20 +141,18 @@ export default function Calculator() {
   const c = useMemo(() => compute(s), [s]);
   const set = <K extends keyof CalculatorState>(k: K, v: CalculatorState[K]) => setS((p) => ({ ...p, [k]: v }));
 
-  const usd = (inr: number) => inr / (s.actualBankUsdRate || 1);
-  const eur = (inr: number) => inr / (s.actualBankEurRate || 1);
-
-  const incotermPrice = s.incoterm === "EXW" ? c.exwPrice : s.incoterm === "FOB" ? c.fobPrice : s.incoterm === "CFR" ? c.cfrPrice : c.cifPrice;
-  const minIncotermPrice = s.incoterm === "EXW" ? c.minExw : s.incoterm === "FOB" ? c.minFob : s.incoterm === "CFR" ? c.minCfr : c.minCif;
-  const walkPrice = s.incoterm === "EXW" ? c.walkExw : s.incoterm === "FOB" ? c.walkFob : s.incoterm === "CFR" ? c.walkCfr : c.walkCif;
-
-  const counterINR = s.buyerCounterCurrency === "INR" ? s.buyerCounterOffer :
-    s.buyerCounterCurrency === "USD" ? s.buyerCounterOffer * s.actualBankUsdRate :
-    s.buyerCounterOffer * s.actualBankEurRate;
-  const counterAcceptable = counterINR >= minIncotermPrice;
-  const discountedPrice = incotermPrice * (1 - s.requestedDiscountPct / 100);
-  const discountAcceptable = discountedPrice >= minIncotermPrice;
-  const lockTriggered = s.marginLock && (c.profitPct < s.minProfitPct || c.netProfit < s.minProfitAmount);
+  const usd = (inr: number) => convertFromINR(inr, "USD", s);
+  const eur = (inr: number) => convertFromINR(inr, "EUR", s);
+  const incotermPrice = c.recommendedPrice;
+  const minIncotermPrice = c.selectedMinimumPrice;
+  const walkPrice = c.selectedWalkAwayPrice;
+  const counterINR = convertToINR(s.buyerCounterOffer, s.buyerCounterCurrency, s);
+  const counterEvaluation = evaluatePrice(c, counterINR);
+  const discountEvaluation = evaluateDiscount(c, s.requestedDiscountPct);
+  const discountedPrice = discountEvaluation.price;
+  const counterAcceptable = counterEvaluation.acceptable;
+  const discountAcceptable = discountEvaluation.acceptable;
+  const lockTriggered = c.marginLockTriggered;
 
   const [scenario, setScenario] = useState<string>("base");
   const scenarioState = scenario === "base" ? s : applyScenario(s, scenario);
@@ -169,6 +168,7 @@ export default function Calculator() {
     { name: "− Freight", value: -c.perUnit.freight, color: "var(--deep-red)" },
     { name: "− Insurance", value: -c.perUnit.insurance, color: "var(--deep-red)" },
     { name: "− Banking", value: -c.perUnit.banking, color: "var(--deep-red)" },
+    { name: "+ Incentives", value: c.perUnit.incentives, color: "var(--success)" },
     { name: "− Buffers", value: -c.perUnit.buffers, color: "var(--deep-red)" },
     { name: "= Profit", value: c.profitPerUnit, color: "var(--success)" },
   ];
@@ -202,6 +202,7 @@ export default function Calculator() {
   };
   const generatePDF = () => {
     if (lockTriggered) { toast.error("Margin lock active — adjust pricing first"); return; }
+    if (c.validationErrors.length) { toast.error(c.validationErrors[0]); return; }
     generateQuotationPDF(s);
   };
 
@@ -316,6 +317,18 @@ export default function Calculator() {
           </div>
         )}
 
+        {c.validationErrors.length > 0 && (
+          <div className="rounded-lg border-2 border-deep-red bg-deep-red/10 p-4 flex items-start gap-3" role="alert">
+            <AlertTriangle className="w-5 h-5 text-deep-red mt-0.5 shrink-0" />
+            <div>
+              <div className="font-bold text-deep-red">{c.isConsistent ? "Pricing Validation Error" : "Calculation Inconsistency Detected"}</div>
+              <ul className="mt-1 text-sm text-foreground/80 list-disc list-inside">
+                {c.validationErrors.map((error) => <li key={error}>{error}</li>)}
+              </ul>
+            </div>
+          </div>
+        )}
+
         {/* Quick-start hint when empty */}
         {!s.productName && !s.quantity && (
           <Card className="p-4 border-gold/30 bg-gold/5 flex items-start gap-3">
@@ -327,12 +340,13 @@ export default function Calculator() {
         )}
 
         <Tabs defaultValue="inputs" className="space-y-5">
-          <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full h-auto p-1 bg-secondary">
+          <TabsList className="grid grid-cols-2 md:grid-cols-6 w-full h-auto p-1 bg-secondary">
             <TabsTrigger value="inputs" className="py-2.5">1. Inputs</TabsTrigger>
             <TabsTrigger value="profit" className="py-2.5">2. Profit</TabsTrigger>
             <TabsTrigger value="incoterms" className="py-2.5">3. Incoterms</TabsTrigger>
             <TabsTrigger value="negotiation" className="py-2.5">4. Negotiation</TabsTrigger>
             <TabsTrigger value="scenario" className="py-2.5">5. Scenarios</TabsTrigger>
+            <TabsTrigger value="audit" className="py-2.5">6. Audit</TabsTrigger>
           </TabsList>
 
           {/* INPUTS — accordion grouping */}
@@ -514,8 +528,12 @@ export default function Calculator() {
                 <KPI label="Net profit" value={fmtINR(c.netProfit)} tone={c.profitPct > 15 ? "green" : c.profitPct >= 8 ? "warn" : "red"} />
                 <KPI label="Profit %" value={`${fmtNum(c.profitPct)}%`} tone={c.profitPct > 15 ? "green" : c.profitPct >= 8 ? "warn" : "red"} />
                 <KPI label="Profit / unit" value={fmtINR(c.profitPerUnit)} />
-                <KPI label="Profit / kg" value={fmtINR(c.profitPerKg)} />
-                <KPI label="Profit / container" value={fmtINR(c.profitPerContainer)} sub={`${s.containerKg} kg`} />
+                {s.uom.toUpperCase().includes("KG") && <KPI label="Profit / kg" value={fmtINR(c.profitPerKg)} />}
+                {c.showFullContainerProjection ? (
+                  <KPI label="Projected profit at full container load" value={fmtINR(c.projectedProfitAtFullContainer)} sub={`${fmtNum(s.containerKg, 0)} kg projection; shipment is ${fmtNum(s.quantity, 0)} kg`} />
+                ) : (
+                  <KPI label="Profit / shipment container" value={fmtINR(c.netProfit)} sub={`${fmtNum(s.containerKg, 0)} kg`} />
+                )}
                 <KPI label="Margin safety" value={`${fmtNum(c.marginSafetyScore, 0)} / 100`} />
                 <KPI label="Risk level" value={c.riskLevel} tone={c.riskLevel === "Low" ? "green" : c.riskLevel === "Medium" ? "warn" : "red"} />
               </div>
@@ -569,9 +587,9 @@ export default function Calculator() {
                         <td className="p-3 text-right tabular-nums font-semibold">{fmtINR(row.price)}</td>
                         <td className="p-3 text-right tabular-nums">{fmtUSD(usd(row.price))}</td>
                         <td className="p-3 text-right tabular-nums">{fmtEUR(eur(row.price))}</td>
-                        <td className="p-3 text-right tabular-nums font-semibold">{fmtINR(row.price * s.quantity)}</td>
-                        <td className="p-3 text-right tabular-nums">{fmtUSD(usd(row.price * s.quantity))}</td>
-                        <td className="p-3 text-right tabular-nums">{fmtEUR(eur(row.price * s.quantity))}</td>
+                        <td className="p-3 text-right tabular-nums font-semibold">{fmtINR(row.name === "EXW" ? c.exwRevenue : row.name === "FOB" ? c.fobRevenue : row.name === "CFR" ? c.cfrRevenue : c.cifRevenue)}</td>
+                        <td className="p-3 text-right tabular-nums">{fmtUSD(usd(row.name === "EXW" ? c.exwRevenue : row.name === "FOB" ? c.fobRevenue : row.name === "CFR" ? c.cfrRevenue : c.cifRevenue))}</td>
+                        <td className="p-3 text-right tabular-nums">{fmtEUR(eur(row.name === "EXW" ? c.exwRevenue : row.name === "FOB" ? c.fobRevenue : row.name === "CFR" ? c.cfrRevenue : c.cifRevenue))}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -580,7 +598,7 @@ export default function Calculator() {
             </GroupCard>
 
             <GroupCard icon={FileText} title="Quotation preview" subtitle="What your buyer will see in the PDF">
-              <QuotationPreview s={s} priceINR={incotermPrice} />
+              <QuotationPreview s={s} priceINR={incotermPrice} totalINR={c.expectedRevenue} />
             </GroupCard>
           </TabsContent>
 
@@ -622,8 +640,8 @@ export default function Calculator() {
                     <Row label="Counter offer in INR" value={fmtINR(counterINR)} />
                     <Row label="Minimum acceptable" value={fmtINR(minIncotermPrice)} />
                     <Row label="Price gap" value={fmtINR(counterINR - minIncotermPrice)} tone={counterINR >= minIncotermPrice ? "green" : "red"} />
-                    <Row label="Net profit at counter" value={fmtINR((counterINR - c.protectedCost / s.quantity) * s.quantity)} />
-                    <Row label="Profit % at counter" value={`${fmtNum(((counterINR * s.quantity - c.protectedCost) / Math.max(c.protectedCost, 1)) * 100)}%`} />
+                    <Row label="Net profit at counter" value={fmtINR(counterEvaluation.profit)} />
+                    <Row label="Profit % at counter" value={`${fmtNum(counterEvaluation.profitPct)}%`} />
                   </div>
                   <div className={"rounded-md p-3 font-semibold text-sm " + (counterAcceptable ? "bg-success/10 text-success" : "bg-deep-red/10 text-deep-red")}>
                     {counterAcceptable ? "✓ Acceptable — above minimum threshold" : "✗ Reject — below profit requirement"}
@@ -637,8 +655,8 @@ export default function Calculator() {
                   <div className="space-y-2 text-sm">
                     <Row label={`Original ${s.incoterm}`} value={fmtINR(incotermPrice)} />
                     <Row label={`Discounted ${s.incoterm}`} value={fmtINR(discountedPrice)} tone={discountAcceptable ? "green" : "red"} />
-                    <Row label="New profit / unit" value={fmtINR(discountedPrice - c.protectedCost / s.quantity)} />
-                    <Row label="New profit %" value={`${fmtNum(((discountedPrice * s.quantity - c.protectedCost) / Math.max(c.protectedCost, 1)) * 100)}%`} />
+                    <Row label="New profit / unit" value={fmtINR(discountEvaluation.profitPerUnit)} />
+                    <Row label="New profit %" value={`${fmtNum(discountEvaluation.profitPct)}%`} />
                   </div>
                   <div className={"rounded-md p-3 text-sm " + (discountAcceptable ? "bg-success/10 text-success" : "bg-deep-red/10 text-deep-red")}>
                     {discountAcceptable
@@ -691,7 +709,7 @@ export default function Calculator() {
                 <KPI label="Break-even" value={fmtINR(sc.breakEvenPrice)} />
                 <KPI label="FOB" value={fmtINR(sc.fobPrice)} />
                 <KPI label="CIF" value={fmtINR(sc.cifPrice)} />
-                <KPI label="Δ vs base" value={fmtINR(sc.netProfit - c.netProfit)} tone={sc.netProfit >= c.netProfit ? "green" : "red"} />
+                <KPI label="Δ vs base" value={fmtINR(profitVariance(c, sc))} tone={sc.netProfit >= c.netProfit ? "green" : "red"} />
               </div>
 
               <div className="mt-6 h-72">
@@ -712,6 +730,32 @@ export default function Calculator() {
               </div>
             </GroupCard>
           </TabsContent>
+
+          <TabsContent value="audit" className="space-y-5">
+            <GroupCard icon={FileText} title="Calculation audit report" subtitle="Every value follows one documented formula from the central pricing engine">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                <KPI label="Reconciliation" value={c.isConsistent ? "Passed" : "Failed"} tone={c.isConsistent ? "green" : "red"} />
+                <KPI label="Expected revenue" value={fmtINR(c.expectedRevenue)} sub="Recommended × quantity" />
+                <KPI label="Protected cost" value={fmtINR(c.protectedCost)} />
+                <KPI label="Expected profit" value={fmtINR(c.netProfit)} sub="Revenue − protected cost" />
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[760px]">
+                  <thead><tr className="border-b bg-secondary/50">
+                    <th className="text-left p-3">Stage</th><th className="text-left p-3">Value</th><th className="text-left p-3">Formula used</th><th className="text-right p-3">Result</th>
+                  </tr></thead>
+                  <tbody>{c.auditRows.map((row) => (
+                    <tr key={`${row.section}-${row.name}`} className="border-b">
+                      <td className="p-3"><Badge variant="outline">{row.section}</Badge></td>
+                      <td className="p-3 font-medium">{row.name}</td>
+                      <td className="p-3 text-muted-foreground">{row.formula}</td>
+                      <td className="p-3 text-right tabular-nums font-semibold">{row.unit === "%" ? `${fmtNum(row.result)}%` : row.unit === "quantity" ? fmtNum(row.result, 0) : fmtINR(row.result)}</td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+            </GroupCard>
+          </TabsContent>
         </Tabs>
 
         <footer className="text-center text-xs text-muted-foreground py-6 border-t mt-8">
@@ -720,7 +764,7 @@ export default function Calculator() {
         </footer>
 
         <div className="print-area hidden print:block">
-          <QuotationPreview s={s} priceINR={incotermPrice} forPrint />
+          <QuotationPreview s={s} priceINR={incotermPrice} totalINR={c.expectedRevenue} forPrint />
         </div>
       </main>
     </div>
@@ -795,8 +839,8 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: "gre
   );
 }
 
-function QuotationPreview({ s, priceINR, forPrint }: { s: CalculatorState; priceINR: number; forPrint?: boolean }) {
-  const total = priceINR * s.quantity;
+function QuotationPreview({ s, priceINR, totalINR, forPrint }: { s: CalculatorState; priceINR: number; totalINR: number; forPrint?: boolean }) {
+  const total = totalINR;
   return (
     <div className={"bg-white text-black p-8 " + (forPrint ? "" : "border rounded-lg")}>
       <div className="flex justify-between items-start border-b-4 pb-4" style={{ borderColor: "var(--gold)" }}>

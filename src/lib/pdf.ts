@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import type { CalculatorState } from "./calc";
-import { compute, fmtINR, fmtUSD, fmtEUR } from "./calc";
+import type { CalculatorState } from "./calculations";
+import { compute, fmtINR, fmtUSD, fmtEUR } from "./calculations";
 
 export function generateQuotationPDF(s: CalculatorState) {
   const c = compute(s);
@@ -52,11 +52,8 @@ export function generateQuotationPDF(s: CalculatorState) {
   doc.text("30 days from quote date", W - 200, 148);
 
   // Product table
-  const unitPriceINR =
-    s.incoterm === "EXW" ? c.exwPrice :
-    s.incoterm === "FOB" ? c.fobPrice :
-    s.incoterm === "CFR" ? c.cfrPrice : c.cifPrice;
-  const totalINR = unitPriceINR * s.quantity;
+  const unitPriceINR = c.recommendedPrice;
+  const totalINR = c.expectedRevenue;
   const totalUSD = totalINR / (s.actualBankUsdRate || 1);
   const totalEUR = totalINR / (s.actualBankEurRate || 1);
 
