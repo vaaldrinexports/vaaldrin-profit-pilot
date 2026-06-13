@@ -208,6 +208,7 @@ export interface Computed {
   forexExposure: number; // diff (market - bank) * value
   selectedMinimumPrice: number;
   selectedWalkAwayPrice: number;
+  marginLockTriggered: boolean;
   isConsistent: boolean;
   validationErrors: string[];
   auditRows: AuditRow[];
@@ -269,10 +270,14 @@ export function compute(s: CalculatorState): Computed {
   const breakEvenFor = (term: Incoterm) => protectedByIncoterm[term] / divisor;
   const walkFor = (term: Incoterm) => breakEvenFor(term) * 1.02;
   const minimumFor = (term: Incoterm) => Math.max(
+    walkFor(term) * 1.01,
     breakEvenFor(term) * (1 + num(s.minProfitPct) / 100),
     (protectedByIncoterm[term] + num(s.minProfitAmount)) / divisor,
   );
-  const targetFor = (term: Incoterm) => breakEvenFor(term) * (1 + num(s.targetProfitPct) / 100);
+  const targetFor = (term: Incoterm) => Math.max(
+    minimumFor(term) * 1.01,
+    breakEvenFor(term) * (1 + num(s.targetProfitPct) / 100),
+  );
 
   const breakEvenPrice = breakEvenFor(s.incoterm);
   const walkExw = walkFor("EXW");
@@ -354,6 +359,7 @@ export function compute(s: CalculatorState): Computed {
     recommendedPrice <= targetSellingPrice
   )) validationErrors.push("Pricing hierarchy violation: Break-even < Walk-away < Minimum Acceptable < Recommended ≤ Target.");
   const isConsistent = !validationErrors.includes("Calculation Inconsistency Detected");
+  const marginLockTriggered = s.marginLock && (profitPct < num(s.minProfitPct) || netProfit < num(s.minProfitAmount));
 
   const auditRows: AuditRow[] = [
     { section: "Input", name: "Shipment Quantity", formula: "User input", result: q, unit: "quantity" },
@@ -390,7 +396,7 @@ export function compute(s: CalculatorState): Computed {
     perUnit,
     riskLevel, marginSafetyScore, dealQualityScore,
     forexExposure, selectedMinimumPrice, selectedWalkAwayPrice,
-    isConsistent, validationErrors, auditRows,
+    isConsistent, validationErrors, auditRows, marginLockTriggered,
   };
 }
 

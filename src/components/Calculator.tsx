@@ -152,7 +152,7 @@ export default function Calculator() {
   const discountedPrice = discountEvaluation.price;
   const counterAcceptable = counterEvaluation.acceptable;
   const discountAcceptable = discountEvaluation.acceptable;
-  const lockTriggered = s.marginLock && (c.profitPct < s.minProfitPct || c.netProfit < s.minProfitAmount);
+  const lockTriggered = c.marginLockTriggered;
 
   const [scenario, setScenario] = useState<string>("base");
   const scenarioState = scenario === "base" ? s : applyScenario(s, scenario);
@@ -839,8 +839,8 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: "gre
   );
 }
 
-function QuotationPreview({ s, priceINR, forPrint }: { s: CalculatorState; priceINR: number; forPrint?: boolean }) {
-  const total = priceINR * s.quantity;
+function QuotationPreview({ s, priceINR, totalINR, forPrint }: { s: CalculatorState; priceINR: number; totalINR: number; forPrint?: boolean }) {
+  const total = totalINR;
   return (
     <div className={"bg-white text-black p-8 " + (forPrint ? "" : "border rounded-lg")}>
       <div className="flex justify-between items-start border-b-4 pb-4" style={{ borderColor: "var(--gold)" }}>
