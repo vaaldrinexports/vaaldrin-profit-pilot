@@ -177,6 +177,10 @@ export interface Computed {
   fobPrice: number;
   cfrPrice: number;
   cifPrice: number;
+  exwRevenue: number;
+  fobRevenue: number;
+  cfrRevenue: number;
+  cifRevenue: number;
 
   // Minimum acceptable prices per unit INR
   minExw: number;
@@ -287,6 +291,10 @@ export function compute(s: CalculatorState): Computed {
   // Recommendation equals the approved target: no undocumented discount is applied.
   const recommendedPrice = targetSellingPrice;
   const expectedRevenue = recommendedPrice * q;
+  const exwRevenue = exwPrice * q;
+  const fobRevenue = fobPrice * q;
+  const cfrRevenue = cfrPrice * q;
+  const cifRevenue = cifPrice * q;
   const netProfit = expectedRevenue - protectedCost;
   const profitPct = protectedCost > 0 ? (netProfit / protectedCost) * 100 : 0;
   const profitPerUnit = netProfit / divisor;
@@ -376,6 +384,7 @@ export function compute(s: CalculatorState): Computed {
     breakEvenPrice, targetSellingPrice, recommendedPrice, expectedRevenue, netProfit, profitPct,
     profitPerUnit, profitPerKg, projectedProfitAtFullContainer, showFullContainerProjection,
     exwPrice, fobPrice, cfrPrice, cifPrice,
+    exwRevenue, fobRevenue, cfrRevenue, cifRevenue,
     minExw, minFob, minCfr, minCif,
     walkExw, walkFob, walkCfr, walkCif,
     perUnit,
@@ -396,6 +405,10 @@ export function evaluatePrice(c: Computed, price: number): PriceEvaluation {
     profitPerUnit: quantity > 0 ? profit / quantity : 0,
     acceptable: price >= c.selectedMinimumPrice,
   };
+}
+
+export function evaluateDiscount(c: Computed, discountPct: number) {
+  return evaluatePrice(c, c.recommendedPrice * (1 - num(discountPct) / 100));
 }
 
 export function convertToINR(amount: number, currency: "INR" | "USD" | "EUR", s: CalculatorState) {
