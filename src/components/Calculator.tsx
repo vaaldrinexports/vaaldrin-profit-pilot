@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   compute, defaultState, fmtINR, fmtUSD, fmtEUR, fmtNum,
-  applyScenario, evaluatePrice, evaluateDiscount, convertToINR, convertFromINR,
+  applyScenario, evaluatePrice, evaluateDiscount, profitVariance, convertToINR, convertFromINR,
   type CalculatorState, type Incoterm,
 } from "@/lib/calculations";
 import { generateQuotationPDF } from "@/lib/pdf";
@@ -709,7 +709,7 @@ export default function Calculator() {
                 <KPI label="Break-even" value={fmtINR(sc.breakEvenPrice)} />
                 <KPI label="FOB" value={fmtINR(sc.fobPrice)} />
                 <KPI label="CIF" value={fmtINR(sc.cifPrice)} />
-                <KPI label="Δ vs base" value={fmtINR(sc.netProfit - c.netProfit)} tone={sc.netProfit >= c.netProfit ? "green" : "red"} />
+                <KPI label="Δ vs base" value={fmtINR(profitVariance(c, sc))} tone={sc.netProfit >= c.netProfit ? "green" : "red"} />
               </div>
 
               <div className="mt-6 h-72">

@@ -373,7 +373,7 @@ export function compute(s: CalculatorState): Computed {
     { section: "Final", name: "Break-even Price", formula: "Protected Cost ÷ Quantity", result: breakEvenPrice, unit: "INR/unit" },
     { section: "Final", name: "Walk-away Price", formula: "Break-even Price × 1.02", result: selectedWalkAwayPrice, unit: "INR/unit" },
     { section: "Final", name: "Minimum Acceptable Price", formula: "max(Break-even × (1 + Minimum %), (Protected Cost + Minimum Amount) ÷ Quantity)", result: selectedMinimumPrice, unit: "INR/unit" },
-    { section: "Final", name: "Target Price", formula: "Break-even Price × (1 + Target Profit %)", result: targetSellingPrice, unit: "INR/unit" },
+    { section: "Final", name: "Target Price", formula: "max(Break-even × (1 + Target Profit %), Minimum Acceptable × 1.01)", result: targetSellingPrice, unit: "INR/unit" },
     { section: "Final", name: "Recommended Price", formula: "Target Price (no hidden discount)", result: recommendedPrice, unit: "INR/unit" },
     { section: "Final", name: "Expected Revenue", formula: "Recommended Price × Quantity", result: expectedRevenue, unit: "INR" },
     { section: "Final", name: "Net Profit", formula: "Expected Revenue − Protected Cost", result: netProfit, unit: "INR" },
@@ -415,6 +415,10 @@ export function evaluatePrice(c: Computed, price: number): PriceEvaluation {
 
 export function evaluateDiscount(c: Computed, discountPct: number) {
   return evaluatePrice(c, c.recommendedPrice * (1 - num(discountPct) / 100));
+}
+
+export function profitVariance(base: Computed, scenario: Computed) {
+  return scenario.netProfit - base.netProfit;
 }
 
 export function convertToINR(amount: number, currency: "INR" | "USD" | "EUR", s: CalculatorState) {
