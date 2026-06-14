@@ -87,8 +87,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Vaaldrin Profit Pilot" },
       { name: "twitter:description", content: "Export costing & quotation system for Vaaldrin Exports" },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/KChx76mlgGbDKQwTzwNhn1Nlzlr1/social-images/social-1781420550550-LOGO.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/KChx76mlgGbDKQwTzwNhn1Nlzlr1/social-images/social-1781420550550-LOGO.webp" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/379d644c-c245-42ab-ba98-8a1c5e677fe1" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/379d644c-c245-42ab-ba98-8a1c5e677fe1" },
     ],
     links: [
       {
