@@ -1,5 +1,5 @@
 export type Incoterm = "EXW" | "FOB" | "CFR" | "CIF";
-export type ContractCurrency = "USD" | "EUR" | "GBP" | "AED";
+export type ContractCurrency = "INR" | "USD" | "EUR" | "GBP" | "AED";
 
 export interface CalculatorState {
   // Shipment
@@ -332,6 +332,8 @@ export function computeCoreINR(s: CalculatorState): Computed {
 
   // Informational only: selected currency's market/bank gap applied to contract value.
   const bankRate = getActualBankRate(s.contractCurrency, s);
+  const contractPrice = recommendedPrice / bankRate;
+  const contractTotal = expectedRevenue / bankRate;
   const marketRate = getMarketRate(s.contractCurrency, s);
   const forexExposure = Math.abs(marketRate - bankRate) * (expectedRevenue / bankRate);
 
@@ -435,6 +437,7 @@ export function profitVariance(base: Computed, scenario: Computed) {
 
 export function getActualBankRate(currency: ContractCurrency, s: CalculatorState) {
   const rates: Record<ContractCurrency, number> = {
+    INR: 1,
     USD: num(s.actualBankUsdRate), EUR: num(s.actualBankEurRate),
     GBP: num(s.actualBankGbpRate), AED: num(s.actualBankAedRate),
   };
@@ -443,6 +446,7 @@ export function getActualBankRate(currency: ContractCurrency, s: CalculatorState
 
 export function getMarketRate(currency: ContractCurrency, s: CalculatorState) {
   const rates: Record<ContractCurrency, number> = {
+    INR: 1,
     USD: num(s.marketUsdRate), EUR: num(s.marketEurRate),
     GBP: num(s.marketGbpRate), AED: num(s.marketAedRate),
   };
