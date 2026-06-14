@@ -61,3 +61,35 @@ describe("export pricing engine", () => {
     expect(evaluated.acceptable).toBe(true);
   });
 });
+describe("currency conversion invariants", () => {
+  it("maintains currency conversion invariants", () => {
+    const sample = {
+      quantity: 1000,
+      actualBankUsdRate: 83.0,
+      actualBankEurRate: 90.0,
+      supplierPricePerUnit: 100,
+      incoterm: "FOB" as const,
+      targetProfitPct: 15,
+      minProfitPct: 5,
+      contingencyPct: 2,
+      forexBufferPct: 2,
+    };
+    
+    const usdSample = { ...sample, contractCurrency: "USD" as const };
+    // @ts-ignore - types might be strict but we are testing the logic
+    const result = compute(usdSample);
+    const bankRate = usdSample.actualBankUsdRate;
+    
+    // Invariant 1: contractTotal * bankRate approx expectedRevenue (INR)
+    expect(result.contractTotal * bankRate).toBeCloseTo(result.expectedRevenue, 5);
+    
+    // Invariant 2: contractPrice * quantity approx contractTotal
+    expect(result.contractPrice * usdSample.quantity).toBeCloseTo(result.contractTotal, 5);
+    
+    const inrSample = { ...sample, contractCurrency: "INR" as const };
+    // @ts-ignore
+    const inrResult = compute(inrSample);
+    // Invariant 3: if INR, must match recommendedPrice
+    expect(inrResult.contractPrice).toBe(inrResult.recommendedPrice);
+  });
+});
