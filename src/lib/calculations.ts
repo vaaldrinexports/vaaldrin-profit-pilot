@@ -93,7 +93,6 @@ export interface CalculatorState {
   // Negotiation
   buyerCounterOffer: number;
   requestedDiscountPct: number;
-  contractCurrency: "INR" | "USD" | "EUR";
 
   // Container size (kg) for per-container metric
   containerKg: number;
@@ -129,7 +128,6 @@ export const defaultState: CalculatorState = {
   forexBufferPct: 2,
   targetProfitPct: 18, minProfitAmount: 0, minProfitPct: 8, marginLock: false,
   buyerCounterOffer: 0, requestedDiscountPct: 0,
-  contractCurrency: "USD",
   containerKg: 20000,
 };
 
@@ -178,9 +176,6 @@ export interface Computed {
   profitPct: number;
   profitPerUnit: number;
   profitPerKg: number;
-  contractCurrency: "INR" | "USD" | "EUR";
-  contractPrice: number;
-  contractTotal: number;
   projectedProfitAtFullContainer: number;
   showFullContainerProjection: boolean;
 
@@ -397,18 +392,13 @@ export function computeCoreINR(s: CalculatorState): Computed {
     { section: "Final", name: "Profit per Unit", formula: "Net Profit ÷ Shipment Quantity", result: profitPerUnit, unit: "INR/unit" },
     { section: "Final", name: "Projected Profit at Full Container Load", formula: "Profit per Unit × Container Size", result: projectedProfitAtFullContainer, unit: "INR" },
   ];
-  const bankRate = s.contractCurrency === "USD" ? num(s.actualBankUsdRate) :
-                   s.contractCurrency === "EUR" ? num(s.actualBankEurRate) : 1;
-  const contractPrice = recommendedPrice / (bankRate || 1);
-  const contractTotal = expectedRevenue / (bankRate || 1);
-
   return {
     supplierTotal, packagingTotal, inlandTotal, documentationTotal,
     customsTotal, freightTotal, insuranceTotal, bankingTotal, miscTotal,
     contingencyAmount, incentiveValue,
     totalCost, effectiveCost, forexBufferAmount, protectedCost,
     breakEvenPrice, targetSellingPrice, recommendedPrice, expectedRevenue, netProfit, profitPct,
-    profitPerUnit, profitPerKg, contractCurrency: s.contractCurrency, contractPrice, contractTotal, projectedProfitAtFullContainer, showFullContainerProjection,
+    profitPerUnit, profitPerKg, projectedProfitAtFullContainer, showFullContainerProjection,
     exwPrice, fobPrice, cfrPrice, cifPrice,
     exwRevenue, fobRevenue, cfrRevenue, cifRevenue,
     minExw, minFob, minCfr, minCif,
