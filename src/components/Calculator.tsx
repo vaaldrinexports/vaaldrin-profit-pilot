@@ -813,8 +813,12 @@ function AccItem({ value, icon: Icon, title, summary, children }: {
   );
 }
 
-function DirectorCell({ label, inr, usd, tone, big, pct }: {
-  label: string; inr: number; usd: number; tone?: "gold" | "warn" | "danger"; big?: boolean; pct?: number;
+function QuoteFact({ label, value }: { label: string; value: string }) {
+  return <div><div className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground/55">{label}</div><div className="mt-0.5 font-semibold">{value}</div></div>;
+}
+
+function DirectorCell({ label, value, tone, big, pct }: {
+  label: string; value: string; tone?: "gold" | "warn" | "danger"; big?: boolean; pct?: number;
 }) {
   const cls =
     tone === "gold" ? "border-gold/60 bg-gold/15" :
@@ -824,9 +828,8 @@ function DirectorCell({ label, inr, usd, tone, big, pct }: {
   return (
     <div className={"rounded-lg border p-4 " + cls}>
       <div className="text-[10px] uppercase tracking-widest text-primary-foreground/70 font-semibold">{label}</div>
-      <div className={"font-bold mt-1.5 tabular-nums " + (big ? "text-xl sm:text-2xl" : "text-base")}>{fmtINR(inr)}</div>
+      <div className={"font-bold mt-1.5 tabular-nums " + (big ? "text-xl sm:text-2xl" : "text-base")}>{value}</div>
       <div className="text-xs text-primary-foreground/60 tabular-nums mt-0.5">
-        {fmtUSD(usd)}
         {pct !== undefined && (
           <span className={"ml-2 font-semibold " + (pct > 15 ? "text-success" : pct >= 8 ? "text-warning" : "text-deep-red")}>
             {fmtNum(pct)}%
@@ -858,7 +861,8 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: "gre
 }
 
 function QuotationPreview({ s, priceINR, totalINR, forPrint }: { s: CalculatorState; priceINR: number; totalINR: number; forPrint?: boolean }) {
-  const total = totalINR;
+  const unitPrice = convertFromINR(priceINR, s.contractCurrency, s);
+  const total = convertFromINR(totalINR, s.contractCurrency, s);
   return (
     <div className={"bg-white text-black p-8 " + (forPrint ? "" : "border rounded-lg")}>
       <div className="flex justify-between items-start border-b-4 pb-4" style={{ borderColor: "var(--gold)" }}>
@@ -897,8 +901,8 @@ function QuotationPreview({ s, priceINR, totalINR, forPrint }: { s: CalculatorSt
             <th className="text-left p-2">HS Code</th>
             <th className="text-right p-2">Qty</th>
             <th className="text-left p-2">UoM</th>
-            <th className="text-right p-2">Unit Price (INR)</th>
-            <th className="text-right p-2">Total (INR)</th>
+            <th className="text-right p-2">Unit Price ({s.contractCurrency})</th>
+            <th className="text-right p-2">Total ({s.contractCurrency})</th>
           </tr>
         </thead>
         <tbody>
@@ -908,24 +912,16 @@ function QuotationPreview({ s, priceINR, totalINR, forPrint }: { s: CalculatorSt
             <td className="p-2">{s.hsCode || "—"}</td>
             <td className="p-2 text-right">{s.quantity}</td>
             <td className="p-2">{s.uom}</td>
-            <td className="p-2 text-right tabular-nums">{fmtINR(priceINR)}</td>
-            <td className="p-2 text-right tabular-nums font-bold">{fmtINR(total)}</td>
+            <td className="p-2 text-right tabular-nums">{fmtCurrency(unitPrice, s.contractCurrency)}</td>
+            <td className="p-2 text-right tabular-nums font-bold">{fmtCurrency(total, s.contractCurrency)}</td>
           </tr>
         </tbody>
       </table>
 
-      <div className="grid grid-cols-3 gap-3 mt-6 text-sm">
-        <div className="border p-3 rounded">
-          <div className="text-xs uppercase text-gray-500">Total INR</div>
-          <div className="font-bold text-lg tabular-nums">{fmtINR(total)}</div>
-        </div>
-        <div className="border p-3 rounded">
-          <div className="text-xs uppercase text-gray-500">Total USD</div>
-          <div className="font-bold text-lg tabular-nums">{fmtUSD(total / (s.actualBankUsdRate || 1))}</div>
-        </div>
-        <div className="border p-3 rounded">
-          <div className="text-xs uppercase text-gray-500">Total EUR</div>
-          <div className="font-bold text-lg tabular-nums">{fmtEUR(total / (s.actualBankEurRate || 1))}</div>
+      <div className="mt-6 text-sm">
+        <div className="border p-4 rounded">
+          <div className="text-xs uppercase text-gray-500">Total Contract Value ({s.contractCurrency})</div>
+          <div className="font-bold text-2xl tabular-nums">{fmtCurrency(total, s.contractCurrency)}</div>
         </div>
       </div>
 
