@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  compute, defaultState, fmtINR, fmtUSD, fmtEUR, fmtNum,
+  compute, defaultState, fmtINR, fmtCurrency, fmtNum,
   applyScenario, evaluatePrice, evaluateDiscount, profitVariance, convertToINR, convertFromINR,
-  type CalculatorState, type Incoterm,
+  getActualBankRate, getMarketRate, type CalculatorState, type Incoterm, type ContractCurrency,
 } from "@/lib/calculations";
 import { generateQuotationPDF } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
@@ -141,12 +141,12 @@ export default function Calculator() {
   const c = useMemo(() => compute(s), [s]);
   const set = <K extends keyof CalculatorState>(k: K, v: CalculatorState[K]) => setS((p) => ({ ...p, [k]: v }));
 
-  const usd = (inr: number) => convertFromINR(inr, "USD", s);
-  const eur = (inr: number) => convertFromINR(inr, "EUR", s);
+  const contractValue = (inr: number) => convertFromINR(inr, s.contractCurrency, s);
+  const fmtContract = (inr: number) => fmtCurrency(contractValue(inr), s.contractCurrency);
   const incotermPrice = c.recommendedPrice;
   const minIncotermPrice = c.selectedMinimumPrice;
   const walkPrice = c.selectedWalkAwayPrice;
-  const counterINR = convertToINR(s.buyerCounterOffer, s.buyerCounterCurrency, s);
+  const counterINR = convertToINR(s.buyerCounterOffer, s.contractCurrency, s);
   const counterEvaluation = evaluatePrice(c, counterINR);
   const discountEvaluation = evaluateDiscount(c, s.requestedDiscountPct);
   const discountedPrice = discountEvaluation.price;
@@ -205,6 +205,14 @@ export default function Calculator() {
     if (c.validationErrors.length) { toast.error(c.validationErrors[0]); return; }
     generateQuotationPDF(s);
   };
+  const buyerUnitPrice = contractValue(incotermPrice);
+  const buyerContractValue = buyerUnitPrice * s.quantity;
+  const buyerPriceText = `${s.contractCurrency} ${fmtNum(buyerUnitPrice)} / ${s.uom || "UNIT"}`;
+  const quotationSummary = `Product: ${s.productName || "Product"}\nIncoterm: ${s.incoterm}\nCurrency: ${s.contractCurrency}\nUnit Price: ${buyerPriceText}\nQuantity: ${fmtNum(s.quantity, 0)} ${s.uom}\nTotal Contract Value: ${fmtCurrency(buyerContractValue, s.contractCurrency)}`;
+  const copyText = async (text: string, message: string) => {
+    try { await navigator.clipboard.writeText(text); toast.success(message); }
+    catch { toast.error("Clipboard access was blocked"); }
+  };
 
   // Quality summary
   const dq = c.dealQualityScore;
@@ -257,6 +265,28 @@ export default function Calculator() {
         {/* Executive Summary — simpler, more spacious */}
         <Card className="overflow-hidden border-gold/30 shadow-md">
           <div className="bg-gradient-to-br from-primary to-primary/95 text-primary-foreground p-6">
+            <div className="mb-6 rounded-lg border border-gold/50 bg-primary-foreground/5 p-5">
+              <div className="text-[11px] font-bold tracking-[0.2em] text-gold">RECOMMENDED BUYER QUOTATION</div>
+              <div className="mt-4 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
+                <div>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+                    <QuoteFact label="Product" value={s.productName || "Not set"} />
+                    <QuoteFact label="Incoterm" value={s.incoterm} />
+                    <QuoteFact label="Contract currency" value={s.contractCurrency} />
+                  </div>
+                  <div className="mt-5 text-[10px] font-bold uppercase tracking-widest text-primary-foreground/60">Quote this price</div>
+                  <div className="mt-1 text-3xl font-bold tabular-nums text-gold sm:text-5xl">{buyerPriceText}</div>
+                  <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-sm">
+                    <span><span className="text-primary-foreground/60">Quantity:</span> <strong>{fmtNum(s.quantity, 0)} {s.uom}</strong></span>
+                    <span><span className="text-primary-foreground/60">Total contract value:</span> <strong>{fmtCurrency(buyerContractValue, s.contractCurrency)}</strong></span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 lg:flex-col">
+                  <Button size="sm" onClick={() => copyText(buyerPriceText, "Buyer price copied")} className="bg-gold text-gold-foreground hover:bg-gold/90"><Copy className="mr-2 h-4 w-4" />Copy Buyer Price</Button>
+                  <Button size="sm" variant="secondary" onClick={() => copyText(quotationSummary, "Quotation summary copied")}><Copy className="mr-2 h-4 w-4" />Copy Quotation Summary</Button>
+                </div>
+              </div>
+            </div>
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 mb-5">
               <div className="min-w-0">
                 <div className="text-[11px] tracking-widest font-bold" style={{ color: "var(--gold)" }}>EXECUTIVE SUMMARY</div>
@@ -279,19 +309,19 @@ export default function Calculator() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <DirectorCell label="Recommended price" inr={incotermPrice} usd={usd(incotermPrice)} tone="gold" big />
-              <DirectorCell label="Expected profit" inr={c.netProfit} usd={usd(c.netProfit)} pct={c.profitPct} big />
-              <DirectorCell label="Minimum acceptable" inr={minIncotermPrice} usd={usd(minIncotermPrice)} tone="warn" big />
-              <DirectorCell label="Walk-away price" inr={walkPrice} usd={usd(walkPrice)} tone="danger" big />
+              <DirectorCell label="Recommended price" value={fmtContract(incotermPrice)} tone="gold" big />
+              <DirectorCell label="Expected profit (internal)" value={fmtINR(c.netProfit)} pct={c.profitPct} big />
+              <DirectorCell label="Minimum acceptable" value={fmtContract(minIncotermPrice)} tone="warn" big />
+              <DirectorCell label="Walk-away price" value={fmtContract(walkPrice)} tone="danger" big />
             </div>
           </div>
 
           <div className="bg-card p-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 text-sm border-t">
-            <MiniStat label="EXW" value={fmtINR(c.exwPrice)} />
-            <MiniStat label="FOB" value={fmtINR(c.fobPrice)} />
-            <MiniStat label="CFR" value={fmtINR(c.cfrPrice)} />
-            <MiniStat label="CIF" value={fmtINR(c.cifPrice)} />
-            <MiniStat label="Break-even" value={fmtINR(c.breakEvenPrice)} />
+            <MiniStat label="EXW" value={fmtContract(c.exwPrice)} />
+            <MiniStat label="FOB" value={fmtContract(c.fobPrice)} />
+            <MiniStat label="CFR" value={fmtContract(c.cfrPrice)} />
+            <MiniStat label="CIF" value={fmtContract(c.cifPrice)} />
+            <MiniStat label="Break-even (internal)" value={fmtINR(c.breakEvenPrice)} />
             <MiniStat
               label="Risk"
               value={c.riskLevel}
@@ -366,6 +396,13 @@ export default function Calculator() {
                       <SelectItem value="CFR">CFR — Cost & Freight</SelectItem>
                       <SelectItem value="CIF">CIF — Cost, Insurance & Freight</SelectItem>
                     </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <FieldLabel hint="The only currency shown on buyer-facing quotations">Contract currency</FieldLabel>
+                  <Select value={s.contractCurrency} onValueChange={(v) => set("contractCurrency", v as ContractCurrency)}>
+                    <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                    <SelectContent>{(["USD", "EUR", "GBP", "AED"] as const).map((currency) => <SelectItem key={currency} value={currency}>{currency}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <TextField label="Buyer company" value={s.buyerCompany} onChange={(v) => set("buyerCompany", v)} placeholder="ABC Trading Ltd." />
@@ -483,16 +520,20 @@ export default function Calculator() {
                   </div>
                 </AccItem>
 
-                <AccItem value="forex" icon={Globe2} title="Currency & forex protection" summary={`${fmtNum(s.forexBufferPct)}% buffer`}>
+                <AccItem value="forex" icon={Globe2} title="Currency & forex protection" summary={`${s.contractCurrency} @ ${fmtNum(getActualBankRate(s.contractCurrency, s))}`}>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <NumField label="Market USD rate" value={s.marketUsdRate} onChange={(v) => set("marketUsdRate", v)} step={0.01} suffix="₹" />
                     <NumField label="Actual bank USD rate" value={s.actualBankUsdRate} onChange={(v) => set("actualBankUsdRate", v)} step={0.01} suffix="₹" hint="Used for actual profit calculation" />
                     <NumField label="Market EUR rate" value={s.marketEurRate} onChange={(v) => set("marketEurRate", v)} step={0.01} suffix="₹" />
                     <NumField label="Actual bank EUR rate" value={s.actualBankEurRate} onChange={(v) => set("actualBankEurRate", v)} step={0.01} suffix="₹" />
+                    <NumField label="Market GBP rate" value={s.marketGbpRate} onChange={(v) => set("marketGbpRate", v)} step={0.01} suffix="₹" />
+                    <NumField label="Actual bank GBP rate" value={s.actualBankGbpRate} onChange={(v) => set("actualBankGbpRate", v)} step={0.01} suffix="₹" />
+                    <NumField label="Market AED rate" value={s.marketAedRate} onChange={(v) => set("marketAedRate", v)} step={0.01} suffix="₹" />
+                    <NumField label="Actual bank AED rate" value={s.actualBankAedRate} onChange={(v) => set("actualBankAedRate", v)} step={0.01} suffix="₹" />
                     <NumField label="Forex risk buffer" value={s.forexBufferPct} onChange={(v) => set("forexBufferPct", v)} step={0.1} suffix="%" />
-                    <NumField label="Forex buffer amount" value={c.forexBufferAmount} onChange={() => {}} readOnly suffix="₹" />
+                    <NumField label="Forex exposure (informational)" value={c.forexExposure} onChange={() => {}} readOnly suffix="₹" />
                   </div>
-                  <p className="mt-3 text-xs text-muted-foreground italic">Profit is always computed using the actual bank conversion rate.</p>
+                  <p className="mt-3 text-xs text-muted-foreground italic">Selected {s.contractCurrency}: market ₹{fmtNum(getMarketRate(s.contractCurrency, s))}, bank ₹{fmtNum(getActualBankRate(s.contractCurrency, s))}. Forex is informational and never changes core INR pricing unless entered as a banking cost.</p>
                 </AccItem>
               </Accordion>
             </Card>
