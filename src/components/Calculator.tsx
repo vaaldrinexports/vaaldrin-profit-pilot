@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  compute, defaultState, fmtINR, fmtUSD, fmtEUR, fmtNum,
+  compute, defaultState, fmtINR, fmtCurrency, fmtNum,
   applyScenario, evaluatePrice, evaluateDiscount, profitVariance, convertToINR, convertFromINR,
-  type CalculatorState, type Incoterm,
+  calculateForexExposure, getActualBankRate, getBuyerQuote, getMarketRate, type CalculatorState, type Incoterm, type ContractCurrency,
 } from "@/lib/calculations";
 import { generateQuotationPDF } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
@@ -134,19 +134,20 @@ export default function Calculator() {
     if (raw) {
       try { setS({ ...defaultState, ...JSON.parse(raw) }); } catch {}
     } else {
-      setS((current) => ({ ...current, quotationDate: new Date().toISOString().slice(0, 10) }));
+      const now = new Date();
+      setS((current) => ({ ...current, quotationNumber: `VX-${now.getFullYear()}-0001`, quotationDate: now.toISOString().slice(0, 10) }));
     }
   }, []);
 
   const c = useMemo(() => compute(s), [s]);
   const set = <K extends keyof CalculatorState>(k: K, v: CalculatorState[K]) => setS((p) => ({ ...p, [k]: v }));
 
-  const usd = (inr: number) => convertFromINR(inr, "USD", s);
-  const eur = (inr: number) => convertFromINR(inr, "EUR", s);
+  const contractValue = (inr: number) => convertFromINR(inr, s.contractCurrency, s);
+  const fmtContract = (inr: number) => fmtCurrency(contractValue(inr), s.contractCurrency);
   const incotermPrice = c.recommendedPrice;
   const minIncotermPrice = c.selectedMinimumPrice;
   const walkPrice = c.selectedWalkAwayPrice;
-  const counterINR = convertToINR(s.buyerCounterOffer, s.buyerCounterCurrency, s);
+  const counterINR = convertToINR(s.buyerCounterOffer, s.contractCurrency, s);
   const counterEvaluation = evaluatePrice(c, counterINR);
   const discountEvaluation = evaluateDiscount(c, s.requestedDiscountPct);
   const discountedPrice = discountEvaluation.price;
@@ -205,6 +206,15 @@ export default function Calculator() {
     if (c.validationErrors.length) { toast.error(c.validationErrors[0]); return; }
     generateQuotationPDF(s);
   };
+  const buyerQuote = getBuyerQuote(incotermPrice, s.quantity, s);
+  const buyerUnitPrice = buyerQuote.unitPrice;
+  const buyerContractValue = buyerQuote.totalContractValue;
+  const buyerPriceText = `${s.contractCurrency} ${fmtNum(buyerUnitPrice)} / ${s.uom || "UNIT"}`;
+  const quotationSummary = `Product: ${s.productName || "Product"}\nIncoterm: ${s.incoterm}\nCurrency: ${s.contractCurrency}\nUnit Price: ${buyerPriceText}\nQuantity: ${fmtNum(s.quantity, 0)} ${s.uom}\nTotal Contract Value: ${fmtCurrency(buyerContractValue, s.contractCurrency)}`;
+  const copyText = async (text: string, message: string) => {
+    try { await navigator.clipboard.writeText(text); toast.success(message); }
+    catch { toast.error("Clipboard access was blocked"); }
+  };
 
   // Quality summary
   const dq = c.dealQualityScore;
@@ -257,6 +267,28 @@ export default function Calculator() {
         {/* Executive Summary — simpler, more spacious */}
         <Card className="overflow-hidden border-gold/30 shadow-md">
           <div className="bg-gradient-to-br from-primary to-primary/95 text-primary-foreground p-6">
+            <div className="mb-6 rounded-lg border border-gold/50 bg-primary-foreground/5 p-5">
+              <div className="text-[11px] font-bold tracking-[0.2em] text-gold">RECOMMENDED BUYER QUOTATION</div>
+              <div className="mt-4 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
+                <div>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+                    <QuoteFact label="Product" value={s.productName || "Not set"} />
+                    <QuoteFact label="Incoterm" value={s.incoterm} />
+                    <QuoteFact label="Contract currency" value={s.contractCurrency} />
+                  </div>
+                  <div className="mt-5 text-[10px] font-bold uppercase tracking-widest text-primary-foreground/60">Quote this price</div>
+                  <div className="mt-1 text-3xl font-bold tabular-nums text-gold sm:text-5xl">{buyerPriceText}</div>
+                  <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-sm">
+                    <span><span className="text-primary-foreground/60">Quantity:</span> <strong>{fmtNum(s.quantity, 0)} {s.uom}</strong></span>
+                    <span><span className="text-primary-foreground/60">Total contract value:</span> <strong>{fmtCurrency(buyerContractValue, s.contractCurrency)}</strong></span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 lg:flex-col">
+                  <Button size="sm" onClick={() => copyText(buyerPriceText, "Buyer price copied")} className="bg-gold text-gold-foreground hover:bg-gold/90"><Copy className="mr-2 h-4 w-4" />Copy Buyer Price</Button>
+                  <Button size="sm" variant="secondary" onClick={() => copyText(quotationSummary, "Quotation summary copied")}><Copy className="mr-2 h-4 w-4" />Copy Quotation Summary</Button>
+                </div>
+              </div>
+            </div>
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 mb-5">
               <div className="min-w-0">
                 <div className="text-[11px] tracking-widest font-bold" style={{ color: "var(--gold)" }}>EXECUTIVE SUMMARY</div>
@@ -279,19 +311,19 @@ export default function Calculator() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <DirectorCell label="Recommended price" inr={incotermPrice} usd={usd(incotermPrice)} tone="gold" big />
-              <DirectorCell label="Expected profit" inr={c.netProfit} usd={usd(c.netProfit)} pct={c.profitPct} big />
-              <DirectorCell label="Minimum acceptable" inr={minIncotermPrice} usd={usd(minIncotermPrice)} tone="warn" big />
-              <DirectorCell label="Walk-away price" inr={walkPrice} usd={usd(walkPrice)} tone="danger" big />
+              <DirectorCell label="Recommended price" value={fmtContract(incotermPrice)} tone="gold" big />
+              <DirectorCell label="Expected profit (internal)" value={fmtINR(c.netProfit)} pct={c.profitPct} big />
+              <DirectorCell label="Minimum acceptable" value={fmtContract(minIncotermPrice)} tone="warn" big />
+              <DirectorCell label="Walk-away price" value={fmtContract(walkPrice)} tone="danger" big />
             </div>
           </div>
 
           <div className="bg-card p-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 text-sm border-t">
-            <MiniStat label="EXW" value={fmtINR(c.exwPrice)} />
-            <MiniStat label="FOB" value={fmtINR(c.fobPrice)} />
-            <MiniStat label="CFR" value={fmtINR(c.cfrPrice)} />
-            <MiniStat label="CIF" value={fmtINR(c.cifPrice)} />
-            <MiniStat label="Break-even" value={fmtINR(c.breakEvenPrice)} />
+            <MiniStat label="EXW" value={fmtContract(c.exwPrice)} />
+            <MiniStat label="FOB" value={fmtContract(c.fobPrice)} />
+            <MiniStat label="CFR" value={fmtContract(c.cfrPrice)} />
+            <MiniStat label="CIF" value={fmtContract(c.cifPrice)} />
+            <MiniStat label="Break-even (internal)" value={fmtINR(c.breakEvenPrice)} />
             <MiniStat
               label="Risk"
               value={c.riskLevel}
@@ -366,6 +398,13 @@ export default function Calculator() {
                       <SelectItem value="CFR">CFR — Cost & Freight</SelectItem>
                       <SelectItem value="CIF">CIF — Cost, Insurance & Freight</SelectItem>
                     </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <FieldLabel hint="The only currency shown on buyer-facing quotations">Contract currency</FieldLabel>
+                  <Select value={s.contractCurrency} onValueChange={(v) => set("contractCurrency", v as ContractCurrency)}>
+                    <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                    <SelectContent>{(["USD", "EUR", "GBP", "AED"] as const).map((currency) => <SelectItem key={currency} value={currency}>{currency}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <TextField label="Buyer company" value={s.buyerCompany} onChange={(v) => set("buyerCompany", v)} placeholder="ABC Trading Ltd." />
@@ -483,16 +522,20 @@ export default function Calculator() {
                   </div>
                 </AccItem>
 
-                <AccItem value="forex" icon={Globe2} title="Currency & forex protection" summary={`${fmtNum(s.forexBufferPct)}% buffer`}>
+                <AccItem value="forex" icon={Globe2} title="Currency & forex protection" summary={`${s.contractCurrency} @ ${fmtNum(getActualBankRate(s.contractCurrency, s))}`}>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <NumField label="Market USD rate" value={s.marketUsdRate} onChange={(v) => set("marketUsdRate", v)} step={0.01} suffix="₹" />
                     <NumField label="Actual bank USD rate" value={s.actualBankUsdRate} onChange={(v) => set("actualBankUsdRate", v)} step={0.01} suffix="₹" hint="Used for actual profit calculation" />
                     <NumField label="Market EUR rate" value={s.marketEurRate} onChange={(v) => set("marketEurRate", v)} step={0.01} suffix="₹" />
                     <NumField label="Actual bank EUR rate" value={s.actualBankEurRate} onChange={(v) => set("actualBankEurRate", v)} step={0.01} suffix="₹" />
+                    <NumField label="Market GBP rate" value={s.marketGbpRate} onChange={(v) => set("marketGbpRate", v)} step={0.01} suffix="₹" />
+                    <NumField label="Actual bank GBP rate" value={s.actualBankGbpRate} onChange={(v) => set("actualBankGbpRate", v)} step={0.01} suffix="₹" />
+                    <NumField label="Market AED rate" value={s.marketAedRate} onChange={(v) => set("marketAedRate", v)} step={0.01} suffix="₹" />
+                    <NumField label="Actual bank AED rate" value={s.actualBankAedRate} onChange={(v) => set("actualBankAedRate", v)} step={0.01} suffix="₹" />
                     <NumField label="Forex risk buffer" value={s.forexBufferPct} onChange={(v) => set("forexBufferPct", v)} step={0.1} suffix="%" />
-                    <NumField label="Forex buffer amount" value={c.forexBufferAmount} onChange={() => {}} readOnly suffix="₹" />
+                    <NumField label="Forex exposure (informational)" value={calculateForexExposure(c.expectedRevenue, s)} onChange={() => {}} readOnly suffix="₹" />
                   </div>
-                  <p className="mt-3 text-xs text-muted-foreground italic">Profit is always computed using the actual bank conversion rate.</p>
+                  <p className="mt-3 text-xs text-muted-foreground italic">Selected {s.contractCurrency}: market ₹{fmtNum(getMarketRate(s.contractCurrency, s))}, bank ₹{fmtNum(getActualBankRate(s.contractCurrency, s))}. Forex is informational and never changes core INR pricing unless entered as a banking cost.</p>
                 </AccItem>
               </Accordion>
             </Card>
@@ -523,8 +566,8 @@ export default function Calculator() {
                 <KPI label="Total cost" value={fmtINR(c.totalCost)} />
                 <KPI label="Effective cost" value={fmtINR(c.effectiveCost)} sub={`− ${fmtINR(c.incentiveValue)} incentives`} />
                 <KPI label="Protected cost" value={fmtINR(c.protectedCost)} sub={`+ ${fmtINR(c.contingencyAmount + c.forexBufferAmount)} buffers`} />
-                <KPI label="Break-even price" value={fmtINR(c.breakEvenPrice)} sub={`${fmtUSD(usd(c.breakEvenPrice))} / unit`} />
-                <KPI label="Target selling price" value={fmtINR(c.targetSellingPrice)} sub={`${fmtUSD(usd(c.targetSellingPrice))} / unit`} tone="gold" />
+                <KPI label="Break-even price" value={fmtINR(c.breakEvenPrice)} sub={`${fmtContract(c.breakEvenPrice)} / unit`} />
+                <KPI label="Target selling price" value={fmtINR(c.targetSellingPrice)} sub={`${fmtContract(c.targetSellingPrice)} / unit`} tone="gold" />
                 <KPI label="Net profit" value={fmtINR(c.netProfit)} tone={c.profitPct > 15 ? "green" : c.profitPct >= 8 ? "warn" : "red"} />
                 <KPI label="Profit %" value={`${fmtNum(c.profitPct)}%`} tone={c.profitPct > 15 ? "green" : c.profitPct >= 8 ? "warn" : "red"} />
                 <KPI label="Profit / unit" value={fmtINR(c.profitPerUnit)} />
@@ -564,12 +607,8 @@ export default function Calculator() {
                   <thead>
                     <tr className="border-b border-gold/30 bg-gold/5">
                       <th className="text-left p-3 font-semibold">Incoterm</th>
-                      <th className="text-right p-3 font-semibold">Per unit (INR)</th>
-                      <th className="text-right p-3 font-semibold">Per unit (USD)</th>
-                      <th className="text-right p-3 font-semibold">Per unit (EUR)</th>
-                      <th className="text-right p-3 font-semibold">Total (INR)</th>
-                      <th className="text-right p-3 font-semibold">Total (USD)</th>
-                      <th className="text-right p-3 font-semibold">Total (EUR)</th>
+                      <th className="text-right p-3 font-semibold">Unit price ({s.contractCurrency})</th>
+                      <th className="text-right p-3 font-semibold">Contract value ({s.contractCurrency})</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -584,12 +623,8 @@ export default function Calculator() {
                           <div className="font-semibold">{row.name}</div>
                           <div className="text-xs text-muted-foreground">{row.desc}</div>
                         </td>
-                        <td className="p-3 text-right tabular-nums font-semibold">{fmtINR(row.price)}</td>
-                        <td className="p-3 text-right tabular-nums">{fmtUSD(usd(row.price))}</td>
-                        <td className="p-3 text-right tabular-nums">{fmtEUR(eur(row.price))}</td>
-                        <td className="p-3 text-right tabular-nums font-semibold">{fmtINR(row.name === "EXW" ? c.exwRevenue : row.name === "FOB" ? c.fobRevenue : row.name === "CFR" ? c.cfrRevenue : c.cifRevenue)}</td>
-                        <td className="p-3 text-right tabular-nums">{fmtUSD(usd(row.name === "EXW" ? c.exwRevenue : row.name === "FOB" ? c.fobRevenue : row.name === "CFR" ? c.cfrRevenue : c.cifRevenue))}</td>
-                        <td className="p-3 text-right tabular-nums">{fmtEUR(eur(row.name === "EXW" ? c.exwRevenue : row.name === "FOB" ? c.fobRevenue : row.name === "CFR" ? c.cfrRevenue : c.cifRevenue))}</td>
+                        <td className="p-3 text-right tabular-nums font-semibold">{fmtContract(row.price)}</td>
+                        <td className="p-3 text-right tabular-nums">{fmtCurrency(getBuyerQuote(row.price, s.quantity, s).totalContractValue, s.contractCurrency)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -606,41 +641,26 @@ export default function Calculator() {
           <TabsContent value="negotiation" className="space-y-5">
             <GroupCard icon={TrendingUp} title="Negotiation thresholds" subtitle="Know exactly when to say yes, push back, or walk away">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                <KPI label="Min EXW" value={fmtINR(c.minExw)} sub={fmtUSD(usd(c.minExw))} tone="warn" />
-                <KPI label="Min FOB" value={fmtINR(c.minFob)} sub={fmtUSD(usd(c.minFob))} tone="warn" />
-                <KPI label="Min CFR" value={fmtINR(c.minCfr)} sub={fmtUSD(usd(c.minCfr))} tone="warn" />
-                <KPI label="Min CIF" value={fmtINR(c.minCif)} sub={fmtUSD(usd(c.minCif))} tone="warn" />
-                <KPI label="Walk-away FOB" value={fmtINR(c.walkFob)} sub={fmtUSD(usd(c.walkFob))} tone="red" />
-                <KPI label="Walk-away CFR" value={fmtINR(c.walkCfr)} sub={fmtUSD(usd(c.walkCfr))} tone="red" />
-                <KPI label="Walk-away CIF" value={fmtINR(c.walkCif)} sub={fmtUSD(usd(c.walkCif))} tone="red" />
-                <KPI label={`Recommended ${s.incoterm}`} value={fmtINR(incotermPrice)} sub={fmtUSD(usd(incotermPrice))} tone="gold" />
+                <KPI label="Min EXW" value={fmtContract(c.minExw)} tone="warn" />
+                <KPI label="Min FOB" value={fmtContract(c.minFob)} tone="warn" />
+                <KPI label="Min CFR" value={fmtContract(c.minCfr)} tone="warn" />
+                <KPI label="Min CIF" value={fmtContract(c.minCif)} tone="warn" />
+                <KPI label="Walk-away FOB" value={fmtContract(c.walkFob)} tone="red" />
+                <KPI label="Walk-away CFR" value={fmtContract(c.walkCfr)} tone="red" />
+                <KPI label="Walk-away CIF" value={fmtContract(c.walkCif)} tone="red" />
+                <KPI label={`Recommended ${s.incoterm}`} value={fmtContract(incotermPrice)} tone="gold" />
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 <div className="rounded-lg border p-5 space-y-4">
                   <div className="flex items-center gap-2 font-semibold"><TrendingUp className="w-4 h-4 text-gold" />Counter-offer check</div>
                   <p className="text-xs text-muted-foreground -mt-2">Enter what the buyer is proposing — we'll tell you if it's acceptable.</p>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="col-span-2">
-                      <NumField label="Buyer counter offer (per unit)" value={s.buyerCounterOffer} onChange={(v) => set("buyerCounterOffer", v)} step={0.01} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <FieldLabel>Currency</FieldLabel>
-                      <Select value={s.buyerCounterCurrency} onValueChange={(v) => set("buyerCounterCurrency", v as "INR" | "USD" | "EUR")}>
-                        <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="INR">INR</SelectItem>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                  <NumField label={`Buyer counter offer (${s.contractCurrency} / unit)`} value={s.buyerCounterOffer} onChange={(v) => set("buyerCounterOffer", v)} step={0.01} />
                   <div className="space-y-2 text-sm">
-                    <Row label="Counter offer in INR" value={fmtINR(counterINR)} />
-                    <Row label="Minimum acceptable" value={fmtINR(minIncotermPrice)} />
-                    <Row label="Price gap" value={fmtINR(counterINR - minIncotermPrice)} tone={counterINR >= minIncotermPrice ? "green" : "red"} />
-                    <Row label="Net profit at counter" value={fmtINR(counterEvaluation.profit)} />
+                    <Row label="Counter offer" value={fmtCurrency(s.buyerCounterOffer, s.contractCurrency)} />
+                    <Row label="Minimum acceptable" value={fmtContract(minIncotermPrice)} />
+                    <Row label="Price gap" value={fmtContract(counterINR - minIncotermPrice)} tone={counterINR >= minIncotermPrice ? "green" : "red"} />
+                    <Row label="Net profit at counter (internal)" value={fmtINR(counterEvaluation.profit)} />
                     <Row label="Profit % at counter" value={`${fmtNum(counterEvaluation.profitPct)}%`} />
                   </div>
                   <div className={"rounded-md p-3 font-semibold text-sm " + (counterAcceptable ? "bg-success/10 text-success" : "bg-deep-red/10 text-deep-red")}>
@@ -653,9 +673,9 @@ export default function Calculator() {
                   <p className="text-xs text-muted-foreground -mt-2">Test how a percentage discount affects your profit.</p>
                   <NumField label="Requested discount %" value={s.requestedDiscountPct} onChange={(v) => set("requestedDiscountPct", v)} step={0.5} suffix="%" />
                   <div className="space-y-2 text-sm">
-                    <Row label={`Original ${s.incoterm}`} value={fmtINR(incotermPrice)} />
-                    <Row label={`Discounted ${s.incoterm}`} value={fmtINR(discountedPrice)} tone={discountAcceptable ? "green" : "red"} />
-                    <Row label="New profit / unit" value={fmtINR(discountEvaluation.profitPerUnit)} />
+                    <Row label={`Original ${s.incoterm}`} value={fmtContract(incotermPrice)} />
+                    <Row label={`Discounted ${s.incoterm}`} value={fmtContract(discountedPrice)} tone={discountAcceptable ? "green" : "red"} />
+                    <Row label="New profit / unit (internal)" value={fmtINR(discountEvaluation.profitPerUnit)} />
                     <Row label="New profit %" value={`${fmtNum(discountEvaluation.profitPct)}%`} />
                   </div>
                   <div className={"rounded-md p-3 text-sm " + (discountAcceptable ? "bg-success/10 text-success" : "bg-deep-red/10 text-deep-red")}>
@@ -669,10 +689,10 @@ export default function Calculator() {
               <div className="mt-5 rounded-lg border bg-secondary/30 p-5">
                 <div className="font-semibold mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-deep-red" />Decision summary</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                  <Row label="Recommended" value={fmtINR(incotermPrice)} />
-                  <Row label="Target" value={fmtINR(c.targetSellingPrice)} />
-                  <Row label="Minimum acceptable" value={fmtINR(minIncotermPrice)} tone="warn" />
-                  <Row label="Walk away" value={fmtINR(walkPrice)} tone="red" />
+                  <Row label="Recommended" value={fmtContract(incotermPrice)} />
+                  <Row label="Target" value={fmtContract(c.targetSellingPrice)} />
+                  <Row label="Minimum acceptable" value={fmtContract(minIncotermPrice)} tone="warn" />
+                  <Row label="Walk away" value={fmtContract(walkPrice)} tone="red" />
                   <Row label="Expected profit" value={fmtINR(c.netProfit)} tone={c.profitPct > 15 ? "green" : c.profitPct >= 8 ? "warn" : "red"} />
                   <Row label="Profit %" value={`${fmtNum(c.profitPct)}%`} />
                   <Row label="Risk level" value={c.riskLevel} />
@@ -795,8 +815,12 @@ function AccItem({ value, icon: Icon, title, summary, children }: {
   );
 }
 
-function DirectorCell({ label, inr, usd, tone, big, pct }: {
-  label: string; inr: number; usd: number; tone?: "gold" | "warn" | "danger"; big?: boolean; pct?: number;
+function QuoteFact({ label, value }: { label: string; value: string }) {
+  return <div><div className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground/55">{label}</div><div className="mt-0.5 font-semibold">{value}</div></div>;
+}
+
+function DirectorCell({ label, value, tone, big, pct }: {
+  label: string; value: string; tone?: "gold" | "warn" | "danger"; big?: boolean; pct?: number;
 }) {
   const cls =
     tone === "gold" ? "border-gold/60 bg-gold/15" :
@@ -806,9 +830,8 @@ function DirectorCell({ label, inr, usd, tone, big, pct }: {
   return (
     <div className={"rounded-lg border p-4 " + cls}>
       <div className="text-[10px] uppercase tracking-widest text-primary-foreground/70 font-semibold">{label}</div>
-      <div className={"font-bold mt-1.5 tabular-nums " + (big ? "text-xl sm:text-2xl" : "text-base")}>{fmtINR(inr)}</div>
+      <div className={"font-bold mt-1.5 tabular-nums " + (big ? "text-xl sm:text-2xl" : "text-base")}>{value}</div>
       <div className="text-xs text-primary-foreground/60 tabular-nums mt-0.5">
-        {fmtUSD(usd)}
         {pct !== undefined && (
           <span className={"ml-2 font-semibold " + (pct > 15 ? "text-success" : pct >= 8 ? "text-warning" : "text-deep-red")}>
             {fmtNum(pct)}%
@@ -840,7 +863,9 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: "gre
 }
 
 function QuotationPreview({ s, priceINR, totalINR, forPrint }: { s: CalculatorState; priceINR: number; totalINR: number; forPrint?: boolean }) {
-  const total = totalINR;
+  const quote = getBuyerQuote(priceINR, s.quantity, s);
+  const unitPrice = quote.unitPrice;
+  const total = quote.totalContractValue;
   return (
     <div className={"bg-white text-black p-8 " + (forPrint ? "" : "border rounded-lg")}>
       <div className="flex justify-between items-start border-b-4 pb-4" style={{ borderColor: "var(--gold)" }}>
@@ -879,8 +904,8 @@ function QuotationPreview({ s, priceINR, totalINR, forPrint }: { s: CalculatorSt
             <th className="text-left p-2">HS Code</th>
             <th className="text-right p-2">Qty</th>
             <th className="text-left p-2">UoM</th>
-            <th className="text-right p-2">Unit Price (INR)</th>
-            <th className="text-right p-2">Total (INR)</th>
+            <th className="text-right p-2">Unit Price ({s.contractCurrency})</th>
+            <th className="text-right p-2">Total ({s.contractCurrency})</th>
           </tr>
         </thead>
         <tbody>
@@ -890,24 +915,16 @@ function QuotationPreview({ s, priceINR, totalINR, forPrint }: { s: CalculatorSt
             <td className="p-2">{s.hsCode || "—"}</td>
             <td className="p-2 text-right">{s.quantity}</td>
             <td className="p-2">{s.uom}</td>
-            <td className="p-2 text-right tabular-nums">{fmtINR(priceINR)}</td>
-            <td className="p-2 text-right tabular-nums font-bold">{fmtINR(total)}</td>
+            <td className="p-2 text-right tabular-nums">{fmtCurrency(unitPrice, s.contractCurrency)}</td>
+            <td className="p-2 text-right tabular-nums font-bold">{fmtCurrency(total, s.contractCurrency)}</td>
           </tr>
         </tbody>
       </table>
 
-      <div className="grid grid-cols-3 gap-3 mt-6 text-sm">
-        <div className="border p-3 rounded">
-          <div className="text-xs uppercase text-gray-500">Total INR</div>
-          <div className="font-bold text-lg tabular-nums">{fmtINR(total)}</div>
-        </div>
-        <div className="border p-3 rounded">
-          <div className="text-xs uppercase text-gray-500">Total USD</div>
-          <div className="font-bold text-lg tabular-nums">{fmtUSD(total / (s.actualBankUsdRate || 1))}</div>
-        </div>
-        <div className="border p-3 rounded">
-          <div className="text-xs uppercase text-gray-500">Total EUR</div>
-          <div className="font-bold text-lg tabular-nums">{fmtEUR(total / (s.actualBankEurRate || 1))}</div>
+      <div className="mt-6 text-sm">
+        <div className="border p-4 rounded">
+          <div className="text-xs uppercase text-gray-500">Total Contract Value ({s.contractCurrency})</div>
+          <div className="font-bold text-2xl tabular-nums">{fmtCurrency(total, s.contractCurrency)}</div>
         </div>
       </div>
 

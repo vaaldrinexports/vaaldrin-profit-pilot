@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compute, defaultState, evaluatePrice } from "./calculations";
+import { compute, getBuyerQuote, defaultState, evaluatePrice } from "./calculations";
 
 const sample = {
   ...defaultState,
@@ -39,11 +39,11 @@ describe("export pricing engine", () => {
     expect(result.validationErrors).toEqual([]);
   });
 
-  it("applies contingency and forex buffers once to effective cost", () => {
+  it("applies contingency once and keeps forex informational", () => {
     const result = compute(sample);
     expect(result.contingencyAmount).toBeCloseTo(result.effectiveCost * sample.contingencyPct / 100, 8);
-    expect(result.forexBufferAmount).toBeCloseTo(result.effectiveCost * sample.forexBufferPct / 100, 8);
-    expect(result.protectedCost).toBeCloseTo(result.effectiveCost + result.contingencyAmount + result.forexBufferAmount, 8);
+    expect(result.forexBufferAmount).toBe(0);
+    expect(result.protectedCost).toBeCloseTo(result.effectiveCost + result.contingencyAmount, 8);
   });
 
   it("labels full-container profit as a separate projection", () => {
@@ -59,5 +59,23 @@ describe("export pricing engine", () => {
     expect(evaluated.revenue).toBeCloseTo(evaluated.price * sample.quantity, 8);
     expect(evaluated.profit).toBeCloseTo(evaluated.revenue - result.protectedCost, 8);
     expect(evaluated.acceptable).toBe(true);
+  });
+});
+describe("currency display invariants", () => {
+  it("never changes core INR outputs when contract currency changes", () => {
+    const keys = ["netProfit", "breakEvenPrice", "selectedWalkAwayPrice", "recommendedPrice", "targetSellingPrice", "selectedMinimumPrice"] as const;
+    const base = compute({ ...sample, contractCurrency: "USD" });
+    for (const contractCurrency of ["EUR", "GBP", "AED"] as const) {
+      const changed = compute({ ...sample, contractCurrency });
+      for (const key of keys) expect(changed[key]).toBeCloseTo(base[key], 8);
+    }
+  });
+
+  it("uses the selected actual bank rate for buyer values", () => {
+    const state = { ...sample, contractCurrency: "GBP" as const, actualBankGbpRate: 105 };
+    const result = compute(state);
+    const quote = getBuyerQuote(result.recommendedPrice, state.quantity, state);
+    expect(quote.unitPrice).toBe(Math.round(result.recommendedPrice / state.actualBankGbpRate * 100) / 100);
+    expect(quote.totalContractValue).toBeCloseTo(quote.unitPrice * state.quantity, 8);
   });
 });

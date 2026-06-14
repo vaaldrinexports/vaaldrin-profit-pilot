@@ -1,10 +1,10 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { CalculatorState } from "./calculations";
-import { compute, fmtINR, fmtUSD, fmtEUR } from "./calculations";
+import { computeCoreINR, fmtCurrency, getBuyerQuote } from "./calculations";
 
 export function generateQuotationPDF(s: CalculatorState) {
-  const c = compute(s);
+  const c = computeCoreINR(s);
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
 
@@ -52,29 +52,30 @@ export function generateQuotationPDF(s: CalculatorState) {
   doc.text("30 days from quote date", W - 200, 148);
 
   // Product table
-  const unitPriceINR = c.recommendedPrice;
-  const totalINR = c.expectedRevenue;
-  const totalUSD = totalINR / (s.actualBankUsdRate || 1);
-  const totalEUR = totalINR / (s.actualBankEurRate || 1);
+  const fmtContract = (val: number) => fmtCurrency(val, s.contractCurrency);
+  const quote = getBuyerQuote(c.recommendedPrice, s.quantity, s);
+  const unitPriceContract = quote.unitPrice;
+  const totalContract = quote.totalContractValue;
+  const currencyLabel = s.contractCurrency;
 
   autoTable(doc, {
     startY: 180,
-    head: [["Product", "Grade", "HS Code", "Qty", "UoM", "Unit Price (INR)", "Total (INR)"]],
+    head: [["Product", "Grade", "HS Code", "Qty", "UoM", `Unit Price (${currencyLabel})`, `Total (${currencyLabel})`]],
     body: [[
       s.productName || "-", s.productGrade || "-", s.hsCode || "-",
-      String(s.quantity), s.uom, fmtINR(unitPriceINR), fmtINR(totalINR),
+      String(s.quantity), s.uom, fmtContract(unitPriceContract), fmtContract(totalContract),
     ]],
     headStyles: { fillColor: [20, 20, 20], textColor: [212, 175, 55] },
     styles: { fontSize: 9 },
     margin: { left: 40, right: 40 },
   });
 
-  // Totals in 3 currencies
+  // Buyer documents show one contract currency only.
   const finalY = (doc as any).lastAutoTable.finalY + 16;
   autoTable(doc, {
     startY: finalY,
-    head: [["Total (INR)", "Total (USD)", "Total (EUR)"]],
-    body: [[fmtINR(totalINR), fmtUSD(totalUSD), fmtEUR(totalEUR)]],
+    head: [[`TOTAL CONTRACT VALUE (${currencyLabel})`]],
+    body: [[fmtContract(totalContract)]],
     headStyles: { fillColor: [240, 230, 200], textColor: [20, 20, 20] },
     styles: { fontSize: 10, halign: "center" },
     margin: { left: 40, right: 40 },
