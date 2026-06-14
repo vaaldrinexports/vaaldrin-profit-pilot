@@ -1,10 +1,10 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { CalculatorState } from "./calculations";
-import { compute, fmtINR, fmtUSD, fmtEUR } from "./calculations";
+import { computeCoreINR, convertFromINR, fmtCurrency } from "./calculations";
 
 export function generateQuotationPDF(s: CalculatorState) {
-  const c = compute(s);
+  const c = computeCoreINR(s);
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
 
@@ -52,14 +52,10 @@ export function generateQuotationPDF(s: CalculatorState) {
   doc.text("30 days from quote date", W - 200, 148);
 
   // Product table
-  const fmtContract = (val: number) => {
-    if (c.contractCurrency === "USD") return fmtUSD(val);
-    if (c.contractCurrency === "EUR") return fmtEUR(val);
-    return fmtINR(val);
-  };
-  const unitPriceContract = c.contractPrice;
-  const totalContract = c.contractTotal;
-  const currencyLabel = c.contractCurrency;
+  const fmtContract = (val: number) => fmtCurrency(val, s.contractCurrency);
+  const unitPriceContract = convertFromINR(c.recommendedPrice, s.contractCurrency, s);
+  const totalContract = unitPriceContract * s.quantity;
+  const currencyLabel = s.contractCurrency;
 
   autoTable(doc, {
     startY: 180,
@@ -73,12 +69,12 @@ export function generateQuotationPDF(s: CalculatorState) {
     margin: { left: 40, right: 40 },
   });
 
-  // Totals in 3 currencies
+  // Buyer documents show one contract currency only.
   const finalY = (doc as any).lastAutoTable.finalY + 16;
   autoTable(doc, {
     startY: finalY,
-    head: [["Total (INR)", "Total (USD)", "Total (EUR)"]],
-    body: [[fmtINR(totalINR), fmtUSD(totalUSD), fmtEUR(totalEUR)]],
+    head: [[`TOTAL CONTRACT VALUE (${currencyLabel})`]],
+    body: [[fmtContract(totalContract)]],
     headStyles: { fillColor: [240, 230, 200], textColor: [20, 20, 20] },
     styles: { fontSize: 10, halign: "center" },
     margin: { left: 40, right: 40 },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compute, defaultState, evaluatePrice } from "./calculations";
+import { compute, convertFromINR, defaultState, evaluatePrice } from "./calculations";
 
 const sample = {
   ...defaultState,
@@ -61,35 +61,21 @@ describe("export pricing engine", () => {
     expect(evaluated.acceptable).toBe(true);
   });
 });
-describe("currency conversion invariants", () => {
-  it("maintains currency conversion invariants", () => {
-    const sample = {
-      quantity: 1000,
-      actualBankUsdRate: 83.0,
-      actualBankEurRate: 90.0,
-      supplierPricePerUnit: 100,
-      incoterm: "FOB" as const,
-      targetProfitPct: 15,
-      minProfitPct: 5,
-      contingencyPct: 2,
-      forexBufferPct: 2,
-    };
-    
-    const usdSample = { ...sample, contractCurrency: "USD" as const };
-    // @ts-ignore - types might be strict but we are testing the logic
-    const result = compute(usdSample);
-    const bankRate = usdSample.actualBankUsdRate;
-    
-    // Invariant 1: contractTotal * bankRate approx expectedRevenue (INR)
-    expect(result.contractTotal * bankRate).toBeCloseTo(result.expectedRevenue, 5);
-    
-    // Invariant 2: contractPrice * quantity approx contractTotal
-    expect(result.contractPrice * usdSample.quantity).toBeCloseTo(result.contractTotal, 5);
-    
-    const inrSample = { ...sample, contractCurrency: "INR" as const };
-    // @ts-ignore
-    const inrResult = compute(inrSample);
-    // Invariant 3: if INR, must match recommendedPrice
-    expect(inrResult.contractPrice).toBe(inrResult.recommendedPrice);
+describe("currency display invariants", () => {
+  it("never changes core INR outputs when contract currency changes", () => {
+    const keys = ["netProfit", "breakEvenPrice", "selectedWalkAwayPrice", "recommendedPrice", "targetSellingPrice", "selectedMinimumPrice"] as const;
+    const base = compute({ ...sample, contractCurrency: "USD" });
+    for (const contractCurrency of ["EUR", "GBP", "AED"] as const) {
+      const changed = compute({ ...sample, contractCurrency });
+      for (const key of keys) expect(changed[key]).toBeCloseTo(base[key], 8);
+    }
+  });
+
+  it("uses the selected actual bank rate for buyer values", () => {
+    const state = { ...sample, contractCurrency: "GBP" as const, actualBankGbpRate: 105 };
+    const result = compute(state);
+    const unitPrice = convertFromINR(result.recommendedPrice, state.contractCurrency, state);
+    expect(unitPrice * state.actualBankGbpRate).toBeCloseTo(result.recommendedPrice, 8);
+    expect(unitPrice * state.quantity).toBeCloseTo(convertFromINR(result.expectedRevenue, state.contractCurrency, state), 8);
   });
 });
