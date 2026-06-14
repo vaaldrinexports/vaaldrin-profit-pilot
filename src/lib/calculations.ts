@@ -99,7 +99,7 @@ export interface CalculatorState {
 }
 
 export const defaultState: CalculatorState = {
-  quotationNumber: `VX-${new Date().getFullYear()}-0001`,
+  quotationNumber: "VX-0001",
   // Filled on the client to keep the server-rendered markup deterministic.
   quotationDate: "",
   buyerName: "",

@@ -134,7 +134,8 @@ export default function Calculator() {
     if (raw) {
       try { setS({ ...defaultState, ...JSON.parse(raw) }); } catch {}
     } else {
-      setS((current) => ({ ...current, quotationDate: new Date().toISOString().slice(0, 10) }));
+      const now = new Date();
+      setS((current) => ({ ...current, quotationNumber: `VX-${now.getFullYear()}-0001`, quotationDate: now.toISOString().slice(0, 10) }));
     }
   }, []);
 
@@ -623,7 +624,7 @@ export default function Calculator() {
                           <div className="text-xs text-muted-foreground">{row.desc}</div>
                         </td>
                         <td className="p-3 text-right tabular-nums font-semibold">{fmtContract(row.price)}</td>
-                        <td className="p-3 text-right tabular-nums">{fmtContract(row.name === "EXW" ? c.exwRevenue : row.name === "FOB" ? c.fobRevenue : row.name === "CFR" ? c.cfrRevenue : c.cifRevenue)}</td>
+                        <td className="p-3 text-right tabular-nums">{fmtCurrency(getBuyerQuote(row.price, s.quantity, s).totalContractValue, s.contractCurrency)}</td>
                       </tr>
                     ))}
                   </tbody>
