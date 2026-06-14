@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import {
   compute, defaultState, fmtINR, fmtCurrency, fmtNum,
   applyScenario, evaluatePrice, evaluateDiscount, profitVariance, convertToINR, convertFromINR,
-  getActualBankRate, getMarketRate, type CalculatorState, type Incoterm, type ContractCurrency,
+  calculateForexExposure, getActualBankRate, getBuyerQuote, getMarketRate, type CalculatorState, type Incoterm, type ContractCurrency,
 } from "@/lib/calculations";
 import { generateQuotationPDF } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
@@ -205,8 +205,9 @@ export default function Calculator() {
     if (c.validationErrors.length) { toast.error(c.validationErrors[0]); return; }
     generateQuotationPDF(s);
   };
-  const buyerUnitPrice = contractValue(incotermPrice);
-  const buyerContractValue = buyerUnitPrice * s.quantity;
+  const buyerQuote = getBuyerQuote(incotermPrice, s.quantity, s);
+  const buyerUnitPrice = buyerQuote.unitPrice;
+  const buyerContractValue = buyerQuote.totalContractValue;
   const buyerPriceText = `${s.contractCurrency} ${fmtNum(buyerUnitPrice)} / ${s.uom || "UNIT"}`;
   const quotationSummary = `Product: ${s.productName || "Product"}\nIncoterm: ${s.incoterm}\nCurrency: ${s.contractCurrency}\nUnit Price: ${buyerPriceText}\nQuantity: ${fmtNum(s.quantity, 0)} ${s.uom}\nTotal Contract Value: ${fmtCurrency(buyerContractValue, s.contractCurrency)}`;
   const copyText = async (text: string, message: string) => {
@@ -531,7 +532,7 @@ export default function Calculator() {
                     <NumField label="Market AED rate" value={s.marketAedRate} onChange={(v) => set("marketAedRate", v)} step={0.01} suffix="₹" />
                     <NumField label="Actual bank AED rate" value={s.actualBankAedRate} onChange={(v) => set("actualBankAedRate", v)} step={0.01} suffix="₹" />
                     <NumField label="Forex risk buffer" value={s.forexBufferPct} onChange={(v) => set("forexBufferPct", v)} step={0.1} suffix="%" />
-                    <NumField label="Forex exposure (informational)" value={c.forexExposure} onChange={() => {}} readOnly suffix="₹" />
+                    <NumField label="Forex exposure (informational)" value={calculateForexExposure(c.expectedRevenue, s)} onChange={() => {}} readOnly suffix="₹" />
                   </div>
                   <p className="mt-3 text-xs text-muted-foreground italic">Selected {s.contractCurrency}: market ₹{fmtNum(getMarketRate(s.contractCurrency, s))}, bank ₹{fmtNum(getActualBankRate(s.contractCurrency, s))}. Forex is informational and never changes core INR pricing unless entered as a banking cost.</p>
                 </AccItem>
@@ -861,8 +862,9 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: "gre
 }
 
 function QuotationPreview({ s, priceINR, totalINR, forPrint }: { s: CalculatorState; priceINR: number; totalINR: number; forPrint?: boolean }) {
-  const unitPrice = convertFromINR(priceINR, s.contractCurrency, s);
-  const total = convertFromINR(totalINR, s.contractCurrency, s);
+  const quote = getBuyerQuote(priceINR, s.quantity, s);
+  const unitPrice = quote.unitPrice;
+  const total = quote.totalContractValue;
   return (
     <div className={"bg-white text-black p-8 " + (forPrint ? "" : "border rounded-lg")}>
       <div className="flex justify-between items-start border-b-4 pb-4" style={{ borderColor: "var(--gold)" }}>
