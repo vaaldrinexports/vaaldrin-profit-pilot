@@ -52,17 +52,21 @@ export function generateQuotationPDF(s: CalculatorState) {
   doc.text("30 days from quote date", W - 200, 148);
 
   // Product table
-  const unitPriceINR = c.recommendedPrice;
-  const totalINR = c.expectedRevenue;
-  const totalUSD = totalINR / (s.actualBankUsdRate || 1);
-  const totalEUR = totalINR / (s.actualBankEurRate || 1);
+  const fmtContract = (val: number) => {
+    if (c.contractCurrency === "USD") return fmtUSD(val);
+    if (c.contractCurrency === "EUR") return fmtEUR(val);
+    return fmtINR(val);
+  };
+  const unitPriceContract = c.contractPrice;
+  const totalContract = c.contractTotal;
+  const currencyLabel = c.contractCurrency;
 
   autoTable(doc, {
     startY: 180,
-    head: [["Product", "Grade", "HS Code", "Qty", "UoM", "Unit Price (INR)", "Total (INR)"]],
+    head: [["Product", "Grade", "HS Code", "Qty", "UoM", `Unit Price (${currencyLabel})`, `Total (${currencyLabel})`]],
     body: [[
       s.productName || "-", s.productGrade || "-", s.hsCode || "-",
-      String(s.quantity), s.uom, fmtINR(unitPriceINR), fmtINR(totalINR),
+      String(s.quantity), s.uom, fmtContract(unitPriceContract), fmtContract(totalContract),
     ]],
     headStyles: { fillColor: [20, 20, 20], textColor: [212, 175, 55] },
     styles: { fontSize: 9 },
