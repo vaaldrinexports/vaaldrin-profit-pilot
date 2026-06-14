@@ -1,0 +1,8 @@
+{
+  "framework": "tanstack-start",
+  "buildCommand": "bun run build",
+  "outputDirectory": ".output/public",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/" }
+  ]
+}
