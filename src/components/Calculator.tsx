@@ -564,8 +564,8 @@ export default function Calculator() {
                 <KPI label="Total cost" value={fmtINR(c.totalCost)} />
                 <KPI label="Effective cost" value={fmtINR(c.effectiveCost)} sub={`− ${fmtINR(c.incentiveValue)} incentives`} />
                 <KPI label="Protected cost" value={fmtINR(c.protectedCost)} sub={`+ ${fmtINR(c.contingencyAmount + c.forexBufferAmount)} buffers`} />
-                <KPI label="Break-even price" value={fmtINR(c.breakEvenPrice)} sub={`${fmtUSD(usd(c.breakEvenPrice))} / unit`} />
-                <KPI label="Target selling price" value={fmtINR(c.targetSellingPrice)} sub={`${fmtUSD(usd(c.targetSellingPrice))} / unit`} tone="gold" />
+                <KPI label="Break-even price" value={fmtINR(c.breakEvenPrice)} sub={`${fmtContract(c.breakEvenPrice)} / unit`} />
+                <KPI label="Target selling price" value={fmtINR(c.targetSellingPrice)} sub={`${fmtContract(c.targetSellingPrice)} / unit`} tone="gold" />
                 <KPI label="Net profit" value={fmtINR(c.netProfit)} tone={c.profitPct > 15 ? "green" : c.profitPct >= 8 ? "warn" : "red"} />
                 <KPI label="Profit %" value={`${fmtNum(c.profitPct)}%`} tone={c.profitPct > 15 ? "green" : c.profitPct >= 8 ? "warn" : "red"} />
                 <KPI label="Profit / unit" value={fmtINR(c.profitPerUnit)} />
@@ -605,12 +605,8 @@ export default function Calculator() {
                   <thead>
                     <tr className="border-b border-gold/30 bg-gold/5">
                       <th className="text-left p-3 font-semibold">Incoterm</th>
-                      <th className="text-right p-3 font-semibold">Per unit (INR)</th>
-                      <th className="text-right p-3 font-semibold">Per unit (USD)</th>
-                      <th className="text-right p-3 font-semibold">Per unit (EUR)</th>
-                      <th className="text-right p-3 font-semibold">Total (INR)</th>
-                      <th className="text-right p-3 font-semibold">Total (USD)</th>
-                      <th className="text-right p-3 font-semibold">Total (EUR)</th>
+                      <th className="text-right p-3 font-semibold">Unit price ({s.contractCurrency})</th>
+                      <th className="text-right p-3 font-semibold">Contract value ({s.contractCurrency})</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -625,12 +621,8 @@ export default function Calculator() {
                           <div className="font-semibold">{row.name}</div>
                           <div className="text-xs text-muted-foreground">{row.desc}</div>
                         </td>
-                        <td className="p-3 text-right tabular-nums font-semibold">{fmtINR(row.price)}</td>
-                        <td className="p-3 text-right tabular-nums">{fmtUSD(usd(row.price))}</td>
-                        <td className="p-3 text-right tabular-nums">{fmtEUR(eur(row.price))}</td>
-                        <td className="p-3 text-right tabular-nums font-semibold">{fmtINR(row.name === "EXW" ? c.exwRevenue : row.name === "FOB" ? c.fobRevenue : row.name === "CFR" ? c.cfrRevenue : c.cifRevenue)}</td>
-                        <td className="p-3 text-right tabular-nums">{fmtUSD(usd(row.name === "EXW" ? c.exwRevenue : row.name === "FOB" ? c.fobRevenue : row.name === "CFR" ? c.cfrRevenue : c.cifRevenue))}</td>
-                        <td className="p-3 text-right tabular-nums">{fmtEUR(eur(row.name === "EXW" ? c.exwRevenue : row.name === "FOB" ? c.fobRevenue : row.name === "CFR" ? c.cfrRevenue : c.cifRevenue))}</td>
+                        <td className="p-3 text-right tabular-nums font-semibold">{fmtContract(row.price)}</td>
+                        <td className="p-3 text-right tabular-nums">{fmtContract(row.name === "EXW" ? c.exwRevenue : row.name === "FOB" ? c.fobRevenue : row.name === "CFR" ? c.cfrRevenue : c.cifRevenue)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -647,41 +639,26 @@ export default function Calculator() {
           <TabsContent value="negotiation" className="space-y-5">
             <GroupCard icon={TrendingUp} title="Negotiation thresholds" subtitle="Know exactly when to say yes, push back, or walk away">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                <KPI label="Min EXW" value={fmtINR(c.minExw)} sub={fmtUSD(usd(c.minExw))} tone="warn" />
-                <KPI label="Min FOB" value={fmtINR(c.minFob)} sub={fmtUSD(usd(c.minFob))} tone="warn" />
-                <KPI label="Min CFR" value={fmtINR(c.minCfr)} sub={fmtUSD(usd(c.minCfr))} tone="warn" />
-                <KPI label="Min CIF" value={fmtINR(c.minCif)} sub={fmtUSD(usd(c.minCif))} tone="warn" />
-                <KPI label="Walk-away FOB" value={fmtINR(c.walkFob)} sub={fmtUSD(usd(c.walkFob))} tone="red" />
-                <KPI label="Walk-away CFR" value={fmtINR(c.walkCfr)} sub={fmtUSD(usd(c.walkCfr))} tone="red" />
-                <KPI label="Walk-away CIF" value={fmtINR(c.walkCif)} sub={fmtUSD(usd(c.walkCif))} tone="red" />
-                <KPI label={`Recommended ${s.incoterm}`} value={fmtINR(incotermPrice)} sub={fmtUSD(usd(incotermPrice))} tone="gold" />
+                <KPI label="Min EXW" value={fmtContract(c.minExw)} tone="warn" />
+                <KPI label="Min FOB" value={fmtContract(c.minFob)} tone="warn" />
+                <KPI label="Min CFR" value={fmtContract(c.minCfr)} tone="warn" />
+                <KPI label="Min CIF" value={fmtContract(c.minCif)} tone="warn" />
+                <KPI label="Walk-away FOB" value={fmtContract(c.walkFob)} tone="red" />
+                <KPI label="Walk-away CFR" value={fmtContract(c.walkCfr)} tone="red" />
+                <KPI label="Walk-away CIF" value={fmtContract(c.walkCif)} tone="red" />
+                <KPI label={`Recommended ${s.incoterm}`} value={fmtContract(incotermPrice)} tone="gold" />
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 <div className="rounded-lg border p-5 space-y-4">
                   <div className="flex items-center gap-2 font-semibold"><TrendingUp className="w-4 h-4 text-gold" />Counter-offer check</div>
                   <p className="text-xs text-muted-foreground -mt-2">Enter what the buyer is proposing — we'll tell you if it's acceptable.</p>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="col-span-2">
-                      <NumField label="Buyer counter offer (per unit)" value={s.buyerCounterOffer} onChange={(v) => set("buyerCounterOffer", v)} step={0.01} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <FieldLabel>Currency</FieldLabel>
-                      <Select value={s.buyerCounterCurrency} onValueChange={(v) => set("buyerCounterCurrency", v as "INR" | "USD" | "EUR")}>
-                        <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="INR">INR</SelectItem>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                  <NumField label={`Buyer counter offer (${s.contractCurrency} / unit)`} value={s.buyerCounterOffer} onChange={(v) => set("buyerCounterOffer", v)} step={0.01} />
                   <div className="space-y-2 text-sm">
-                    <Row label="Counter offer in INR" value={fmtINR(counterINR)} />
-                    <Row label="Minimum acceptable" value={fmtINR(minIncotermPrice)} />
-                    <Row label="Price gap" value={fmtINR(counterINR - minIncotermPrice)} tone={counterINR >= minIncotermPrice ? "green" : "red"} />
-                    <Row label="Net profit at counter" value={fmtINR(counterEvaluation.profit)} />
+                    <Row label="Counter offer" value={fmtCurrency(s.buyerCounterOffer, s.contractCurrency)} />
+                    <Row label="Minimum acceptable" value={fmtContract(minIncotermPrice)} />
+                    <Row label="Price gap" value={fmtContract(counterINR - minIncotermPrice)} tone={counterINR >= minIncotermPrice ? "green" : "red"} />
+                    <Row label="Net profit at counter (internal)" value={fmtINR(counterEvaluation.profit)} />
                     <Row label="Profit % at counter" value={`${fmtNum(counterEvaluation.profitPct)}%`} />
                   </div>
                   <div className={"rounded-md p-3 font-semibold text-sm " + (counterAcceptable ? "bg-success/10 text-success" : "bg-deep-red/10 text-deep-red")}>
@@ -694,9 +671,9 @@ export default function Calculator() {
                   <p className="text-xs text-muted-foreground -mt-2">Test how a percentage discount affects your profit.</p>
                   <NumField label="Requested discount %" value={s.requestedDiscountPct} onChange={(v) => set("requestedDiscountPct", v)} step={0.5} suffix="%" />
                   <div className="space-y-2 text-sm">
-                    <Row label={`Original ${s.incoterm}`} value={fmtINR(incotermPrice)} />
-                    <Row label={`Discounted ${s.incoterm}`} value={fmtINR(discountedPrice)} tone={discountAcceptable ? "green" : "red"} />
-                    <Row label="New profit / unit" value={fmtINR(discountEvaluation.profitPerUnit)} />
+                    <Row label={`Original ${s.incoterm}`} value={fmtContract(incotermPrice)} />
+                    <Row label={`Discounted ${s.incoterm}`} value={fmtContract(discountedPrice)} tone={discountAcceptable ? "green" : "red"} />
+                    <Row label="New profit / unit (internal)" value={fmtINR(discountEvaluation.profitPerUnit)} />
                     <Row label="New profit %" value={`${fmtNum(discountEvaluation.profitPct)}%`} />
                   </div>
                   <div className={"rounded-md p-3 text-sm " + (discountAcceptable ? "bg-success/10 text-success" : "bg-deep-red/10 text-deep-red")}>
@@ -710,10 +687,10 @@ export default function Calculator() {
               <div className="mt-5 rounded-lg border bg-secondary/30 p-5">
                 <div className="font-semibold mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-deep-red" />Decision summary</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                  <Row label="Recommended" value={fmtINR(incotermPrice)} />
-                  <Row label="Target" value={fmtINR(c.targetSellingPrice)} />
-                  <Row label="Minimum acceptable" value={fmtINR(minIncotermPrice)} tone="warn" />
-                  <Row label="Walk away" value={fmtINR(walkPrice)} tone="red" />
+                  <Row label="Recommended" value={fmtContract(incotermPrice)} />
+                  <Row label="Target" value={fmtContract(c.targetSellingPrice)} />
+                  <Row label="Minimum acceptable" value={fmtContract(minIncotermPrice)} tone="warn" />
+                  <Row label="Walk away" value={fmtContract(walkPrice)} tone="red" />
                   <Row label="Expected profit" value={fmtINR(c.netProfit)} tone={c.profitPct > 15 ? "green" : c.profitPct >= 8 ? "warn" : "red"} />
                   <Row label="Profit %" value={`${fmtNum(c.profitPct)}%`} />
                   <Row label="Risk level" value={c.riskLevel} />
