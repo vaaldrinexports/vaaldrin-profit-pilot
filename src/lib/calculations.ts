@@ -150,6 +150,12 @@ export interface PriceEvaluation {
   acceptable: boolean;
 }
 
+export interface BuyerQuote {
+  currency: ContractCurrency;
+  unitPrice: number;
+  totalContractValue: number;
+}
+
 export interface Computed {
   supplierTotal: number;
   packagingTotal: number;
@@ -330,12 +336,8 @@ export function computeCoreINR(s: CalculatorState): Computed {
     buffers: (contingencyAmount + forexBufferAmount) / divisor,
   };
 
-  // Informational only: selected currency's market/bank gap applied to contract value.
-  const bankRate = getActualBankRate(s.contractCurrency, s);
-  const contractPrice = recommendedPrice / bankRate;
-  const contractTotal = expectedRevenue / bankRate;
-  const marketRate = getMarketRate(s.contractCurrency, s);
-  const forexExposure = Math.abs(marketRate - bankRate) * (expectedRevenue / bankRate);
+  // Currency conversion and forex exposure remain outside this INR-only core.
+  const forexExposure = 0;
 
   // Margin safety: how far above min profit % we are
   const marginSafetyScore = Math.max(0, Math.min(100,
@@ -459,6 +461,16 @@ export function convertToINR(amount: number, currency: ContractCurrency, s: Calc
 
 export function convertFromINR(amount: number, currency: ContractCurrency, s: CalculatorState) {
   return amount / getActualBankRate(currency, s);
+}
+
+export function getBuyerQuote(recommendedPriceINR: number, quantity: number, s: CalculatorState): BuyerQuote {
+  const unitPrice = Math.round(convertFromINR(recommendedPriceINR, s.contractCurrency, s) * 100) / 100;
+  return { currency: s.contractCurrency, unitPrice, totalContractValue: unitPrice * num(quantity) };
+}
+
+export function calculateForexExposure(contractValueINR: number, s: CalculatorState) {
+  const bankRate = getActualBankRate(s.contractCurrency, s);
+  return Math.abs(getMarketRate(s.contractCurrency, s) - bankRate) * (num(contractValueINR) / bankRate);
 }
 
 export function fmtINR(n: number) {
