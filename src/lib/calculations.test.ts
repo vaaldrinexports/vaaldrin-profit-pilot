@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compute, convertFromINR, defaultState, evaluatePrice } from "./calculations";
+import { compute, getBuyerQuote, defaultState, evaluatePrice } from "./calculations";
 
 const sample = {
   ...defaultState,
@@ -39,11 +39,11 @@ describe("export pricing engine", () => {
     expect(result.validationErrors).toEqual([]);
   });
 
-  it("applies contingency and forex buffers once to effective cost", () => {
+  it("applies contingency once and keeps forex informational", () => {
     const result = compute(sample);
     expect(result.contingencyAmount).toBeCloseTo(result.effectiveCost * sample.contingencyPct / 100, 8);
-    expect(result.forexBufferAmount).toBeCloseTo(result.effectiveCost * sample.forexBufferPct / 100, 8);
-    expect(result.protectedCost).toBeCloseTo(result.effectiveCost + result.contingencyAmount + result.forexBufferAmount, 8);
+    expect(result.forexBufferAmount).toBe(0);
+    expect(result.protectedCost).toBeCloseTo(result.effectiveCost + result.contingencyAmount, 8);
   });
 
   it("labels full-container profit as a separate projection", () => {
@@ -74,8 +74,8 @@ describe("currency display invariants", () => {
   it("uses the selected actual bank rate for buyer values", () => {
     const state = { ...sample, contractCurrency: "GBP" as const, actualBankGbpRate: 105 };
     const result = compute(state);
-    const unitPrice = convertFromINR(result.recommendedPrice, state.contractCurrency, state);
-    expect(unitPrice * state.actualBankGbpRate).toBeCloseTo(result.recommendedPrice, 8);
-    expect(unitPrice * state.quantity).toBeCloseTo(convertFromINR(result.expectedRevenue, state.contractCurrency, state), 8);
+    const quote = getBuyerQuote(result.recommendedPrice, state.quantity, state);
+    expect(quote.unitPrice).toBe(Math.round(result.recommendedPrice / state.actualBankGbpRate * 100) / 100);
+    expect(quote.totalContractValue).toBeCloseTo(quote.unitPrice * state.quantity, 8);
   });
 });

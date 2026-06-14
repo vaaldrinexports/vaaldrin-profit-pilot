@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { CalculatorState } from "./calculations";
-import { computeCoreINR, convertFromINR, fmtCurrency } from "./calculations";
+import { computeCoreINR, fmtCurrency, getBuyerQuote } from "./calculations";
 
 export function generateQuotationPDF(s: CalculatorState) {
   const c = computeCoreINR(s);
@@ -53,8 +53,9 @@ export function generateQuotationPDF(s: CalculatorState) {
 
   // Product table
   const fmtContract = (val: number) => fmtCurrency(val, s.contractCurrency);
-  const unitPriceContract = convertFromINR(c.recommendedPrice, s.contractCurrency, s);
-  const totalContract = unitPriceContract * s.quantity;
+  const quote = getBuyerQuote(c.recommendedPrice, s.quantity, s);
+  const unitPriceContract = quote.unitPrice;
+  const totalContract = quote.totalContractValue;
   const currencyLabel = s.contractCurrency;
 
   autoTable(doc, {
