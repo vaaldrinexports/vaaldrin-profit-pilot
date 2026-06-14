@@ -1,4 +1,5 @@
 export type Incoterm = "EXW" | "FOB" | "CFR" | "CIF";
+export type ContractCurrency = "USD" | "EUR" | "GBP" | "AED";
 
 export interface CalculatorState {
   // Shipment
@@ -14,6 +15,7 @@ export interface CalculatorState {
   quantity: number;
   uom: string;
   incoterm: Incoterm;
+  contractCurrency: ContractCurrency;
 
   // Costing
   supplierPricePerUnit: number;
@@ -76,6 +78,10 @@ export interface CalculatorState {
   actualBankUsdRate: number;
   marketEurRate: number;
   actualBankEurRate: number;
+  marketGbpRate: number;
+  actualBankGbpRate: number;
+  marketAedRate: number;
+  actualBankAedRate: number;
   forexBufferPct: number;
 
   // Profit
@@ -86,7 +92,6 @@ export interface CalculatorState {
 
   // Negotiation
   buyerCounterOffer: number;
-  buyerCounterCurrency: "INR" | "USD" | "EUR";
   requestedDiscountPct: number;
 
   // Container size (kg) for per-container metric
@@ -107,6 +112,7 @@ export const defaultState: CalculatorState = {
   quantity: 0,
   uom: "KG",
   incoterm: "FOB",
+  contractCurrency: "USD",
   supplierPricePerUnit: 0,
   pouchCost: 0, labelCost: 0, cartonCost: 0, palletCost: 0, otherPackaging: 0,
   factoryToWarehouse: 0, warehouseToPort: 0, loadingCharges: 0, unloadingCharges: 0,
@@ -118,9 +124,10 @@ export const defaultState: CalculatorState = {
   miscCost: 0, contingencyPct: 2,
   rodtepPct: 0, dutyDrawbackPct: 0, otherIncentives: 0,
   marketUsdRate: 83.5, actualBankUsdRate: 83, marketEurRate: 90.5, actualBankEurRate: 90,
+  marketGbpRate: 105.5, actualBankGbpRate: 105, marketAedRate: 22.8, actualBankAedRate: 22.6,
   forexBufferPct: 2,
   targetProfitPct: 18, minProfitAmount: 0, minProfitPct: 8, marginLock: false,
-  buyerCounterOffer: 0, buyerCounterCurrency: "USD", requestedDiscountPct: 0,
+  buyerCounterOffer: 0, requestedDiscountPct: 0,
   containerKg: 20000,
 };
 
@@ -214,7 +221,7 @@ export interface Computed {
   auditRows: AuditRow[];
 }
 
-export function compute(s: CalculatorState): Computed {
+export function computeCoreINR(s: CalculatorState): Computed {
   const q = Math.max(0, num(s.quantity));
   const divisor = q || 1;
 
@@ -248,10 +255,12 @@ export function compute(s: CalculatorState): Computed {
   const effectiveCost = totalCost - incentiveValue;
 
   const contingencyAmount = effectiveCost * num(s.contingencyPct) / 100;
-  const forexBufferAmount = effectiveCost * num(s.forexBufferPct) / 100;
-  const protectedCost = effectiveCost + contingencyAmount + forexBufferAmount;
+  // Forex rates and the informational forex buffer never alter INR economics.
+  // Exporters may explicitly include a realized spread in currencyConversion.
+  const forexBufferAmount = 0;
+  const protectedCost = effectiveCost + contingencyAmount;
 
-  const bufferRate = (num(s.contingencyPct) + num(s.forexBufferPct)) / 100;
+  const bufferRate = num(s.contingencyPct) / 100;
   const incentiveRatio = totalCost > 0 ? incentiveValue / totalCost : 0;
   const protectedFor = (directCost: number) => {
     const applicableTotal = directCost + sharedCost;
@@ -321,8 +330,10 @@ export function compute(s: CalculatorState): Computed {
     buffers: (contingencyAmount + forexBufferAmount) / divisor,
   };
 
-  // Forex exposure: gap between market and bank rates applied to revenue
-  const forexExposure = Math.abs(num(s.marketUsdRate) - num(s.actualBankUsdRate)) * (expectedRevenue / num(s.actualBankUsdRate || 1));
+  // Informational only: selected currency's market/bank gap applied to contract value.
+  const bankRate = getActualBankRate(s.contractCurrency, s);
+  const marketRate = getMarketRate(s.contractCurrency, s);
+  const forexExposure = Math.abs(marketRate - bankRate) * (expectedRevenue / bankRate);
 
   // Margin safety: how far above min profit % we are
   const marginSafetyScore = Math.max(0, Math.min(100,
@@ -330,7 +341,7 @@ export function compute(s: CalculatorState): Computed {
   ));
 
   // Deal quality 0-100
-  const bufferCoverage = Math.min(100, (num(s.contingencyPct) + num(s.forexBufferPct)) * 10);
+  const bufferCoverage = Math.min(100, num(s.contingencyPct) * 10);
   const freightExposure = Math.max(0, 100 - (freightTotal / Math.max(totalCost, 1)) * 100);
   const dealQualityScore = Math.round(
     Math.max(0, Math.min(100,
@@ -339,7 +350,7 @@ export function compute(s: CalculatorState): Computed {
   );
 
   const riskLevel: "Low" | "Medium" | "High" =
-    profitPct >= 15 && (num(s.forexBufferPct) + num(s.contingencyPct)) >= 3 ? "Low" :
+    profitPct >= 15 && num(s.contingencyPct) >= 3 ? "Low" :
     profitPct >= 8 ? "Medium" : "High";
 
   const selectedMinimumPrice = minimumFor(s.incoterm);
@@ -368,8 +379,8 @@ export function compute(s: CalculatorState): Computed {
     { section: "Intermediate", name: "Total Cost", formula: "Sum of costs applicable to selected Incoterm", result: totalCost, unit: "INR" },
     { section: "Intermediate", name: "Effective Cost", formula: "Total Cost − Export Incentives", result: effectiveCost, unit: "INR" },
     { section: "Intermediate", name: "Contingency", formula: "Effective Cost × Contingency %", result: contingencyAmount, unit: "INR" },
-    { section: "Intermediate", name: "Forex Buffer", formula: "Effective Cost × Forex Buffer %", result: forexBufferAmount, unit: "INR" },
-    { section: "Intermediate", name: "Protected Cost", formula: "Effective Cost + Contingency + Forex Buffer", result: protectedCost, unit: "INR" },
+    { section: "Intermediate", name: "Forex Buffer", formula: "Informational only; add realized spread under Banking Costs", result: forexBufferAmount, unit: "INR" },
+    { section: "Intermediate", name: "Protected Cost", formula: "Effective Cost + Contingency", result: protectedCost, unit: "INR" },
     { section: "Final", name: "Break-even Price", formula: "Protected Cost ÷ Quantity", result: breakEvenPrice, unit: "INR/unit" },
     { section: "Final", name: "Walk-away Price", formula: "Break-even Price × 1.02", result: selectedWalkAwayPrice, unit: "INR/unit" },
     { section: "Final", name: "Minimum Acceptable Price", formula: "max(Break-even × (1 + Minimum %), (Protected Cost + Minimum Amount) ÷ Quantity)", result: selectedMinimumPrice, unit: "INR/unit" },
@@ -399,6 +410,8 @@ export function compute(s: CalculatorState): Computed {
     isConsistent, validationErrors, auditRows, marginLockTriggered,
   };
 }
+
+export const compute = computeCoreINR;
 
 export function evaluatePrice(c: Computed, price: number): PriceEvaluation {
   const quantityRow = c.auditRows.find((row) => row.name === "Shipment Quantity");
