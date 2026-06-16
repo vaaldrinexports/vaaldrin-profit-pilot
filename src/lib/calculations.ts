@@ -1,5 +1,87 @@
 export type Incoterm = "EXW" | "FOB" | "CFR" | "CIF";
 export type ContractCurrency = "INR" | "USD" | "EUR" | "GBP" | "AED";
+export type PaymentMethod = "SWIFT" | "DP" | "DA" | "LC";
+
+export interface BankingTariff {
+  // Fixed (INR)
+  inward_remittance_charge: number;
+  export_bill_collection_charge: number;
+  export_bill_advance_remittance_handling: number;
+  export_bill_dishonour_charge: number;
+  export_bill_writeoff_charge: number;
+  reimbursement_claim_charge: number;
+  export_due_date_extension: number;
+  edf_gr_approval_charge: number;
+  edf_gr_waiver_certificate: number;
+  export_lc_advising_customer: number;
+  export_lc_advising_non_customer: number;
+  export_lc_amendment_customer: number;
+  export_lc_amendment_non_customer: number;
+  export_lc_transfer: number;
+  courier_export_documents: number;
+  swift_outward_remittance: number;
+  outward_remittance_charge: number;
+  duplicate_firc_brc_swift: number;
+  certificate_attestation: number;
+  swift_tracer: number;
+  manual_brc: number;
+  ebrc: number;
+  // Variable
+  gst_percent: number;
+  forex_spread_percent: number;
+  correspondent_bank_fee_usd: number;
+  // Percentage-based
+  export_bill_negotiation_rate_percent: number;
+  export_bill_negotiation_minimum: number;
+  advance_against_export_bill_rate_percent: number;
+  advance_against_export_bill_minimum: number;
+  export_bill_crystallization_rate_percent: number;
+  export_bill_crystallization_minimum: number;
+  setoff_fixed: number;
+  setoff_rate_percent: number;
+  commission_in_lieu_rate_percent: number;
+  // Whether this exporter is an Axis customer (affects LC advising)
+  is_axis_customer: boolean;
+}
+
+export const defaultBankingTariff: BankingTariff = {
+  inward_remittance_charge: 300,
+  export_bill_collection_charge: 1250,
+  export_bill_advance_remittance_handling: 1250,
+  export_bill_dishonour_charge: 1250,
+  export_bill_writeoff_charge: 1250,
+  reimbursement_claim_charge: 1000,
+  export_due_date_extension: 500,
+  edf_gr_approval_charge: 1000,
+  edf_gr_waiver_certificate: 1000,
+  export_lc_advising_customer: 1500,
+  export_lc_advising_non_customer: 2000,
+  export_lc_amendment_customer: 750,
+  export_lc_amendment_non_customer: 1000,
+  export_lc_transfer: 2000,
+  courier_export_documents: 1000,
+  swift_outward_remittance: 500,
+  outward_remittance_charge: 1000,
+  duplicate_firc_brc_swift: 100,
+  certificate_attestation: 250,
+  swift_tracer: 500,
+  manual_brc: 0,
+  ebrc: 0,
+  gst_percent: 18,
+  forex_spread_percent: 1.0,
+  correspondent_bank_fee_usd: 20,
+  export_bill_negotiation_rate_percent: 0.03,
+  export_bill_negotiation_minimum: 2000,
+  advance_against_export_bill_rate_percent: 0.0625,
+  advance_against_export_bill_minimum: 1000,
+  export_bill_crystallization_rate_percent: 0.125,
+  export_bill_crystallization_minimum: 2000,
+  setoff_fixed: 1250,
+  setoff_rate_percent: 0.125,
+  commission_in_lieu_rate_percent: 0.125,
+  is_axis_customer: true,
+};
+
 
 export interface CalculatorState {
   // Shipment
