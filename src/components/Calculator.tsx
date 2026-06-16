@@ -778,7 +778,10 @@ export default function Calculator() {
                 </table>
               </div>
             </GroupCard>
+          </TabsContent>
+
           {/* BANKING & FOREX */}
+
           <TabsContent value="banking" className="space-y-5">
             <GroupCard icon={Landmark} title="Payment method" subtitle="Bank charges automatically adjust based on the agreed payment terms">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
