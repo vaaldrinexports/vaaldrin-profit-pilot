@@ -565,6 +565,11 @@ export function computeCoreINR(s: CalculatorState): Computed {
     { section: "Final", name: "Profit per Unit", formula: "Net Profit ÷ Shipment Quantity", result: profitPerUnit, unit: "INR/unit" },
     { section: "Final", name: "Projected Profit at Full Container Load", formula: "Profit per Unit × Container Size", result: projectedProfitAtFullContainer, unit: "INR" },
   ];
+  // Refine banking breakdown using actual expected revenue
+  const foreignContractValue = expectedRevenue / contractRate;
+  const banking = computeBankingCharges(s, foreignContractValue);
+  const forex = computeForexImpact(s, foreignContractValue, netProfit);
+
   return {
     supplierTotal, packagingTotal, inlandTotal, documentationTotal,
     customsTotal, freightTotal, insuranceTotal, bankingTotal, miscTotal,
@@ -580,8 +585,10 @@ export function computeCoreINR(s: CalculatorState): Computed {
     riskLevel, marginSafetyScore, dealQualityScore,
     forexExposure, selectedMinimumPrice, selectedWalkAwayPrice,
     isConsistent, validationErrors, auditRows, marginLockTriggered,
+    banking, forex,
   };
 }
+
 
 export const compute = computeCoreINR;
 
