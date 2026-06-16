@@ -372,14 +372,17 @@ export default function Calculator() {
         )}
 
         <Tabs defaultValue="inputs" className="space-y-5">
-          <TabsList className="grid grid-cols-2 md:grid-cols-6 w-full h-auto p-1 bg-secondary">
+          <TabsList className="grid grid-cols-2 md:grid-cols-8 w-full h-auto p-1 bg-secondary">
             <TabsTrigger value="inputs" className="py-2.5">1. Inputs</TabsTrigger>
-            <TabsTrigger value="profit" className="py-2.5">2. Profit</TabsTrigger>
-            <TabsTrigger value="incoterms" className="py-2.5">3. Incoterms</TabsTrigger>
-            <TabsTrigger value="negotiation" className="py-2.5">4. Negotiation</TabsTrigger>
-            <TabsTrigger value="scenario" className="py-2.5">5. Scenarios</TabsTrigger>
-            <TabsTrigger value="audit" className="py-2.5">6. Audit</TabsTrigger>
+            <TabsTrigger value="banking" className="py-2.5">2. Banking & Forex</TabsTrigger>
+            <TabsTrigger value="profit" className="py-2.5">3. Profit</TabsTrigger>
+            <TabsTrigger value="incoterms" className="py-2.5">4. Incoterms</TabsTrigger>
+            <TabsTrigger value="negotiation" className="py-2.5">5. Negotiation</TabsTrigger>
+            <TabsTrigger value="scenario" className="py-2.5">6. Scenarios</TabsTrigger>
+            <TabsTrigger value="audit" className="py-2.5">7. Audit</TabsTrigger>
+            <TabsTrigger value="admin" className="py-2.5">8. Admin</TabsTrigger>
           </TabsList>
+
 
           {/* INPUTS — accordion grouping */}
           <TabsContent value="inputs" className="space-y-5">
