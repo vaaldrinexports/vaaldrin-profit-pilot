@@ -1,5 +1,87 @@
 export type Incoterm = "EXW" | "FOB" | "CFR" | "CIF";
 export type ContractCurrency = "INR" | "USD" | "EUR" | "GBP" | "AED";
+export type PaymentMethod = "SWIFT" | "DP" | "DA" | "LC";
+
+export interface BankingTariff {
+  // Fixed (INR)
+  inward_remittance_charge: number;
+  export_bill_collection_charge: number;
+  export_bill_advance_remittance_handling: number;
+  export_bill_dishonour_charge: number;
+  export_bill_writeoff_charge: number;
+  reimbursement_claim_charge: number;
+  export_due_date_extension: number;
+  edf_gr_approval_charge: number;
+  edf_gr_waiver_certificate: number;
+  export_lc_advising_customer: number;
+  export_lc_advising_non_customer: number;
+  export_lc_amendment_customer: number;
+  export_lc_amendment_non_customer: number;
+  export_lc_transfer: number;
+  courier_export_documents: number;
+  swift_outward_remittance: number;
+  outward_remittance_charge: number;
+  duplicate_firc_brc_swift: number;
+  certificate_attestation: number;
+  swift_tracer: number;
+  manual_brc: number;
+  ebrc: number;
+  // Variable
+  gst_percent: number;
+  forex_spread_percent: number;
+  correspondent_bank_fee_usd: number;
+  // Percentage-based
+  export_bill_negotiation_rate_percent: number;
+  export_bill_negotiation_minimum: number;
+  advance_against_export_bill_rate_percent: number;
+  advance_against_export_bill_minimum: number;
+  export_bill_crystallization_rate_percent: number;
+  export_bill_crystallization_minimum: number;
+  setoff_fixed: number;
+  setoff_rate_percent: number;
+  commission_in_lieu_rate_percent: number;
+  // Whether this exporter is an Axis customer (affects LC advising)
+  is_axis_customer: boolean;
+}
+
+export const defaultBankingTariff: BankingTariff = {
+  inward_remittance_charge: 300,
+  export_bill_collection_charge: 1250,
+  export_bill_advance_remittance_handling: 1250,
+  export_bill_dishonour_charge: 1250,
+  export_bill_writeoff_charge: 1250,
+  reimbursement_claim_charge: 1000,
+  export_due_date_extension: 500,
+  edf_gr_approval_charge: 1000,
+  edf_gr_waiver_certificate: 1000,
+  export_lc_advising_customer: 1500,
+  export_lc_advising_non_customer: 2000,
+  export_lc_amendment_customer: 750,
+  export_lc_amendment_non_customer: 1000,
+  export_lc_transfer: 2000,
+  courier_export_documents: 1000,
+  swift_outward_remittance: 500,
+  outward_remittance_charge: 1000,
+  duplicate_firc_brc_swift: 100,
+  certificate_attestation: 250,
+  swift_tracer: 500,
+  manual_brc: 0,
+  ebrc: 0,
+  gst_percent: 18,
+  forex_spread_percent: 1.0,
+  correspondent_bank_fee_usd: 20,
+  export_bill_negotiation_rate_percent: 0.03,
+  export_bill_negotiation_minimum: 2000,
+  advance_against_export_bill_rate_percent: 0.0625,
+  advance_against_export_bill_minimum: 1000,
+  export_bill_crystallization_rate_percent: 0.125,
+  export_bill_crystallization_minimum: 2000,
+  setoff_fixed: 1250,
+  setoff_rate_percent: 0.125,
+  commission_in_lieu_rate_percent: 0.125,
+  is_axis_customer: true,
+};
+
 
 export interface CalculatorState {
   // Shipment
@@ -64,9 +146,14 @@ export interface CalculatorState {
   currencyConversion: number;
   otherBanking: number;
 
+  // Banking module
+  paymentMethod: PaymentMethod;
+  bankingTariff: BankingTariff;
+
   // Misc
   miscCost: number;
   contingencyPct: number;
+
 
   // Incentives
   rodtepPct: number;
@@ -129,6 +216,9 @@ export const defaultState: CalculatorState = {
   targetProfitPct: 18, minProfitAmount: 0, minProfitPct: 8, marginLock: false,
   buyerCounterOffer: 0, requestedDiscountPct: 0,
   containerKg: 20000,
+  paymentMethod: "SWIFT",
+  bankingTariff: defaultBankingTariff,
+
 };
 
 const num = (n: number) => (isFinite(n) ? n : 0);
@@ -156,6 +246,30 @@ export interface BuyerQuote {
   totalContractValue: number;
 }
 
+export interface BankingBreakdown {
+  inwardRemittance: number;
+  collection: number;
+  lcAdvising: number;
+  lcAmendment: number;
+  negotiation: number;
+  courier: number;
+  correspondentFee: number;
+  forexSpread: number;
+  subtotal: number;
+  gst: number;
+  total: number;
+}
+
+export interface ForexImpact {
+  foreignCurrencyAmount: number;
+  expectedExchangeRate: number;
+  actualExchangeRate: number;
+  expectedInrRealization: number;
+  actualInrRealization: number;
+  forexGainLoss: number; // positive = gain, negative = loss
+  netProfitAfterForex: number;
+}
+
 export interface Computed {
   supplierTotal: number;
   packagingTotal: number;
@@ -174,9 +288,9 @@ export interface Computed {
   forexBufferAmount: number;
   protectedCost: number;
 
-  breakEvenPrice: number; // per unit INR
-  targetSellingPrice: number; // selected Incoterm, per unit INR
-  recommendedPrice: number; // selected Incoterm, per unit INR
+  breakEvenPrice: number;
+  targetSellingPrice: number;
+  recommendedPrice: number;
   expectedRevenue: number;
   netProfit: number;
   profitPct: number;
@@ -185,29 +299,11 @@ export interface Computed {
   projectedProfitAtFullContainer: number;
   showFullContainerProjection: boolean;
 
-  // Incoterm prices (per unit INR)
-  exwPrice: number;
-  fobPrice: number;
-  cfrPrice: number;
-  cifPrice: number;
-  exwRevenue: number;
-  fobRevenue: number;
-  cfrRevenue: number;
-  cifRevenue: number;
+  exwPrice: number; fobPrice: number; cfrPrice: number; cifPrice: number;
+  exwRevenue: number; fobRevenue: number; cfrRevenue: number; cifRevenue: number;
+  minExw: number; minFob: number; minCfr: number; minCif: number;
+  walkExw: number; walkFob: number; walkCfr: number; walkCif: number;
 
-  // Minimum acceptable prices per unit INR
-  minExw: number;
-  minFob: number;
-  minCfr: number;
-  minCif: number;
-
-  // Walk away (break-even based, per unit INR)
-  walkExw: number;
-  walkFob: number;
-  walkCfr: number;
-  walkCif: number;
-
-  // Per unit component costs used by waterfall
   perUnit: {
     supplier: number; packaging: number; inland: number; docs: number;
     customs: number; freight: number; insurance: number; banking: number;
@@ -218,14 +314,80 @@ export interface Computed {
   marginSafetyScore: number;
   dealQualityScore: number;
 
-  forexExposure: number; // diff (market - bank) * value
+  forexExposure: number;
   selectedMinimumPrice: number;
   selectedWalkAwayPrice: number;
   marginLockTriggered: boolean;
   isConsistent: boolean;
   validationErrors: string[];
   auditRows: AuditRow[];
+
+  // Banking & Forex modules
+  banking: BankingBreakdown;
+  forex: ForexImpact;
 }
+
+/**
+ * Calculate banking charges (INR) using Axis-style tariff rules.
+ * `foreignCurrencyAmount` is the export bill value in the contract currency.
+ */
+export function computeBankingCharges(s: CalculatorState, foreignCurrencyAmount: number): BankingBreakdown {
+  const t = s.bankingTariff;
+  const usdToInr = num(s.actualBankUsdRate) || 83;
+  const contractToInr = getActualBankRate(s.contractCurrency, s) || 1;
+  const billValueInr = num(foreignCurrencyAmount) * contractToInr;
+
+  const inwardRemittance = num(t.inward_remittance_charge);
+  const correspondentFee = num(t.correspondent_bank_fee_usd) * usdToInr;
+  const courier = num(t.courier_export_documents);
+
+  const collection = num(t.export_bill_collection_charge);
+  const lcAdvising = t.is_axis_customer ? num(t.export_lc_advising_customer) : num(t.export_lc_advising_non_customer);
+  const lcAmendment = t.is_axis_customer ? num(t.export_lc_amendment_customer) : num(t.export_lc_amendment_non_customer);
+
+  const negotiationRaw = billValueInr * num(t.export_bill_negotiation_rate_percent) / 100;
+  const negotiation = Math.max(negotiationRaw, num(t.export_bill_negotiation_minimum));
+
+  const forexSpread = num(foreignCurrencyAmount) * contractToInr * num(t.forex_spread_percent) / 100;
+
+  let subtotal = 0;
+  switch (s.paymentMethod) {
+    case "SWIFT":
+      subtotal = inwardRemittance + correspondentFee + forexSpread;
+      break;
+    case "DP":
+    case "DA":
+      subtotal = collection + courier + inwardRemittance + forexSpread;
+      break;
+    case "LC":
+      subtotal = lcAdvising + courier + negotiation + inwardRemittance + forexSpread;
+      break;
+  }
+  const gst = subtotal * num(t.gst_percent) / 100;
+  return {
+    inwardRemittance, collection, lcAdvising, lcAmendment, negotiation, courier,
+    correspondentFee, forexSpread,
+    subtotal, gst, total: subtotal + gst,
+  };
+}
+
+export function computeForexImpact(s: CalculatorState, foreignCurrencyAmount: number, netProfitInr: number): ForexImpact {
+  const expectedExchangeRate = getMarketRate(s.contractCurrency, s);
+  const actualExchangeRate = getActualBankRate(s.contractCurrency, s);
+  const expectedInrRealization = foreignCurrencyAmount * expectedExchangeRate;
+  const actualInrRealization = foreignCurrencyAmount * actualExchangeRate;
+  const forexGainLoss = actualInrRealization - expectedInrRealization; // negative = loss
+  return {
+    foreignCurrencyAmount,
+    expectedExchangeRate,
+    actualExchangeRate,
+    expectedInrRealization,
+    actualInrRealization,
+    forexGainLoss,
+    netProfitAfterForex: netProfitInr + forexGainLoss,
+  };
+}
+
 
 export function computeCoreINR(s: CalculatorState): Computed {
   const q = Math.max(0, num(s.quantity));
@@ -238,8 +400,15 @@ export function computeCoreINR(s: CalculatorState): Computed {
   const customsTotal = num(s.chaCharges) + num(s.portHandling) + num(s.terminalHandling) + num(s.customsClearance) + num(s.containerHandling);
   const freightTotal = num(s.oceanFreight) + num(s.airFreight) + num(s.freightForwarderFee) + num(s.localDestination);
   const insuranceTotal = num(s.cargoInsurance);
-  const bankingTotal = num(s.swiftCharges) + num(s.bankCharges) + num(s.exportRealization) + num(s.currencyConversion) + num(s.otherBanking);
+  const legacyBanking = num(s.swiftCharges) + num(s.bankCharges) + num(s.exportRealization) + num(s.currencyConversion) + num(s.otherBanking);
+  // Proxy foreign-currency value to size module banking (small effect on cost)
+  const contractRate = getActualBankRate(s.contractCurrency, s) || 1;
+  const proxyContractValueInr = supplierTotal * (1 + num(s.targetProfitPct) / 100) + packagingTotal + inlandTotal + documentationTotal + customsTotal + freightTotal + insuranceTotal;
+  const proxyForeign = proxyContractValueInr / contractRate;
+  const moduleBankingProxy = computeBankingCharges(s, proxyForeign);
+  const bankingTotal = legacyBanking + moduleBankingProxy.total;
   const miscTotal = num(s.miscCost);
+
 
   const exwDirectCost = supplierTotal + packagingTotal;
   const fobDirectCost = exwDirectCost + inlandTotal + documentationTotal + customsTotal;
@@ -396,6 +565,11 @@ export function computeCoreINR(s: CalculatorState): Computed {
     { section: "Final", name: "Profit per Unit", formula: "Net Profit ÷ Shipment Quantity", result: profitPerUnit, unit: "INR/unit" },
     { section: "Final", name: "Projected Profit at Full Container Load", formula: "Profit per Unit × Container Size", result: projectedProfitAtFullContainer, unit: "INR" },
   ];
+  // Refine banking breakdown using actual expected revenue
+  const foreignContractValue = expectedRevenue / contractRate;
+  const banking = computeBankingCharges(s, foreignContractValue);
+  const forex = computeForexImpact(s, foreignContractValue, netProfit);
+
   return {
     supplierTotal, packagingTotal, inlandTotal, documentationTotal,
     customsTotal, freightTotal, insuranceTotal, bankingTotal, miscTotal,
@@ -411,8 +585,10 @@ export function computeCoreINR(s: CalculatorState): Computed {
     riskLevel, marginSafetyScore, dealQualityScore,
     forexExposure, selectedMinimumPrice, selectedWalkAwayPrice,
     isConsistent, validationErrors, auditRows, marginLockTriggered,
+    banking, forex,
   };
 }
+
 
 export const compute = computeCoreINR;
 

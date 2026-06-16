@@ -372,14 +372,17 @@ export default function Calculator() {
         )}
 
         <Tabs defaultValue="inputs" className="space-y-5">
-          <TabsList className="grid grid-cols-2 md:grid-cols-6 w-full h-auto p-1 bg-secondary">
+          <TabsList className="grid grid-cols-2 md:grid-cols-8 w-full h-auto p-1 bg-secondary">
             <TabsTrigger value="inputs" className="py-2.5">1. Inputs</TabsTrigger>
-            <TabsTrigger value="profit" className="py-2.5">2. Profit</TabsTrigger>
-            <TabsTrigger value="incoterms" className="py-2.5">3. Incoterms</TabsTrigger>
-            <TabsTrigger value="negotiation" className="py-2.5">4. Negotiation</TabsTrigger>
-            <TabsTrigger value="scenario" className="py-2.5">5. Scenarios</TabsTrigger>
-            <TabsTrigger value="audit" className="py-2.5">6. Audit</TabsTrigger>
+            <TabsTrigger value="banking" className="py-2.5">2. Banking & Forex</TabsTrigger>
+            <TabsTrigger value="profit" className="py-2.5">3. Profit</TabsTrigger>
+            <TabsTrigger value="incoterms" className="py-2.5">4. Incoterms</TabsTrigger>
+            <TabsTrigger value="negotiation" className="py-2.5">5. Negotiation</TabsTrigger>
+            <TabsTrigger value="scenario" className="py-2.5">6. Scenarios</TabsTrigger>
+            <TabsTrigger value="audit" className="py-2.5">7. Audit</TabsTrigger>
+            <TabsTrigger value="admin" className="py-2.5">8. Admin</TabsTrigger>
           </TabsList>
+
 
           {/* INPUTS — accordion grouping */}
           <TabsContent value="inputs" className="space-y-5">
@@ -776,7 +779,168 @@ export default function Calculator() {
               </div>
             </GroupCard>
           </TabsContent>
+
+          {/* BANKING & FOREX */}
+
+          <TabsContent value="banking" className="space-y-5">
+            <GroupCard icon={Landmark} title="Payment method" subtitle="Bank charges automatically adjust based on the agreed payment terms">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <FieldLabel hint="Controls which banking charges apply">Payment method</FieldLabel>
+                  <Select value={s.paymentMethod} onValueChange={(v) => set("paymentMethod", v as any)}>
+                    <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SWIFT">Direct SWIFT Transfer</SelectItem>
+                      <SelectItem value="DP">Documents Against Payment (D/P)</SelectItem>
+                      <SelectItem value="DA">Documents Against Acceptance (D/A)</SelectItem>
+                      <SelectItem value="LC">Letter of Credit (LC)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <NumField label="GST %" value={s.bankingTariff.gst_percent} onChange={(v) => set("bankingTariff", { ...s.bankingTariff, gst_percent: v })} step={0.5} suffix="%" />
+                <NumField label="Forex spread %" value={s.bankingTariff.forex_spread_percent} onChange={(v) => set("bankingTariff", { ...s.bankingTariff, forex_spread_percent: v })} step={0.05} suffix="%" hint="Bank's hidden FX margin on conversion" />
+                <NumField label="Correspondent bank fee" value={s.bankingTariff.correspondent_bank_fee_usd} onChange={(v) => set("bankingTariff", { ...s.bankingTariff, correspondent_bank_fee_usd: v })} suffix="USD" />
+              </div>
+            </GroupCard>
+
+            <GroupCard icon={Landmark} title="Banking charges breakdown" subtitle={`Auto-calculated for ${s.paymentMethod === "SWIFT" ? "Direct SWIFT Transfer" : s.paymentMethod === "DP" ? "D/P" : s.paymentMethod === "DA" ? "D/A" : "Letter of Credit"}`}>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {s.paymentMethod === "SWIFT" && <>
+                  <KPI label="Inward remittance" value={fmtINR(c.banking.inwardRemittance)} />
+                  <KPI label="Correspondent fee" value={fmtINR(c.banking.correspondentFee)} sub={`${s.bankingTariff.correspondent_bank_fee_usd} USD`} />
+                  <KPI label="Forex spread" value={fmtINR(c.banking.forexSpread)} sub={`${fmtNum(s.bankingTariff.forex_spread_percent)}%`} />
+                </>}
+                {(s.paymentMethod === "DP" || s.paymentMethod === "DA") && <>
+                  <KPI label="Export bill collection" value={fmtINR(c.banking.collection)} />
+                  <KPI label="Courier" value={fmtINR(c.banking.courier)} />
+                  <KPI label="Inward remittance" value={fmtINR(c.banking.inwardRemittance)} />
+                  <KPI label="Forex spread" value={fmtINR(c.banking.forexSpread)} />
+                </>}
+                {s.paymentMethod === "LC" && <>
+                  <KPI label="LC advising" value={fmtINR(c.banking.lcAdvising)} sub={s.bankingTariff.is_axis_customer ? "Customer rate" : "Non-customer rate"} />
+                  <KPI label="Courier" value={fmtINR(c.banking.courier)} />
+                  <KPI label="Negotiation (0.03% min ₹2,000)" value={fmtINR(c.banking.negotiation)} />
+                  <KPI label="Inward remittance" value={fmtINR(c.banking.inwardRemittance)} />
+                  <KPI label="Forex spread" value={fmtINR(c.banking.forexSpread)} />
+                </>}
+                <KPI label="Subtotal" value={fmtINR(c.banking.subtotal)} />
+                <KPI label={`GST @ ${fmtNum(s.bankingTariff.gst_percent)}%`} value={fmtINR(c.banking.gst)} />
+                <KPI label="Total banking charges" value={fmtINR(c.banking.total)} tone="gold" />
+              </div>
+            </GroupCard>
+
+            <GroupCard icon={Globe2} title="Forex impact" subtitle="Gain or loss from exchange rate movement between expected and actual realization">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <KPI label="Foreign currency amount" value={`${s.contractCurrency} ${fmtNum(c.forex.foreignCurrencyAmount)}`} />
+                <KPI label="Expected rate (market)" value={`₹${fmtNum(c.forex.expectedExchangeRate)}`} />
+                <KPI label="Actual rate (bank)" value={`₹${fmtNum(c.forex.actualExchangeRate)}`} />
+                <KPI label="Forex gain/loss" value={fmtINR(c.forex.forexGainLoss)} tone={c.forex.forexGainLoss >= 0 ? "green" : "red"} />
+                <KPI label="Expected INR realization" value={fmtINR(c.forex.expectedInrRealization)} />
+                <KPI label="Actual INR realization" value={fmtINR(c.forex.actualInrRealization)} />
+                <KPI label="Net profit (before forex)" value={fmtINR(c.netProfit)} />
+                <KPI label="Net profit after forex" value={fmtINR(c.forex.netProfitAfterForex)} tone={c.forex.netProfitAfterForex >= c.netProfit ? "green" : "red"} />
+              </div>
+              <p className="text-xs text-muted-foreground italic">Formula: Forex Gain/Loss = (Actual − Expected) × Foreign Currency Amount. Configure rates under Inputs → Currency & forex protection.</p>
+            </GroupCard>
+
+            <GroupCard icon={FileText} title="Cost dashboard" subtitle="Complete cost stack including banking and forex">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <KPI label="Product cost" value={fmtINR(c.supplierTotal)} />
+                <KPI label="Packaging" value={fmtINR(c.packagingTotal)} />
+                <KPI label="Inland transport" value={fmtINR(c.inlandTotal)} />
+                <KPI label="Customs & documentation" value={fmtINR(c.customsTotal + c.documentationTotal)} />
+                <KPI label="Freight" value={fmtINR(c.freightTotal)} />
+                <KPI label="Insurance" value={fmtINR(c.insuranceTotal)} />
+                <KPI label="Banking charges" value={fmtINR(c.bankingTotal)} />
+                <KPI label="Forex gain/loss" value={fmtINR(c.forex.forexGainLoss)} tone={c.forex.forexGainLoss >= 0 ? "green" : "red"} />
+                <KPI label="Total export cost" value={fmtINR(c.totalCost)} tone="warn" />
+                <KPI label="Net profit" value={fmtINR(c.netProfit)} tone={c.profitPct > 15 ? "green" : c.profitPct >= 8 ? "warn" : "red"} />
+                <KPI label="Net profit %" value={`${fmtNum(c.profitPct)}%`} tone={c.profitPct > 15 ? "green" : c.profitPct >= 8 ? "warn" : "red"} />
+                <KPI label="Break-even export price" value={fmtINR(c.breakEvenPrice)} sub="per unit" />
+              </div>
+            </GroupCard>
+          </TabsContent>
+
+          {/* ADMIN — Banking tariff editor */}
+          <TabsContent value="admin" className="space-y-5">
+            <Card className="p-4 border-warning/40 bg-warning/5 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-warning mt-0.5 shrink-0" />
+              <div className="text-sm">
+                <div className="font-semibold">Banking tariff settings</div>
+                <div className="text-muted-foreground">Update these values whenever your bank publishes a new tariff schedule. Defaults follow Axis Bank Trade &amp; Forex charges.</div>
+              </div>
+            </Card>
+
+            <GroupCard icon={Landmark} title="Customer status">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="rounded-lg border bg-secondary/40 p-4 flex items-center justify-between gap-4">
+                  <div>
+                    <div className="font-semibold text-sm">Axis Bank customer</div>
+                    <div className="text-xs text-muted-foreground">Lower LC advising/amendment rates apply</div>
+                  </div>
+                  <Switch checked={s.bankingTariff.is_axis_customer} onCheckedChange={(v) => set("bankingTariff", { ...s.bankingTariff, is_axis_customer: v })} />
+                </div>
+                <Button variant="outline" onClick={() => { if (confirm("Reset banking tariff to Axis Bank defaults?")) { set("bankingTariff", defaultState.bankingTariff); toast.success("Tariff reset"); } }}>
+                  <RotateCcw className="w-4 h-4 mr-2" />Reset to Axis Bank defaults
+                </Button>
+              </div>
+            </GroupCard>
+
+            <GroupCard icon={Wallet} title="Fixed charges (INR)" subtitle="Per-transaction fees published by the bank">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {([
+                  ["inward_remittance_charge","Inward remittance charge"],
+                  ["export_bill_collection_charge","Export bill collection"],
+                  ["export_bill_advance_remittance_handling","Advance remittance handling"],
+                  ["export_bill_dishonour_charge","Export bill dishonour"],
+                  ["export_bill_writeoff_charge","Export bill write-off"],
+                  ["reimbursement_claim_charge","Reimbursement claim"],
+                  ["export_due_date_extension","Due date extension"],
+                  ["edf_gr_approval_charge","EDF / GR approval"],
+                  ["edf_gr_waiver_certificate","EDF / GR waiver certificate"],
+                  ["export_lc_advising_customer","LC advising (customer)"],
+                  ["export_lc_advising_non_customer","LC advising (non-customer)"],
+                  ["export_lc_amendment_customer","LC amendment (customer)"],
+                  ["export_lc_amendment_non_customer","LC amendment (non-customer)"],
+                  ["export_lc_transfer","LC transfer"],
+                  ["courier_export_documents","Courier — export documents"],
+                  ["swift_outward_remittance","SWIFT outward remittance"],
+                  ["outward_remittance_charge","Outward remittance"],
+                  ["duplicate_firc_brc_swift","Duplicate FIRC / BRC / SWIFT"],
+                  ["certificate_attestation","Certificate attestation"],
+                  ["swift_tracer","SWIFT tracer"],
+                  ["manual_brc","Manual BRC"],
+                  ["ebrc","eBRC"],
+                ] as const).map(([key, label]) => (
+                  <NumField key={key} label={label} value={(s.bankingTariff as any)[key]} onChange={(v) => set("bankingTariff", { ...s.bankingTariff, [key]: v })} suffix="₹" />
+                ))}
+              </div>
+            </GroupCard>
+
+            <GroupCard icon={TrendingUp} title="Percentage-based charges" subtitle="Calculated dynamically against bill value, subject to a minimum">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <NumField label="Bill negotiation %" value={s.bankingTariff.export_bill_negotiation_rate_percent} onChange={(v) => set("bankingTariff", { ...s.bankingTariff, export_bill_negotiation_rate_percent: v })} step={0.001} suffix="%" />
+                <NumField label="Bill negotiation minimum" value={s.bankingTariff.export_bill_negotiation_minimum} onChange={(v) => set("bankingTariff", { ...s.bankingTariff, export_bill_negotiation_minimum: v })} suffix="₹" />
+                <NumField label="Advance against bill %" value={s.bankingTariff.advance_against_export_bill_rate_percent} onChange={(v) => set("bankingTariff", { ...s.bankingTariff, advance_against_export_bill_rate_percent: v })} step={0.001} suffix="%" />
+                <NumField label="Advance against bill minimum" value={s.bankingTariff.advance_against_export_bill_minimum} onChange={(v) => set("bankingTariff", { ...s.bankingTariff, advance_against_export_bill_minimum: v })} suffix="₹" />
+                <NumField label="Bill crystallization %" value={s.bankingTariff.export_bill_crystallization_rate_percent} onChange={(v) => set("bankingTariff", { ...s.bankingTariff, export_bill_crystallization_rate_percent: v })} step={0.001} suffix="%" />
+                <NumField label="Bill crystallization minimum" value={s.bankingTariff.export_bill_crystallization_minimum} onChange={(v) => set("bankingTariff", { ...s.bankingTariff, export_bill_crystallization_minimum: v })} suffix="₹" />
+                <NumField label="Set-off fixed" value={s.bankingTariff.setoff_fixed} onChange={(v) => set("bankingTariff", { ...s.bankingTariff, setoff_fixed: v })} suffix="₹" />
+                <NumField label="Set-off %" value={s.bankingTariff.setoff_rate_percent} onChange={(v) => set("bankingTariff", { ...s.bankingTariff, setoff_rate_percent: v })} step={0.001} suffix="%" />
+                <NumField label="Commission in lieu of exchange %" value={s.bankingTariff.commission_in_lieu_rate_percent} onChange={(v) => set("bankingTariff", { ...s.bankingTariff, commission_in_lieu_rate_percent: v })} step={0.001} suffix="%" />
+              </div>
+            </GroupCard>
+
+            <GroupCard icon={Sparkles} title="Variable charges">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <NumField label="GST %" value={s.bankingTariff.gst_percent} onChange={(v) => set("bankingTariff", { ...s.bankingTariff, gst_percent: v })} step={0.5} suffix="%" />
+                <NumField label="Forex spread %" value={s.bankingTariff.forex_spread_percent} onChange={(v) => set("bankingTariff", { ...s.bankingTariff, forex_spread_percent: v })} step={0.05} suffix="%" />
+                <NumField label="Correspondent bank fee" value={s.bankingTariff.correspondent_bank_fee_usd} onChange={(v) => set("bankingTariff", { ...s.bankingTariff, correspondent_bank_fee_usd: v })} suffix="USD" />
+              </div>
+            </GroupCard>
+          </TabsContent>
         </Tabs>
+
 
         <footer className="text-center text-xs text-muted-foreground py-6 border-t mt-8">
           <div className="font-semibold tracking-widest" style={{ color: "var(--gold)" }}>VAALDRIN EXPORTS</div>
