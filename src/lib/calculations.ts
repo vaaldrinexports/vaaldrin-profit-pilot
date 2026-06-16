@@ -146,9 +146,14 @@ export interface CalculatorState {
   currencyConversion: number;
   otherBanking: number;
 
+  // Banking module
+  paymentMethod: PaymentMethod;
+  bankingTariff: BankingTariff;
+
   // Misc
   miscCost: number;
   contingencyPct: number;
+
 
   // Incentives
   rodtepPct: number;
