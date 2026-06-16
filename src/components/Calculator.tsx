@@ -880,7 +880,7 @@ export default function Calculator() {
                   </div>
                   <Switch checked={s.bankingTariff.is_axis_customer} onCheckedChange={(v) => set("bankingTariff", { ...s.bankingTariff, is_axis_customer: v })} />
                 </div>
-                <Button variant="outline" onClick={() => { if (confirm("Reset banking tariff to Axis Bank defaults?")) { set("bankingTariff", defaultStateImport.bankingTariff); toast.success("Tariff reset"); } }}>
+                <Button variant="outline" onClick={() => { if (confirm("Reset banking tariff to Axis Bank defaults?")) { set("bankingTariff", defaultState.bankingTariff); toast.success("Tariff reset"); } }}>
                   <RotateCcw className="w-4 h-4 mr-2" />Reset to Axis Bank defaults
                 </Button>
               </div>
