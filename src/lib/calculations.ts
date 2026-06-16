@@ -216,6 +216,9 @@ export const defaultState: CalculatorState = {
   targetProfitPct: 18, minProfitAmount: 0, minProfitPct: 8, marginLock: false,
   buyerCounterOffer: 0, requestedDiscountPct: 0,
   containerKg: 20000,
+  paymentMethod: "SWIFT",
+  bankingTariff: defaultBankingTariff,
+
 };
 
 const num = (n: number) => (isFinite(n) ? n : 0);
