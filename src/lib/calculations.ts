@@ -400,8 +400,15 @@ export function computeCoreINR(s: CalculatorState): Computed {
   const customsTotal = num(s.chaCharges) + num(s.portHandling) + num(s.terminalHandling) + num(s.customsClearance) + num(s.containerHandling);
   const freightTotal = num(s.oceanFreight) + num(s.airFreight) + num(s.freightForwarderFee) + num(s.localDestination);
   const insuranceTotal = num(s.cargoInsurance);
-  const bankingTotal = num(s.swiftCharges) + num(s.bankCharges) + num(s.exportRealization) + num(s.currencyConversion) + num(s.otherBanking);
+  const legacyBanking = num(s.swiftCharges) + num(s.bankCharges) + num(s.exportRealization) + num(s.currencyConversion) + num(s.otherBanking);
+  // Proxy foreign-currency value to size module banking (small effect on cost)
+  const contractRate = getActualBankRate(s.contractCurrency, s) || 1;
+  const proxyContractValueInr = supplierTotal * (1 + num(s.targetProfitPct) / 100) + packagingTotal + inlandTotal + documentationTotal + customsTotal + freightTotal + insuranceTotal;
+  const proxyForeign = proxyContractValueInr / contractRate;
+  const moduleBankingProxy = computeBankingCharges(s, proxyForeign);
+  const bankingTotal = legacyBanking + moduleBankingProxy.total;
   const miscTotal = num(s.miscCost);
+
 
   const exwDirectCost = supplierTotal + packagingTotal;
   const fobDirectCost = exwDirectCost + inlandTotal + documentationTotal + customsTotal;
