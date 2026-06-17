@@ -518,20 +518,51 @@ export default function Calculator() {
                 </AccItem>
 
                 <AccItem value="forex" icon={Globe2} title="Currency & forex protection" summary={`${s.contractCurrency} @ ${fmtNum(getActualBankRate(s.contractCurrency, s))}`}>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <NumField label="Market USD rate" value={s.marketUsdRate} onChange={(v) => set("marketUsdRate", v)} step={0.01} suffix="₹" />
-                    <NumField label="Actual bank USD rate" value={s.actualBankUsdRate} onChange={(v) => set("actualBankUsdRate", v)} step={0.01} suffix="₹" hint="Used for actual profit calculation" />
-                    <NumField label="Market EUR rate" value={s.marketEurRate} onChange={(v) => set("marketEurRate", v)} step={0.01} suffix="₹" />
-                    <NumField label="Actual bank EUR rate" value={s.actualBankEurRate} onChange={(v) => set("actualBankEurRate", v)} step={0.01} suffix="₹" />
-                    <NumField label="Market GBP rate" value={s.marketGbpRate} onChange={(v) => set("marketGbpRate", v)} step={0.01} suffix="₹" />
-                    <NumField label="Actual bank GBP rate" value={s.actualBankGbpRate} onChange={(v) => set("actualBankGbpRate", v)} step={0.01} suffix="₹" />
-                    <NumField label="Market AED rate" value={s.marketAedRate} onChange={(v) => set("marketAedRate", v)} step={0.01} suffix="₹" />
-                    <NumField label="Actual bank AED rate" value={s.actualBankAedRate} onChange={(v) => set("actualBankAedRate", v)} step={0.01} suffix="₹" />
-                    <NumField label="Forex risk buffer" value={s.forexBufferPct} onChange={(v) => set("forexBufferPct", v)} step={0.1} suffix="%" />
-                    <NumField label="Forex exposure (informational)" value={calculateForexExposure(c.expectedRevenue, s)} onChange={() => {}} readOnly suffix="₹" />
-                  </div>
-                  <p className="mt-3 text-xs text-muted-foreground italic">Selected {s.contractCurrency}: market ₹{fmtNum(getMarketRate(s.contractCurrency, s))}, bank ₹{fmtNum(getActualBankRate(s.contractCurrency, s))}. Forex is informational and never changes core INR pricing unless entered as a banking cost.</p>
+                  {(() => {
+                    const cc = s.contractCurrency;
+                    const marketKey = `market${cc.charAt(0)}${cc.slice(1).toLowerCase()}Rate` as
+                      | "marketUsdRate" | "marketEurRate" | "marketGbpRate" | "marketAedRate";
+                    const bankKey = `actualBank${cc.charAt(0)}${cc.slice(1).toLowerCase()}Rate` as
+                      | "actualBankUsdRate" | "actualBankEurRate" | "actualBankGbpRate" | "actualBankAedRate";
+                    const fetchLive = async () => {
+                      try {
+                        toast.loading(`Fetching live ${cc}/INR rate…`, { id: "fx" });
+                        const r = await fetch(`https://open.er-api.com/v6/latest/${cc}`);
+                        const j = await r.json();
+                        const rate = j?.rates?.INR;
+                        if (!rate || typeof rate !== "number") throw new Error("No INR rate in response");
+                        const rounded = Math.round(rate * 100) / 100;
+                        set(marketKey, rounded);
+                        const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toLocaleString() : "today";
+                        toast.success(`Live ${cc}/INR = ₹${rounded} (as of ${ts})`, { id: "fx" });
+                      } catch (e) {
+                        toast.error(`Could not fetch live ${cc} rate. Enter manually.`, { id: "fx" });
+                      }
+                    };
+                    return (
+                      <>
+                        <div className="mb-4 flex items-center justify-between gap-3 rounded-md bg-primary/5 px-3 py-2 text-xs">
+                          <span className="text-foreground/80">
+                            Only the selected contract currency (<strong>{cc}</strong>) is editable. Change it in the Buyer & Product tab to switch.
+                          </span>
+                          <Button type="button" size="sm" variant="outline" onClick={fetchLive}>
+                            <Globe2 className="w-3.5 h-3.5 mr-1.5" /> Fetch live rate
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                          <NumField label={`Market ${cc} rate`} value={s[marketKey]} onChange={(v) => set(marketKey, v)} step={0.01} suffix="₹" hint="Click Fetch live rate to auto-fill today's market rate" />
+                          <NumField label={`Actual bank ${cc} rate`} value={s[bankKey]} onChange={(v) => set(bankKey, v)} step={0.01} suffix="₹" hint="Rate your bank actually credits — typically lower than market" />
+                          <NumField label="Forex risk buffer" value={s.forexBufferPct} onChange={(v) => set("forexBufferPct", v)} step={0.1} suffix="%" />
+                          <NumField label="Forex exposure (informational)" value={calculateForexExposure(c.expectedRevenue, s)} onChange={() => {}} readOnly suffix="₹" />
+                        </div>
+                        <p className="mt-3 text-xs text-muted-foreground italic">
+                          Selected {cc}: market ₹{fmtNum(getMarketRate(cc, s))}, bank ₹{fmtNum(getActualBankRate(cc, s))}. Forex is informational and never changes core INR pricing unless entered as a banking cost.
+                        </p>
+                      </>
+                    );
+                  })()}
                 </AccItem>
+
               </Accordion>
             </Card>
           </TabsContent>
