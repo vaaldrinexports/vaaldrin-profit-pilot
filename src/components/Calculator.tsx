@@ -495,18 +495,10 @@ export default function Calculator() {
                   </div>
                 </AccItem>
 
-                <AccItem value="banking" icon={Landmark} title="Banking costs" summary={fmtINR(c.bankingTotal)}>
-                  <div className="mb-4 rounded-md bg-warning/10 px-3 py-2 text-xs text-foreground/80">
-                    Enter shipment totals. Include the expected FX spread under currency conversion; it is often the largest hidden bank cost.
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <NumField label="SWIFT — shipment total" value={s.swiftCharges} onChange={(v) => set("swiftCharges", v)} suffix="₹" hint="Typical test range: ₹1,000–₹3,000" />
-                    <NumField label="Bank fees — shipment total" value={s.bankCharges} onChange={(v) => set("bankCharges", v)} suffix="₹" hint="Typical test range: ₹1,000–₹5,000" />
-                    <NumField label="Export realization — total" value={s.exportRealization} onChange={(v) => set("exportRealization", v)} suffix="₹" />
-                    <NumField label="FX spread — shipment total" value={s.currencyConversion} onChange={(v) => set("currencyConversion", v)} suffix="₹" hint="Bank rate spread across the full invoice; often ₹10,000–₹50,000+" />
-                    <NumField label="Other banking — total" value={s.otherBanking} onChange={(v) => set("otherBanking", v)} suffix="₹" />
-                  </div>
-                </AccItem>
+                {/* Legacy "Banking costs" inputs removed. Banking is now auto-calculated
+                    in the Banking & Forex tab from Axis Bank tariffs + payment method. */}
+
+
 
                 <AccItem value="misc" icon={Wallet} title="Miscellaneous & contingency" summary={fmtINR(c.miscTotal + c.contingencyAmount)}>
                   <div className="grid grid-cols-2 gap-4">
