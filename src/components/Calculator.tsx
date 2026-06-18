@@ -514,6 +514,16 @@ export default function Calculator() {
             <p className="text-xs text-primary-foreground/60 mt-0.5 hidden sm:block">Export costing & quotation system</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <Select value={docType} onValueChange={(v) => setDocType(v as DocType)}>
+              <SelectTrigger className="h-9 w-[180px] sm:w-[210px] bg-primary-foreground/10 border-gold/30 text-primary-foreground text-xs sm:text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DOC_TYPES.map((d) => (
+                  <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button size="sm" onClick={generatePDF} className="bg-gold hover:bg-gold/90 text-gold-foreground font-semibold">
               <FileDown className="w-4 h-4 mr-1.5" />
               <span className="hidden sm:inline">Generate PDF</span>
