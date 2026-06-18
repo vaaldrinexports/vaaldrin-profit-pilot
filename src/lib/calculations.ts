@@ -653,14 +653,6 @@ export function fmtINR(n: number) {
   if (!isFinite(n)) n = 0;
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(n);
 }
-export function fmtUSD(n: number) {
-  if (!isFinite(n)) n = 0;
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(n);
-}
-export function fmtEUR(n: number) {
-  if (!isFinite(n)) n = 0;
-  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(n);
-}
 export function fmtCurrency(n: number, currency: ContractCurrency) {
   if (!isFinite(n)) n = 0;
   const locale = currency === "EUR" ? "de-DE" : currency === "GBP" ? "en-GB" : currency === "AED" ? "en-AE" : "en-US";
@@ -671,11 +663,7 @@ export function fmtNum(n: number, d = 2) {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: d, minimumFractionDigits: d }).format(n);
 }
 
-export function profitColor(pct: number) {
-  if (pct > 15) return "text-success";
-  if (pct >= 8) return "text-warning";
-  return "text-deep-red";
-}
+
 
 export function applyScenario(s: CalculatorState, scenario: string): CalculatorState {
   const next = { ...s };
