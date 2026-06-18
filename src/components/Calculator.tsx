@@ -1328,7 +1328,7 @@ export default function Calculator() {
         </footer>
 
         <div className="print-area hidden print:block">
-          <QuotationPreview s={s} priceINR={incotermPrice} totalINR={c.expectedRevenue} forPrint />
+          <DocumentPreview s={s} priceINR={incotermPrice} docType={docType} forPrint />
         </div>
       </main>
     </div>
