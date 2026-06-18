@@ -686,15 +686,39 @@ export default function Calculator() {
                         toast.error(`Could not fetch live ${cc} rate. Enter manually.`, { id: "fx" });
                       }
                     };
+                    const fetchAll = async () => {
+                      try {
+                        toast.loading("Fetching all 4 FX rates…", { id: "fxall" });
+                        const r = await fetch(`https://open.er-api.com/v6/latest/INR`);
+                        const j = await r.json();
+                        const rates = j?.rates;
+                        if (!rates) throw new Error("No rates");
+                        const pairs: Array<[ContractCurrency, "marketUsdRate" | "marketEurRate" | "marketGbpRate" | "marketAedRate"]> = [
+                          ["USD", "marketUsdRate"], ["EUR", "marketEurRate"], ["GBP", "marketGbpRate"], ["AED", "marketAedRate"],
+                        ];
+                        for (const [code, key] of pairs) {
+                          const inrPer = rates[code] ? 1 / rates[code] : null;
+                          if (inrPer) set(key, Math.round(inrPer * 100) / 100);
+                        }
+                        toast.success("Updated USD, EUR, GBP & AED market rates", { id: "fxall" });
+                      } catch {
+                        toast.error("Could not fetch live rates", { id: "fxall" });
+                      }
+                    };
                     return (
                       <>
                         <div className="mb-4 flex items-center justify-between gap-3 rounded-md bg-primary/5 px-3 py-2 text-xs">
                           <span className="text-foreground/80">
                             Only the selected contract currency (<strong>{cc}</strong>) is editable. Change it in the Buyer & Product tab to switch.
                           </span>
-                          <Button type="button" size="sm" variant="outline" onClick={fetchLive}>
-                            <Globe2 className="w-3.5 h-3.5 mr-1.5" /> Fetch live rate
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button type="button" size="sm" variant="outline" onClick={fetchLive}>
+                              <Globe2 className="w-3.5 h-3.5 mr-1.5" /> Fetch {cc}
+                            </Button>
+                            <Button type="button" size="sm" variant="outline" onClick={fetchAll}>
+                              <Globe2 className="w-3.5 h-3.5 mr-1.5" /> Fetch all 4
+                            </Button>
+                          </div>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                           <NumField label={`Market ${cc} rate`} value={s[marketKey]} onChange={(v) => set(marketKey, v)} step={0.01} suffix="₹" hint="Click Fetch live rate to auto-fill today's market rate" />
