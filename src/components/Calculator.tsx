@@ -6,7 +6,7 @@ import {
   calculateForexExposure, getActualBankRate, getBuyerQuote, getMarketRate, type CalculatorState, type Incoterm, type ContractCurrency,
 } from "@/lib/calculations";
 import {
-  searchHsCodes, lookupDuty, findCountryByName, COUNTRIES,
+  searchHsCodes, lookupDuty, findCountryByName, COUNTRIES, INDIAN_PORTS,
   type HsCodeEntry,
 } from "@/lib/trade-data";
 import { generateQuotationPDF } from "@/lib/pdf";
@@ -227,7 +227,145 @@ function DestinationDutyCard({ country, hsCode }: { country: string; hsCode: str
   );
 }
 
+/* ---------- Port weather (Open-Meteo, free, no key) ---------- */
+
+interface WeatherData {
+  current: { temperature_2m: number; weather_code: number; wind_speed_10m: number };
+  daily: {
+    time: string[];
+    weather_code: number[];
+    temperature_2m_max: number[];
+    temperature_2m_min: number[];
+    precipitation_sum: number[];
+    wind_speed_10m_max: number[];
+  };
+}
+
+const WMO_CODE: Record<number, { label: string; icon: string }> = {
+  0: { label: "Clear", icon: "☀️" },
+  1: { label: "Mostly clear", icon: "🌤️" },
+  2: { label: "Partly cloudy", icon: "⛅" },
+  3: { label: "Overcast", icon: "☁️" },
+  45: { label: "Fog", icon: "🌫️" }, 48: { label: "Rime fog", icon: "🌫️" },
+  51: { label: "Light drizzle", icon: "🌦️" }, 53: { label: "Drizzle", icon: "🌦️" }, 55: { label: "Heavy drizzle", icon: "🌧️" },
+  61: { label: "Light rain", icon: "🌦️" }, 63: { label: "Rain", icon: "🌧️" }, 65: { label: "Heavy rain", icon: "🌧️" },
+  71: { label: "Light snow", icon: "🌨️" }, 73: { label: "Snow", icon: "🌨️" }, 75: { label: "Heavy snow", icon: "❄️" },
+  80: { label: "Rain showers", icon: "🌦️" }, 81: { label: "Heavy showers", icon: "🌧️" }, 82: { label: "Violent showers", icon: "⛈️" },
+  95: { label: "Thunderstorm", icon: "⛈️" }, 96: { label: "Storm + hail", icon: "⛈️" }, 99: { label: "Severe storm", icon: "⛈️" },
+};
+
+function wmoInfo(code: number) {
+  return WMO_CODE[code] ?? { label: `Code ${code}`, icon: "❓" };
+}
+
+function PortWeatherCard() {
+  const [portCode, setPortCode] = useState<string>(INDIAN_PORTS[0].code);
+  const [data, setData] = useState<WeatherData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const port = INDIAN_PORTS.find((p) => p.code === portCode)!;
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${port.lat}&longitude=${port.lon}&current=temperature_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max&forecast_days=4&timezone=auto`;
+    fetch(url)
+      .then((r) => r.json())
+      .then((j) => { if (!cancelled) setData(j); })
+      .catch(() => { if (!cancelled) setError("Could not load weather"); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [portCode, port.lat, port.lon]);
+
+  const riskFlag = useMemo(() => {
+    if (!data) return null;
+    const next3 = data.daily.weather_code.slice(0, 4);
+    const rain = data.daily.precipitation_sum.slice(0, 4);
+    const wind = data.daily.wind_speed_10m_max.slice(0, 4);
+    const heavyCodes = new Set([65, 75, 81, 82, 95, 96, 99]);
+    const hasStorm = next3.some((c) => heavyCodes.has(c));
+    const hasHeavyRain = rain.some((mm) => mm >= 40);
+    const hasHighWind = wind.some((w) => w >= 50);
+    if (hasStorm || hasHeavyRain || hasHighWind) {
+      return { level: "high", msg: "Potential vessel/loading delay risk in next 4 days" };
+    }
+    if (rain.some((mm) => mm >= 15)) {
+      return { level: "medium", msg: "Moderate rain forecast — minor delay possible" };
+    }
+    return { level: "low", msg: "Clear sailing conditions forecast" };
+  }, [data]);
+
+  return (
+    <div className="mt-4 rounded-lg border bg-secondary/30 p-4">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <Globe2 className="w-4 h-4 text-gold" /> Port weather & delay risk
+        </div>
+        <Select value={portCode} onValueChange={setPortCode}>
+          <SelectTrigger className="h-8 w-64 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent className="max-h-72">
+            {INDIAN_PORTS.map((p) => (
+              <SelectItem key={p.code} value={p.code} className="text-xs">{p.name} — {p.city}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {loading && <div className="text-xs text-muted-foreground">Loading live forecast for {port.name}…</div>}
+      {error && <div className="text-xs text-deep-red">{error}</div>}
+
+      {data && !loading && (
+        <>
+          <div className="flex items-center justify-between gap-4 mb-3 rounded-md bg-background p-3 border">
+            <div className="flex items-center gap-3">
+              <div className="text-3xl">{wmoInfo(data.current.weather_code).icon}</div>
+              <div>
+                <div className="text-xs uppercase text-muted-foreground">Now at {port.name}</div>
+                <div className="font-bold text-lg">{Math.round(data.current.temperature_2m)}°C · {wmoInfo(data.current.weather_code).label}</div>
+                <div className="text-xs text-muted-foreground">Wind {Math.round(data.current.wind_speed_10m)} km/h</div>
+              </div>
+            </div>
+            {riskFlag && (
+              <div className={
+                "shrink-0 rounded-md px-3 py-2 text-xs font-medium " +
+                (riskFlag.level === "high" ? "bg-deep-red/15 text-deep-red" :
+                 riskFlag.level === "medium" ? "bg-warning/15 text-warning" :
+                 "bg-success/15 text-success")
+              }>
+                {riskFlag.level === "high" ? "⚠ " : riskFlag.level === "medium" ? "▲ " : "✓ "}
+                {riskFlag.msg}
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {data.daily.time.slice(0, 4).map((day, i) => {
+              const info = wmoInfo(data.daily.weather_code[i]);
+              const date = new Date(day);
+              const label = i === 0 ? "Today" : date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+              return (
+                <div key={day} className="rounded-md border bg-card p-2 text-xs">
+                  <div className="font-medium">{label}</div>
+                  <div className="text-xl my-1">{info.icon}</div>
+                  <div className="text-muted-foreground">{info.label}</div>
+                  <div className="font-semibold tabular-nums">{Math.round(data.daily.temperature_2m_max[i])}° / {Math.round(data.daily.temperature_2m_min[i])}°</div>
+                  <div className="text-muted-foreground tabular-nums">🌧 {data.daily.precipitation_sum[i].toFixed(1)} mm · 💨 {Math.round(data.daily.wind_speed_10m_max[i])} km/h</div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">Live data from Open-Meteo. Use for loading-window planning and delay-risk disclosures to buyer.</p>
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ---------- Main component ---------- */
+
+
 
 
 
@@ -634,6 +772,7 @@ export default function Calculator() {
                     <NumField label="Forwarder fee" value={s.freightForwarderFee} onChange={(v) => set("freightForwarderFee", v)} suffix="₹" />
                     <NumField label="Local destination" value={s.localDestination} onChange={(v) => set("localDestination", v)} suffix="₹" />
                   </div>
+                  <PortWeatherCard />
                 </AccItem>
 
                 <AccItem value="insurance" icon={ShieldCheck} title="Insurance" summary={fmtINR(c.insuranceTotal)}>
