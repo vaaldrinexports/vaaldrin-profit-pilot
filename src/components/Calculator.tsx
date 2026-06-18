@@ -5,6 +5,10 @@ import {
   applyScenario, evaluatePrice, evaluateDiscount, profitVariance, convertToINR, convertFromINR,
   calculateForexExposure, getActualBankRate, getBuyerQuote, getMarketRate, type CalculatorState, type Incoterm, type ContractCurrency,
 } from "@/lib/calculations";
+import {
+  searchHsCodes, lookupDuty, findCountryByName, COUNTRIES, HS_CODES,
+  type HsCodeEntry, type CountryInfo,
+} from "@/lib/trade-data";
 import { generateQuotationPDF } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
