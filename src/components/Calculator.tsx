@@ -9,7 +9,35 @@ import {
   searchHsCodes, lookupDuty, findCountryByName, COUNTRIES, INDIAN_PORTS,
   type HsCodeEntry,
 } from "@/lib/trade-data";
-import { generateQuotationPDF } from "@/lib/pdf";
+import {
+  generateQuotationPDF,
+  generateProformaInvoicePDF,
+  generateCommercialInvoicePDF,
+  generatePackingListPDF,
+  generateInternalCostSheetPDF,
+  generatePurchaseOrderPDF,
+  generateSalesContractPDF,
+} from "@/lib/pdf";
+import logoAsset from "@/assets/vaaldrin-logo.png.asset.json";
+
+type DocType =
+  | "quotation"
+  | "proforma"
+  | "commercial_invoice"
+  | "packing_list"
+  | "internal_cost"
+  | "purchase_order"
+  | "sales_contract";
+
+const DOC_TYPES: { value: DocType; label: string; title: string }[] = [
+  { value: "quotation",          label: "Export Quotation",       title: "EXPORT QUOTATION" },
+  { value: "proforma",           label: "Proforma Invoice",       title: "PROFORMA INVOICE" },
+  { value: "commercial_invoice", label: "Commercial Invoice",     title: "COMMERCIAL INVOICE" },
+  { value: "packing_list",       label: "Packing List",           title: "PACKING LIST" },
+  { value: "internal_cost",      label: "Internal Cost Sheet",    title: "INTERNAL COST ANALYSIS" },
+  { value: "purchase_order",     label: "Purchase Order",         title: "PURCHASE ORDER" },
+  { value: "sales_contract",     label: "Export Sales Contract",  title: "EXPORT SALES CONTRACT" },
+];
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -371,6 +399,7 @@ function PortWeatherCard() {
 
 export default function Calculator() {
   const [s, setS] = useState<CalculatorState>(defaultState);
+  const [docType, setDocType] = useState<DocType>("quotation");
 
   useEffect(() => {
     const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
@@ -445,9 +474,17 @@ export default function Calculator() {
     }
   };
   const generatePDF = async () => {
-    if (lockTriggered) { toast.error("Margin lock active — adjust pricing first"); return; }
+    if (lockTriggered && docType !== "internal_cost") { toast.error("Margin lock active — adjust pricing first"); return; }
     if (c.validationErrors.length) { toast.error(c.validationErrors[0]); return; }
-    await generateQuotationPDF(s);
+    switch (docType) {
+      case "quotation":          await generateQuotationPDF(s); break;
+      case "proforma":           await generateProformaInvoicePDF(s); break;
+      case "commercial_invoice": await generateCommercialInvoicePDF(s); break;
+      case "packing_list":       await generatePackingListPDF(s); break;
+      case "internal_cost":      await generateInternalCostSheetPDF(s); break;
+      case "purchase_order":     await generatePurchaseOrderPDF(s); break;
+      case "sales_contract":     await generateSalesContractPDF(s); break;
+    }
   };
   const buyerQuote = getBuyerQuote(incotermPrice, s.quantity, s);
   const buyerUnitPrice = buyerQuote.unitPrice;
@@ -477,6 +514,16 @@ export default function Calculator() {
             <p className="text-xs text-primary-foreground/60 mt-0.5 hidden sm:block">Export costing & quotation system</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <Select value={docType} onValueChange={(v) => setDocType(v as DocType)}>
+              <SelectTrigger className="h-9 w-[180px] sm:w-[210px] bg-primary-foreground/10 border-gold/30 text-primary-foreground text-xs sm:text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DOC_TYPES.map((d) => (
+                  <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button size="sm" onClick={generatePDF} className="bg-gold hover:bg-gold/90 text-gold-foreground font-semibold">
               <FileDown className="w-4 h-4 mr-1.5" />
               <span className="hidden sm:inline">Generate PDF</span>
@@ -968,8 +1015,8 @@ export default function Calculator() {
               </div>
             </GroupCard>
 
-            <GroupCard icon={FileText} title="Quotation preview" subtitle="What your buyer will see in the PDF">
-              <QuotationPreview s={s} priceINR={incotermPrice} totalINR={c.expectedRevenue} />
+            <GroupCard icon={FileText} title="Document preview" subtitle={`Live preview of the ${DOC_TYPES.find(d => d.value === docType)?.label}`}>
+              <DocumentPreview s={s} priceINR={incotermPrice} docType={docType} />
             </GroupCard>
           </TabsContent>
 
@@ -1281,7 +1328,7 @@ export default function Calculator() {
         </footer>
 
         <div className="print-area hidden print:block">
-          <QuotationPreview s={s} priceINR={incotermPrice} totalINR={c.expectedRevenue} forPrint />
+          <DocumentPreview s={s} priceINR={incotermPrice} docType={docType} forPrint />
         </div>
       </main>
     </div>
@@ -1359,89 +1406,253 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: "gre
   );
 }
 
-function QuotationPreview({ s, priceINR, totalINR, forPrint }: { s: CalculatorState; priceINR: number; totalINR: number; forPrint?: boolean }) {
+function DocumentPreview({ s, priceINR, docType, forPrint }: {
+  s: CalculatorState; priceINR: number; docType: DocType; forPrint?: boolean;
+}) {
   const quote = getBuyerQuote(priceINR, s.quantity, s);
   const unitPrice = quote.unitPrice;
   const total = quote.totalContractValue;
+  const meta = DOC_TYPES.find((d) => d.value === docType)!;
+
+  // Visibility per spec
+  const showPrices = docType !== "packing_list";
+  const showCommercialTerms =
+    docType === "quotation" || docType === "proforma" || docType === "purchase_order" || docType === "sales_contract" || docType === "internal_cost";
+  const showValidity = docType === "quotation" || docType === "proforma";
+  const showBank = docType === "proforma";
+  const showOriginDestination = docType === "commercial_invoice" || docType === "packing_list";
+  const showContainerInfo = docType === "packing_list";
+  const showDeclaration = docType === "commercial_invoice";
+  const isInternal = docType === "internal_cost";
+  const isContract = docType === "sales_contract";
+
+  const docNumberPrefix: Record<DocType, string> = {
+    quotation: "",
+    proforma: "PI-",
+    commercial_invoice: "CI-",
+    packing_list: "PL-",
+    internal_cost: "",
+    purchase_order: "PO-",
+    sales_contract: "SC-",
+  };
+  const docNo = `${docNumberPrefix[docType]}${s.quotationNumber}`;
+
+  const counterpartyLabel =
+    docType === "purchase_order" ? "Supplier" :
+    docType === "commercial_invoice" ? "Consignee" :
+    "Buyer";
+
+  // Internal cost summary
+  const totalCost = isInternal ? (
+    s.supplierPricePerUnit * s.quantity +
+    s.pouchCost + s.labelCost + s.cartonCost + s.palletCost + s.otherPackaging +
+    s.factoryToWarehouse + s.warehouseToPort + s.loadingCharges + s.unloadingCharges +
+    s.certificateOfOrigin + s.phytosanitary + s.fumigation + s.labTesting + s.exportDocs + s.otherCertification +
+    s.chaCharges + s.portHandling + s.terminalHandling + s.customsClearance + s.containerHandling +
+    s.oceanFreight + s.airFreight + s.freightForwarderFee + s.localDestination +
+    s.cargoInsurance +
+    s.swiftCharges + s.bankCharges + s.exportRealization + s.currencyConversion + s.otherBanking +
+    s.miscCost
+  ) : 0;
+
   return (
-    <div className={"bg-white text-black p-8 " + (forPrint ? "" : "border rounded-lg")}>
-      <div className="flex justify-between items-start border-b-4 pb-4" style={{ borderColor: "var(--gold)" }}>
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight" style={{ color: "#1a1a1a" }}>VAALDRIN EXPORTS</h2>
-          <div className="text-xs text-gray-600 mt-1 tracking-widest">EXPORT PRICING & PROFIT CONTROL</div>
+    <div className={"bg-white text-[#111827] p-8 " + (forPrint ? "" : "border rounded-lg")} style={{ fontFamily: "Helvetica, Arial, sans-serif" }}>
+      {/* HEADER */}
+      <div className="flex justify-between items-start pb-4" style={{ borderBottom: "1px solid #C99A2E" }}>
+        <div className="flex items-start gap-3">
+          <img src={logoAsset.url} alt="Vaaldrin Exports" className="w-14 h-14 object-contain" />
+          <div>
+            <div className="text-base font-bold tracking-tight">VAALDRIN EXPORTS</div>
+            <div className="text-[10px] text-[#6B7280] mt-0.5">International Trade • Export House</div>
+          </div>
         </div>
         <div className="text-right">
-          <div className="text-xl font-bold" style={{ color: "var(--deep-red)" }}>EXPORT QUOTATION</div>
-          <div className="text-sm mt-1">No: <span className="font-semibold">{s.quotationNumber}</span></div>
-          <div className="text-sm">Date: {s.quotationDate}</div>
+          <div className="text-xl font-bold" style={{ color: "#A61D24" }}>{meta.title}</div>
+          <div className="text-xs mt-1">No: <span className="font-semibold">{docNo}</span></div>
+          <div className="text-xs">Date: {s.quotationDate}</div>
+          {isInternal && <div className="text-[10px] font-bold mt-1" style={{ color: "#A61D24" }}>CONFIDENTIAL</div>}
+          {docType === "proforma" && <div className="text-[10px] italic text-[#6B7280] mt-1">PROFORMA — NOT A TAX INVOICE</div>}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6 mt-6 text-sm">
+      {/* PARTIES */}
+      <div className="grid grid-cols-2 gap-6 mt-6 text-xs">
         <div>
-          <div className="text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">Buyer</div>
-          <div className="font-semibold">{s.buyerCompany || "—"}</div>
-          <div>{s.buyerName}</div>
-          <div>{s.buyerCountry}</div>
-          <div className="text-gray-600">{s.buyerEmail}</div>
+          <SectionTitle>{docType === "sales_contract" ? "Seller" : "Exporter"}</SectionTitle>
+          <div className="font-semibold mt-1">Vaaldrin Exports</div>
+          <div className="text-[#6B7280]">India</div>
         </div>
-        <div className="text-right">
-          <div className="text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">Terms</div>
-          <div>Incoterm: <span className="font-semibold">{s.incoterm}</span></div>
-          <div>Payment: 30% Advance / 70% B/L</div>
-          <div>Validity: 30 days</div>
+        <div>
+          <SectionTitle>{counterpartyLabel}</SectionTitle>
+          <div className="font-semibold mt-1">{s.buyerCompany || "—"}</div>
+          {s.buyerName && <div>{s.buyerName}</div>}
+          {s.buyerCountry && <div>{s.buyerCountry}</div>}
+          {s.buyerEmail && <div className="text-[#6B7280]">{s.buyerEmail}</div>}
         </div>
       </div>
 
-      <table className="w-full mt-6 text-sm border-collapse">
+      {/* Shipment / Origin */}
+      {(showOriginDestination || showContainerInfo) && (
+        <div className="mt-5 grid grid-cols-3 gap-4 text-xs border-t pt-4" style={{ borderColor: "#E5E7EB" }}>
+          {showOriginDestination && <><div><div className="text-[#6B7280]">Country of Origin</div><div className="font-semibold">India</div></div>
+          <div><div className="text-[#6B7280]">Country of Destination</div><div className="font-semibold">{s.buyerCountry || "—"}</div></div>
+          <div><div className="text-[#6B7280]">Incoterm</div><div className="font-semibold">{s.incoterm} (Incoterms 2020)</div></div></>}
+          {showContainerInfo && !showOriginDestination && <>
+            <div><div className="text-[#6B7280]">Container No.</div><div className="font-semibold">—</div></div>
+            <div><div className="text-[#6B7280]">Seal No.</div><div className="font-semibold">—</div></div>
+            <div><div className="text-[#6B7280]">Incoterm</div><div className="font-semibold">{s.incoterm}</div></div>
+          </>}
+        </div>
+      )}
+
+      {/* PRODUCT TABLE */}
+      <table className="w-full mt-6 text-xs border-collapse">
         <thead>
-          <tr style={{ backgroundColor: "#1a1a1a", color: "var(--gold)" }}>
-            <th className="text-left p-2">Product</th>
-            <th className="text-left p-2">Grade</th>
-            <th className="text-left p-2">HS Code</th>
-            <th className="text-right p-2">Qty</th>
-            <th className="text-left p-2">UoM</th>
-            <th className="text-right p-2">Unit Price ({s.contractCurrency})</th>
-            <th className="text-right p-2">Total ({s.contractCurrency})</th>
+          <tr style={{ backgroundColor: "#F8F9FA", color: "#111827" }}>
+            <th className="text-left p-2 border" style={{ borderColor: "#E5E7EB" }}>HS Code</th>
+            <th className="text-left p-2 border" style={{ borderColor: "#E5E7EB" }}>Description</th>
+            <th className="text-right p-2 border" style={{ borderColor: "#E5E7EB" }}>Qty</th>
+            <th className="text-left p-2 border" style={{ borderColor: "#E5E7EB" }}>UoM</th>
+            {showPrices && <th className="text-right p-2 border" style={{ borderColor: "#E5E7EB" }}>Unit Price ({s.contractCurrency})</th>}
+            {showPrices && <th className="text-right p-2 border" style={{ borderColor: "#E5E7EB" }}>Amount ({s.contractCurrency})</th>}
+            {docType === "packing_list" && <>
+              <th className="text-right p-2 border" style={{ borderColor: "#E5E7EB" }}>Net Wt (kg)</th>
+              <th className="text-right p-2 border" style={{ borderColor: "#E5E7EB" }}>Gross Wt (kg)</th>
+            </>}
           </tr>
         </thead>
         <tbody>
-          <tr className="border-b">
-            <td className="p-2">{s.productName || "—"}</td>
-            <td className="p-2">{s.productGrade || "—"}</td>
-            <td className="p-2">{s.hsCode || "—"}</td>
-            <td className="p-2 text-right">{s.quantity}</td>
-            <td className="p-2">{s.uom}</td>
-            <td className="p-2 text-right tabular-nums">{fmtCurrency(unitPrice, s.contractCurrency)}</td>
-            <td className="p-2 text-right tabular-nums font-bold">{fmtCurrency(total, s.contractCurrency)}</td>
+          <tr>
+            <td className="p-2 border" style={{ borderColor: "#E5E7EB" }}>{s.hsCode || "—"}</td>
+            <td className="p-2 border" style={{ borderColor: "#E5E7EB" }}>{s.productName || "—"}{s.productGrade ? ` — ${s.productGrade}` : ""}</td>
+            <td className="p-2 border text-right" style={{ borderColor: "#E5E7EB" }}>{s.quantity}</td>
+            <td className="p-2 border" style={{ borderColor: "#E5E7EB" }}>{s.uom}</td>
+            {showPrices && <td className="p-2 border text-right tabular-nums" style={{ borderColor: "#E5E7EB" }}>{fmtCurrency(unitPrice, s.contractCurrency)}</td>}
+            {showPrices && <td className="p-2 border text-right tabular-nums font-bold" style={{ borderColor: "#E5E7EB" }}>{fmtCurrency(total, s.contractCurrency)}</td>}
+            {docType === "packing_list" && <>
+              <td className="p-2 border text-right tabular-nums" style={{ borderColor: "#E5E7EB" }}>{s.quantity.toFixed(2)}</td>
+              <td className="p-2 border text-right tabular-nums" style={{ borderColor: "#E5E7EB" }}>{(s.quantity * 1.05).toFixed(2)}</td>
+            </>}
           </tr>
         </tbody>
       </table>
 
-      <div className="mt-6 text-sm">
-        <div className="border p-4 rounded">
-          <div className="text-xs uppercase text-gray-500">Total Contract Value ({s.contractCurrency})</div>
-          <div className="font-bold text-2xl tabular-nums">{fmtCurrency(total, s.contractCurrency)}</div>
+      {/* TOTALS */}
+      {showPrices && !isInternal && (
+        <div className="mt-4 flex justify-end">
+          <div className="border p-3 rounded text-right min-w-[260px]" style={{ borderColor: "#E5E7EB" }}>
+            <div className="text-[10px] uppercase tracking-widest text-[#6B7280]">
+              {docType === "commercial_invoice" ? "Invoice Total" : "Total Contract Value"} ({s.contractCurrency})
+            </div>
+            <div className="font-bold text-xl tabular-nums" style={{ color: "#A61D24" }}>{fmtCurrency(total, s.contractCurrency)}</div>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="mt-6 text-xs text-gray-700 leading-relaxed">
-        <div className="font-bold uppercase tracking-widest mb-1">Terms & Conditions</div>
-        <ul className="list-disc list-inside space-y-0.5">
-          <li>Payment Terms: 30% advance, 70% against B/L copy.</li>
-          <li>Delivery Terms: {s.incoterm} as per Incoterms 2020.</li>
-          <li>Validity: 30 days from quotation date.</li>
-          <li>Subject to product availability at time of order confirmation.</li>
-          <li>All disputes subject to jurisdiction of issuing office.</li>
-        </ul>
-      </div>
-
-      <div className="mt-12 flex justify-end">
-        <div className="text-right">
-          <div className="text-sm font-bold">For Vaaldrin Exports</div>
-          <div className="border-t border-gray-400 w-48 mt-12 pt-1 text-xs text-gray-600">Authorized Signatory</div>
+      {/* COMMERCIAL TERMS */}
+      {showCommercialTerms && (
+        <div className="mt-6 grid grid-cols-2 gap-6 text-xs">
+          <div>
+            <SectionTitle>Commercial Terms</SectionTitle>
+            <div className="mt-2 space-y-1">
+              <KV k="Incoterm" v={`${s.incoterm} (Incoterms 2020)`} />
+              <KV k="Currency" v={s.contractCurrency} />
+              <KV k="Payment Terms" v="30% Advance / 70% against B/L" />
+              {showValidity && <KV k="Validity" v="30 days from issue date" />}
+              <KV k="Country of Origin" v="India" />
+            </div>
+          </div>
+          {showBank && (
+            <div>
+              <SectionTitle>Bank Details</SectionTitle>
+              <div className="mt-2 space-y-1">
+                <KV k="Bank Name" v="Axis Bank" />
+                <KV k="Account No." v="—" />
+                <KV k="SWIFT" v="AXISINBB" />
+                <KV k="Branch" v="—" />
+              </div>
+            </div>
+          )}
         </div>
+      )}
+
+      {/* INTERNAL COST SUMMARY */}
+      {isInternal && (
+        <div className="mt-6 text-xs">
+          <SectionTitle>Cost & Profit Summary</SectionTitle>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <KV k="Total Cost (INR)" v={fmtCurrency(totalCost, "INR")} />
+            <KV k="Selling Price / unit" v={`${s.contractCurrency} ${fmtCurrency(unitPrice, s.contractCurrency)}`} />
+            <KV k="Contract Value" v={`${s.contractCurrency} ${fmtCurrency(total, s.contractCurrency)}`} />
+            <KV k="Country Risk" v={s.buyerCountry || "—"} />
+          </div>
+          <div className="mt-3 text-[10px] font-bold text-center text-[#6B7280] uppercase tracking-widest">
+            Confidential — Internal Use Only
+          </div>
+        </div>
+      )}
+
+      {/* DECLARATION */}
+      {showDeclaration && (
+        <div className="mt-6 text-xs italic text-[#6B7280] border-t pt-3" style={{ borderColor: "#E5E7EB" }}>
+          We hereby certify that the goods described above are of Indian origin.
+        </div>
+      )}
+
+      {/* CONTRACT CLAUSES */}
+      {isContract && (
+        <div className="mt-6 text-xs space-y-1.5">
+          <SectionTitle>Contract Clauses</SectionTitle>
+          <div className="mt-2"><span className="font-bold">1. Goods:</span> {s.productName || "—"}{s.productGrade ? ` (${s.productGrade})` : ""}, HS {s.hsCode || "—"}</div>
+          <div><span className="font-bold">2. Quantity:</span> {s.quantity} {s.uom}</div>
+          <div><span className="font-bold">3. Price:</span> {s.contractCurrency} {fmtCurrency(unitPrice, s.contractCurrency)} per {s.uom}</div>
+          <div><span className="font-bold">4. Payment:</span> 30% advance with order; 70% against B/L copy via SWIFT</div>
+          <div><span className="font-bold">5. Delivery:</span> {s.incoterm} as per Incoterms 2020</div>
+          <div><span className="font-bold">6. Inspection:</span> Pre-shipment inspection at seller's premises</div>
+          <div><span className="font-bold">7. Force Majeure:</span> Standard exclusion clause applies</div>
+          <div><span className="font-bold">8. Disputes:</span> Arbitration under ICC Rules; jurisdiction of seller</div>
+        </div>
+      )}
+
+      {/* SIGNATURES */}
+      <div className="mt-10 pt-3" style={{ borderTop: "1px solid #C99A2E" }}>
+        {isContract ? (
+          <div className="grid grid-cols-2 gap-12 text-xs">
+            <div>
+              <div className="font-bold">Buyer</div>
+              <div className="border-t border-black/60 mt-10 pt-1 text-[10px] text-[#6B7280]">Authorized Signatory</div>
+            </div>
+            <div>
+              <div className="font-bold">Seller (Vaaldrin Exports)</div>
+              <div className="border-t border-black/60 mt-10 pt-1 text-[10px] text-[#6B7280]">Authorized Signatory</div>
+            </div>
+          </div>
+        ) : !isInternal && (
+          <div className="flex justify-end">
+            <div className="text-right text-xs">
+              <div className="font-bold">For Vaaldrin Exports</div>
+              <div className="border-t border-black/60 w-48 mt-10 pt-1 text-[10px] text-[#6B7280]">Authorized Signatory</div>
+            </div>
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="text-[10px] font-bold uppercase tracking-widest pb-1" style={{ color: "#A61D24", borderBottom: "1px solid #E5E7EB" }}>
+      {children}
+    </div>
+  );
+}
+
+function KV({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex justify-between gap-3 py-0.5">
+      <span className="text-[#6B7280]">{k}</span>
+      <span className="font-semibold text-right">{v}</span>
     </div>
   );
 }
