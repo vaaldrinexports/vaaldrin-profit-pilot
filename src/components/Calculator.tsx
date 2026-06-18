@@ -399,6 +399,7 @@ function PortWeatherCard() {
 
 export default function Calculator() {
   const [s, setS] = useState<CalculatorState>(defaultState);
+  const [docType, setDocType] = useState<DocType>("quotation");
 
   useEffect(() => {
     const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
