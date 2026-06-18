@@ -6,8 +6,8 @@ import {
   calculateForexExposure, getActualBankRate, getBuyerQuote, getMarketRate, type CalculatorState, type Incoterm, type ContractCurrency,
 } from "@/lib/calculations";
 import {
-  searchHsCodes, lookupDuty, findCountryByName, COUNTRIES, HS_CODES,
-  type HsCodeEntry, type CountryInfo,
+  searchHsCodes, lookupDuty, findCountryByName, COUNTRIES,
+  type HsCodeEntry,
 } from "@/lib/trade-data";
 import { generateQuotationPDF } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
