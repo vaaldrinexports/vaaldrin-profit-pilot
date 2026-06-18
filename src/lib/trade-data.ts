@@ -194,3 +194,25 @@ export function findCountryByName(name: string): CountryInfo | null {
 // Mirror EU CET for FR/NL to save typing
 DUTY_TABLE.FR = DUTY_TABLE.DE;
 DUTY_TABLE.NL = DUTY_TABLE.DE;
+
+// ---------------- Indian export ports ----------------
+export interface IndianPort {
+  code: string;
+  name: string;
+  city: string;
+  lat: number;
+  lon: number;
+}
+
+export const INDIAN_PORTS: IndianPort[] = [
+  { code: "INNSA", name: "Jawaharlal Nehru (Nhava Sheva)", city: "Mumbai",        lat: 18.9490, lon: 72.9525 },
+  { code: "INMUN", name: "Mundra",                          city: "Gujarat",       lat: 22.7397, lon: 69.7039 },
+  { code: "INMAA", name: "Chennai",                         city: "Tamil Nadu",    lat: 13.1020, lon: 80.2922 },
+  { code: "INCCU", name: "Kolkata",                         city: "West Bengal",   lat: 22.5400, lon: 88.3100 },
+  { code: "INCOK", name: "Cochin (Kochi)",                  city: "Kerala",        lat: 9.9667,  lon: 76.2667 },
+  { code: "INVTZ", name: "Visakhapatnam",                   city: "Andhra Pradesh",lat: 17.6900, lon: 83.2200 },
+  { code: "INIXY", name: "Kandla (Deendayal)",              city: "Gujarat",       lat: 23.0167, lon: 70.2167 },
+  { code: "INTUT", name: "Tuticorin (V O Chidambaranar)",   city: "Tamil Nadu",    lat: 8.7600,  lon: 78.2000 },
+  { code: "INPAV", name: "Pipavav",                         city: "Gujarat",       lat: 20.9200, lon: 71.5300 },
+  { code: "INHZA", name: "Hazira",                          city: "Gujarat",       lat: 21.1167, lon: 72.6167 },
+];
