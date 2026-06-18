@@ -5,6 +5,10 @@ import {
   applyScenario, evaluatePrice, evaluateDiscount, profitVariance, convertToINR, convertFromINR,
   calculateForexExposure, getActualBankRate, getBuyerQuote, getMarketRate, type CalculatorState, type Incoterm, type ContractCurrency,
 } from "@/lib/calculations";
+import {
+  searchHsCodes, lookupDuty, findCountryByName, COUNTRIES,
+  type HsCodeEntry,
+} from "@/lib/trade-data";
 import { generateQuotationPDF } from "@/lib/pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,7 +128,108 @@ function KPI({ label, value, sub, tone }: { label: string; value: string; sub?: 
   );
 }
 
+/* ---------- HS code product search ---------- */
+
+function HsProductSearch({
+  productName, hsCode, onPick, onChangeProductName, onChangeHs,
+}: {
+  productName: string;
+  hsCode: string;
+  onPick: (entry: HsCodeEntry) => void;
+  onChangeProductName: (v: string) => void;
+  onChangeHs: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const suggestions = useMemo(() => searchHsCodes(productName, 6), [productName]);
+
+  return (
+    <>
+      <div className="space-y-1.5 relative">
+        <FieldLabel hint="Type a product name to auto-fill HS code, RoDTEP & duty drawback. Top 20 Indian export commodities supported.">
+          Product name
+        </FieldLabel>
+        <Input
+          value={productName}
+          placeholder="Try: Basmati Rice, Coffee, Cotton T-Shirts…"
+          onChange={(e) => { onChangeProductName(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          className="h-10 text-base"
+        />
+        {open && suggestions.length > 0 && (
+          <div className="absolute z-50 left-0 right-0 top-full mt-1 max-h-64 overflow-auto rounded-md border bg-popover shadow-lg">
+            {suggestions.map((e) => (
+              <button
+                key={e.hsCode}
+                type="button"
+                className="w-full text-left px-3 py-2 hover:bg-accent text-sm flex items-center justify-between gap-2"
+                onMouseDown={(ev) => { ev.preventDefault(); onPick(e); setOpen(false); }}
+              >
+                <span>
+                  <span className="font-medium">{e.name}</span>
+                  <span className="text-muted-foreground"> · {e.category}</span>
+                </span>
+                <span className="text-xs text-muted-foreground tabular-nums">{e.hsCode} · RoDTEP {e.rodtepPct}%</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <TextField label="HS code" value={hsCode} onChange={onChangeHs} placeholder="1006.30.20" />
+    </>
+  );
+}
+
+/* ---------- Destination duty preview ---------- */
+
+function DestinationDutyCard({ country, hsCode }: { country: string; hsCode: string }) {
+  const ci = findCountryByName(country);
+  if (!ci || !hsCode) return null;
+  const duty = lookupDuty(ci.code, hsCode);
+  if (!duty) {
+    return (
+      <div className="mt-4 rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        Destination duty preview not available for <strong>{ci.name}</strong> + HS <strong>{hsCode}</strong> (not in bundled dataset).
+      </div>
+    );
+  }
+  const effective = duty.ftaDutyPct ?? duty.mfnDutyPct;
+  const landedUpliftPct = effective + duty.vatPct;
+  return (
+    <div className="mt-4 rounded-lg border border-gold/30 bg-gold/5 p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-sm font-semibold">Destination landed-cost preview — {ci.name}</div>
+        <Badge variant="outline" className="text-xs">HS {hsCode}</Badge>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+        <div>
+          <div className="text-xs uppercase text-muted-foreground">MFN duty</div>
+          <div className="font-bold tabular-nums">{duty.mfnDutyPct}%</div>
+        </div>
+        <div>
+          <div className="text-xs uppercase text-muted-foreground">FTA / preferential</div>
+          <div className="font-bold tabular-nums">{duty.ftaDutyPct == null ? "—" : `${duty.ftaDutyPct}%`}</div>
+          {duty.ftaName && <div className="text-[10px] text-muted-foreground">{duty.ftaName}</div>}
+        </div>
+        <div>
+          <div className="text-xs uppercase text-muted-foreground">VAT / GST</div>
+          <div className="font-bold tabular-nums">{duty.vatPct}%</div>
+        </div>
+        <div>
+          <div className="text-xs uppercase text-muted-foreground">Landed uplift</div>
+          <div className="font-bold tabular-nums text-gold">≈ {fmtNum(landedUpliftPct, 1)}%</div>
+          <div className="text-[10px] text-muted-foreground">duty + VAT on CIF</div>
+        </div>
+      </div>
+      {duty.notes && <p className="mt-2 text-xs text-muted-foreground italic">Note: {duty.notes}</p>}
+      <p className="mt-1 text-[11px] text-muted-foreground">Indicative — verify with destination customs broker before final quote.</p>
+    </div>
+  );
+}
+
 /* ---------- Main component ---------- */
+
+
 
 export default function Calculator() {
   const [s, setS] = useState<CalculatorState>(defaultState);
@@ -412,14 +517,56 @@ export default function Calculator() {
                 </div>
                 <TextField label="Buyer company" value={s.buyerCompany} onChange={(v) => set("buyerCompany", v)} placeholder="ABC Trading Ltd." />
                 <TextField label="Buyer contact name" value={s.buyerName} onChange={(v) => set("buyerName", v)} />
-                <TextField label="Buyer country" value={s.buyerCountry} onChange={(v) => set("buyerCountry", v)} placeholder="Germany" />
+                <div className="space-y-1.5">
+                  <FieldLabel hint="Pick from list to enable destination duty lookup & country risk">Buyer country</FieldLabel>
+                  <Select
+                    value={(findCountryByName(s.buyerCountry)?.code) || ""}
+                    onValueChange={(code) => {
+                      const c = COUNTRIES.find((x) => x.code === code);
+                      if (c) set("buyerCountry", c.name);
+                    }}
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder={s.buyerCountry || "Select country"} />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {COUNTRIES.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          {c.name} — <span className={c.riskLevel === "Low" ? "text-success" : c.riskLevel === "Medium" ? "text-warning" : "text-deep-red"}>{c.riskLevel} risk</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {(() => {
+                    const ci = findCountryByName(s.buyerCountry);
+                    if (!ci) return <p className="text-xs text-muted-foreground">Free-text countries work too — pick from list for duty & risk data.</p>;
+                    const tone = ci.riskLevel === "Low" ? "bg-success/15 text-success" : ci.riskLevel === "Medium" ? "bg-warning/15 text-warning" : "bg-deep-red/15 text-deep-red";
+                    return (
+                      <div className={`mt-1 inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium ${tone}`}>
+                        {ci.riskLevel} risk — <span className="font-normal opacity-80">{ci.riskNotes}</span>
+                      </div>
+                    );
+                  })()}
+                </div>
                 <TextField label="Buyer email" value={s.buyerEmail} onChange={(v) => set("buyerEmail", v)} type="email" />
-                <TextField label="Product name" value={s.productName} onChange={(v) => set("productName", v)} placeholder="Basmati Rice 1121" />
+                <HsProductSearch
+                  productName={s.productName}
+                  hsCode={s.hsCode}
+                  onPick={(entry) => {
+                    set("productName", entry.name);
+                    set("hsCode", entry.hsCode);
+                    set("rodtepPct", entry.rodtepPct);
+                    set("dutyDrawbackPct", entry.dutyDrawbackPct);
+                    toast.success(`Loaded ${entry.name}: HS ${entry.hsCode} · RoDTEP ${entry.rodtepPct}% · Drawback ${entry.dutyDrawbackPct}%`);
+                  }}
+                  onChangeProductName={(v) => set("productName", v)}
+                  onChangeHs={(v) => set("hsCode", v)}
+                />
                 <TextField label="Product grade" value={s.productGrade} onChange={(v) => set("productGrade", v)} />
-                <TextField label="HS code" value={s.hsCode} onChange={(v) => set("hsCode", v)} placeholder="1006.30.20" />
                 <NumField label="Quantity" value={s.quantity} onChange={(v) => set("quantity", v)} hint="Total quantity in selected UoM" />
                 <TextField label="Unit of measure" value={s.uom} onChange={(v) => set("uom", v)} placeholder="KG" />
               </div>
+              <DestinationDutyCard country={s.buyerCountry} hsCode={s.hsCode} />
             </GroupCard>
 
             <GroupCard icon={Coins} title="Product cost" subtitle="What you pay your supplier — the foundation of pricing">
@@ -539,15 +686,39 @@ export default function Calculator() {
                         toast.error(`Could not fetch live ${cc} rate. Enter manually.`, { id: "fx" });
                       }
                     };
+                    const fetchAll = async () => {
+                      try {
+                        toast.loading("Fetching all 4 FX rates…", { id: "fxall" });
+                        const r = await fetch(`https://open.er-api.com/v6/latest/INR`);
+                        const j = await r.json();
+                        const rates = j?.rates;
+                        if (!rates) throw new Error("No rates");
+                        const pairs: Array<[ContractCurrency, "marketUsdRate" | "marketEurRate" | "marketGbpRate" | "marketAedRate"]> = [
+                          ["USD", "marketUsdRate"], ["EUR", "marketEurRate"], ["GBP", "marketGbpRate"], ["AED", "marketAedRate"],
+                        ];
+                        for (const [code, key] of pairs) {
+                          const inrPer = rates[code] ? 1 / rates[code] : null;
+                          if (inrPer) set(key, Math.round(inrPer * 100) / 100);
+                        }
+                        toast.success("Updated USD, EUR, GBP & AED market rates", { id: "fxall" });
+                      } catch {
+                        toast.error("Could not fetch live rates", { id: "fxall" });
+                      }
+                    };
                     return (
                       <>
                         <div className="mb-4 flex items-center justify-between gap-3 rounded-md bg-primary/5 px-3 py-2 text-xs">
                           <span className="text-foreground/80">
                             Only the selected contract currency (<strong>{cc}</strong>) is editable. Change it in the Buyer & Product tab to switch.
                           </span>
-                          <Button type="button" size="sm" variant="outline" onClick={fetchLive}>
-                            <Globe2 className="w-3.5 h-3.5 mr-1.5" /> Fetch live rate
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button type="button" size="sm" variant="outline" onClick={fetchLive}>
+                              <Globe2 className="w-3.5 h-3.5 mr-1.5" /> Fetch {cc}
+                            </Button>
+                            <Button type="button" size="sm" variant="outline" onClick={fetchAll}>
+                              <Globe2 className="w-3.5 h-3.5 mr-1.5" /> Fetch all 4
+                            </Button>
+                          </div>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                           <NumField label={`Market ${cc} rate`} value={s[marketKey]} onChange={(v) => set(marketKey, v)} step={0.01} suffix="₹" hint="Click Fetch live rate to auto-fill today's market rate" />
