@@ -128,7 +128,108 @@ function KPI({ label, value, sub, tone }: { label: string; value: string; sub?: 
   );
 }
 
+/* ---------- HS code product search ---------- */
+
+function HsProductSearch({
+  productName, hsCode, onPick, onChangeProductName, onChangeHs,
+}: {
+  productName: string;
+  hsCode: string;
+  onPick: (entry: HsCodeEntry) => void;
+  onChangeProductName: (v: string) => void;
+  onChangeHs: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const suggestions = useMemo(() => searchHsCodes(productName, 6), [productName]);
+
+  return (
+    <>
+      <div className="space-y-1.5 relative">
+        <FieldLabel hint="Type a product name to auto-fill HS code, RoDTEP & duty drawback. Top 20 Indian export commodities supported.">
+          Product name
+        </FieldLabel>
+        <Input
+          value={productName}
+          placeholder="Try: Basmati Rice, Coffee, Cotton T-Shirts…"
+          onChange={(e) => { onChangeProductName(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          className="h-10 text-base"
+        />
+        {open && suggestions.length > 0 && (
+          <div className="absolute z-50 left-0 right-0 top-full mt-1 max-h-64 overflow-auto rounded-md border bg-popover shadow-lg">
+            {suggestions.map((e) => (
+              <button
+                key={e.hsCode}
+                type="button"
+                className="w-full text-left px-3 py-2 hover:bg-accent text-sm flex items-center justify-between gap-2"
+                onMouseDown={(ev) => { ev.preventDefault(); onPick(e); setOpen(false); }}
+              >
+                <span>
+                  <span className="font-medium">{e.name}</span>
+                  <span className="text-muted-foreground"> · {e.category}</span>
+                </span>
+                <span className="text-xs text-muted-foreground tabular-nums">{e.hsCode} · RoDTEP {e.rodtepPct}%</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <TextField label="HS code" value={hsCode} onChange={onChangeHs} placeholder="1006.30.20" />
+    </>
+  );
+}
+
+/* ---------- Destination duty preview ---------- */
+
+function DestinationDutyCard({ country, hsCode }: { country: string; hsCode: string }) {
+  const ci = findCountryByName(country);
+  if (!ci || !hsCode) return null;
+  const duty = lookupDuty(ci.code, hsCode);
+  if (!duty) {
+    return (
+      <div className="mt-4 rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        Destination duty preview not available for <strong>{ci.name}</strong> + HS <strong>{hsCode}</strong> (not in bundled dataset).
+      </div>
+    );
+  }
+  const effective = duty.ftaDutyPct ?? duty.mfnDutyPct;
+  const landedUpliftPct = effective + duty.vatPct;
+  return (
+    <div className="mt-4 rounded-lg border border-gold/30 bg-gold/5 p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-sm font-semibold">Destination landed-cost preview — {ci.name}</div>
+        <Badge variant="outline" className="text-xs">HS {hsCode}</Badge>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+        <div>
+          <div className="text-xs uppercase text-muted-foreground">MFN duty</div>
+          <div className="font-bold tabular-nums">{duty.mfnDutyPct}%</div>
+        </div>
+        <div>
+          <div className="text-xs uppercase text-muted-foreground">FTA / preferential</div>
+          <div className="font-bold tabular-nums">{duty.ftaDutyPct == null ? "—" : `${duty.ftaDutyPct}%`}</div>
+          {duty.ftaName && <div className="text-[10px] text-muted-foreground">{duty.ftaName}</div>}
+        </div>
+        <div>
+          <div className="text-xs uppercase text-muted-foreground">VAT / GST</div>
+          <div className="font-bold tabular-nums">{duty.vatPct}%</div>
+        </div>
+        <div>
+          <div className="text-xs uppercase text-muted-foreground">Landed uplift</div>
+          <div className="font-bold tabular-nums text-gold">≈ {fmtNum(landedUpliftPct, 1)}%</div>
+          <div className="text-[10px] text-muted-foreground">duty + VAT on CIF</div>
+        </div>
+      </div>
+      {duty.notes && <p className="mt-2 text-xs text-muted-foreground italic">Note: {duty.notes}</p>}
+      <p className="mt-1 text-[11px] text-muted-foreground">Indicative — verify with destination customs broker before final quote.</p>
+    </div>
+  );
+}
+
 /* ---------- Main component ---------- */
+
+
 
 export default function Calculator() {
   const [s, setS] = useState<CalculatorState>(defaultState);
