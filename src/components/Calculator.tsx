@@ -9,7 +9,35 @@ import {
   searchHsCodes, lookupDuty, findCountryByName, COUNTRIES, INDIAN_PORTS,
   type HsCodeEntry,
 } from "@/lib/trade-data";
-import { generateQuotationPDF } from "@/lib/pdf";
+import {
+  generateQuotationPDF,
+  generateProformaInvoicePDF,
+  generateCommercialInvoicePDF,
+  generatePackingListPDF,
+  generateInternalCostSheetPDF,
+  generatePurchaseOrderPDF,
+  generateSalesContractPDF,
+} from "@/lib/pdf";
+import logoAsset from "@/assets/vaaldrin-logo.png.asset.json";
+
+type DocType =
+  | "quotation"
+  | "proforma"
+  | "commercial_invoice"
+  | "packing_list"
+  | "internal_cost"
+  | "purchase_order"
+  | "sales_contract";
+
+const DOC_TYPES: { value: DocType; label: string; title: string }[] = [
+  { value: "quotation",          label: "Export Quotation",       title: "EXPORT QUOTATION" },
+  { value: "proforma",           label: "Proforma Invoice",       title: "PROFORMA INVOICE" },
+  { value: "commercial_invoice", label: "Commercial Invoice",     title: "COMMERCIAL INVOICE" },
+  { value: "packing_list",       label: "Packing List",           title: "PACKING LIST" },
+  { value: "internal_cost",      label: "Internal Cost Sheet",    title: "INTERNAL COST ANALYSIS" },
+  { value: "purchase_order",     label: "Purchase Order",         title: "PURCHASE ORDER" },
+  { value: "sales_contract",     label: "Export Sales Contract",  title: "EXPORT SALES CONTRACT" },
+];
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
