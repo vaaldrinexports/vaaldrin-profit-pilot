@@ -444,10 +444,10 @@ export default function Calculator() {
       setS(defaultState); toast.success("Reset");
     }
   };
-  const generatePDF = () => {
+  const generatePDF = async () => {
     if (lockTriggered) { toast.error("Margin lock active — adjust pricing first"); return; }
     if (c.validationErrors.length) { toast.error(c.validationErrors[0]); return; }
-    generateQuotationPDF(s);
+    await generateQuotationPDF(s);
   };
   const buyerQuote = getBuyerQuote(incotermPrice, s.quantity, s);
   const buyerUnitPrice = buyerQuote.unitPrice;
