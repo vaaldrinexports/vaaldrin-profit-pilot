@@ -1555,21 +1555,21 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
           <div>
             <SectionTitle>Commercial Terms</SectionTitle>
             <div className="mt-2 space-y-1">
-              <Line k="Incoterm" v={`${s.incoterm} (Incoterms 2020)`} />
-              <Line k="Currency" v={s.contractCurrency} />
-              <Line k="Payment Terms" v="30% Advance / 70% against B/L" />
-              {showValidity && <Line k="Validity" v="30 days from issue date" />}
-              <Line k="Country of Origin" v="India" />
+              <KV k="Incoterm" v={`${s.incoterm} (Incoterms 2020)`} />
+              <KV k="Currency" v={s.contractCurrency} />
+              <KV k="Payment Terms" v="30% Advance / 70% against B/L" />
+              {showValidity && <KV k="Validity" v="30 days from issue date" />}
+              <KV k="Country of Origin" v="India" />
             </div>
           </div>
           {showBank && (
             <div>
               <SectionTitle>Bank Details</SectionTitle>
               <div className="mt-2 space-y-1">
-                <Line k="Bank Name" v="Axis Bank" />
-                <Line k="Account No." v="—" />
-                <Line k="SWIFT" v="AXISINBB" />
-                <Line k="Branch" v="—" />
+                <KV k="Bank Name" v="Axis Bank" />
+                <KV k="Account No." v="—" />
+                <KV k="SWIFT" v="AXISINBB" />
+                <KV k="Branch" v="—" />
               </div>
             </div>
           )}
@@ -1581,10 +1581,10 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
         <div className="mt-6 text-xs">
           <SectionTitle>Cost & Profit Summary</SectionTitle>
           <div className="mt-2 grid grid-cols-2 gap-2">
-            <Line k="Total Cost (INR)" v={fmtCurrency(totalCost, "INR")} />
-            <Line k="Selling Price / unit" v={`${s.contractCurrency} ${fmtCurrency(unitPrice, s.contractCurrency)}`} />
-            <Line k="Contract Value" v={`${s.contractCurrency} ${fmtCurrency(total, s.contractCurrency)}`} />
-            <Line k="Country Risk" v={s.buyerCountry || "—"} />
+            <KV k="Total Cost (INR)" v={fmtCurrency(totalCost, "INR")} />
+            <KV k="Selling Price / unit" v={`${s.contractCurrency} ${fmtCurrency(unitPrice, s.contractCurrency)}`} />
+            <KV k="Contract Value" v={`${s.contractCurrency} ${fmtCurrency(total, s.contractCurrency)}`} />
+            <KV k="Country Risk" v={s.buyerCountry || "—"} />
           </div>
           <div className="mt-3 text-[10px] font-bold text-center text-[#6B7280] uppercase tracking-widest">
             Confidential — Internal Use Only
@@ -1648,7 +1648,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Line({ k, v }: { k: string; v: string }) {
+function KV({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex justify-between gap-3 py-0.5">
       <span className="text-[#6B7280]">{k}</span>
