@@ -416,14 +416,56 @@ export default function Calculator() {
                 </div>
                 <TextField label="Buyer company" value={s.buyerCompany} onChange={(v) => set("buyerCompany", v)} placeholder="ABC Trading Ltd." />
                 <TextField label="Buyer contact name" value={s.buyerName} onChange={(v) => set("buyerName", v)} />
-                <TextField label="Buyer country" value={s.buyerCountry} onChange={(v) => set("buyerCountry", v)} placeholder="Germany" />
+                <div className="space-y-1.5">
+                  <FieldLabel hint="Pick from list to enable destination duty lookup & country risk">Buyer country</FieldLabel>
+                  <Select
+                    value={(findCountryByName(s.buyerCountry)?.code) || ""}
+                    onValueChange={(code) => {
+                      const c = COUNTRIES.find((x) => x.code === code);
+                      if (c) set("buyerCountry", c.name);
+                    }}
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder={s.buyerCountry || "Select country"} />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {COUNTRIES.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          {c.name} — <span className={c.riskLevel === "Low" ? "text-success" : c.riskLevel === "Medium" ? "text-warning" : "text-deep-red"}>{c.riskLevel} risk</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {(() => {
+                    const ci = findCountryByName(s.buyerCountry);
+                    if (!ci) return <p className="text-xs text-muted-foreground">Free-text countries work too — pick from list for duty & risk data.</p>;
+                    const tone = ci.riskLevel === "Low" ? "bg-success/15 text-success" : ci.riskLevel === "Medium" ? "bg-warning/15 text-warning" : "bg-deep-red/15 text-deep-red";
+                    return (
+                      <div className={`mt-1 inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium ${tone}`}>
+                        {ci.riskLevel} risk — <span className="font-normal opacity-80">{ci.riskNotes}</span>
+                      </div>
+                    );
+                  })()}
+                </div>
                 <TextField label="Buyer email" value={s.buyerEmail} onChange={(v) => set("buyerEmail", v)} type="email" />
-                <TextField label="Product name" value={s.productName} onChange={(v) => set("productName", v)} placeholder="Basmati Rice 1121" />
+                <HsProductSearch
+                  productName={s.productName}
+                  hsCode={s.hsCode}
+                  onPick={(entry) => {
+                    set("productName", entry.name);
+                    set("hsCode", entry.hsCode);
+                    set("rodtepPct", entry.rodtepPct);
+                    set("dutyDrawbackPct", entry.dutyDrawbackPct);
+                    toast.success(`Loaded ${entry.name}: HS ${entry.hsCode} · RoDTEP ${entry.rodtepPct}% · Drawback ${entry.dutyDrawbackPct}%`);
+                  }}
+                  onChangeProductName={(v) => set("productName", v)}
+                  onChangeHs={(v) => set("hsCode", v)}
+                />
                 <TextField label="Product grade" value={s.productGrade} onChange={(v) => set("productGrade", v)} />
-                <TextField label="HS code" value={s.hsCode} onChange={(v) => set("hsCode", v)} placeholder="1006.30.20" />
                 <NumField label="Quantity" value={s.quantity} onChange={(v) => set("quantity", v)} hint="Total quantity in selected UoM" />
                 <TextField label="Unit of measure" value={s.uom} onChange={(v) => set("uom", v)} placeholder="KG" />
               </div>
+              <DestinationDutyCard country={s.buyerCountry} hsCode={s.hsCode} />
             </GroupCard>
 
             <GroupCard icon={Coins} title="Product cost" subtitle="What you pay your supplier — the foundation of pricing">
