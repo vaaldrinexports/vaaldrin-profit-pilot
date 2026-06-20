@@ -755,6 +755,12 @@ export default function Calculator() {
               <DestinationDutyCard country={s.buyerCountry} hsCode={s.hsCode} />
             </GroupCard>
 
+            <MarketIntelligence
+              productName={s.productName}
+              supplierPricePerKg={s.supplierPricePerUnit}
+              uom={s.uom}
+            />
+
             <GroupCard icon={Coins} title="Product cost" subtitle="What you pay your supplier — the foundation of pricing">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <NumField label="Supplier price / unit" value={s.supplierPricePerUnit} onChange={(v) => set("supplierPricePerUnit", v)} suffix="₹" hint="Cost per unit from your supplier" />
