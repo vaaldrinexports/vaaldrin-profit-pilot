@@ -19,6 +19,7 @@ import {
   generateSalesContractPDF,
 } from "@/lib/pdf";
 import logoAsset from "@/assets/vaaldrin-logo.png.asset.json";
+import MarketIntelligence from "@/components/MarketIntelligence";
 
 type DocType =
   | "quotation"
@@ -753,6 +754,12 @@ export default function Calculator() {
               </div>
               <DestinationDutyCard country={s.buyerCountry} hsCode={s.hsCode} />
             </GroupCard>
+
+            <MarketIntelligence
+              productName={s.productName}
+              supplierPricePerKg={s.supplierPricePerUnit}
+              uom={s.uom}
+            />
 
             <GroupCard icon={Coins} title="Product cost" subtitle="What you pay your supplier — the foundation of pricing">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
