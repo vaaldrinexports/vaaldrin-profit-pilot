@@ -1621,10 +1621,10 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
             <div>
               <SectionTitle>Bank Details</SectionTitle>
               <div className="mt-2 space-y-1">
-                <KV k="Bank Name" v="Axis Bank" />
-                <KV k="Account No." v="—" />
-                <KV k="SWIFT" v="AXISINBB" />
-                <KV k="Branch" v="—" />
+                <KV k="Bank Name" v={s.companyBankName || "—"} />
+                <KV k="Account No." v={s.companyBankAccount || "—"} />
+                <KV k="SWIFT" v={s.companyBankSwift || "—"} />
+                <KV k="Branch" v={s.companyBankBranch || "—"} />
               </div>
             </div>
           )}
