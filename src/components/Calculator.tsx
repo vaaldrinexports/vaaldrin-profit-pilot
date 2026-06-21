@@ -1524,15 +1524,25 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
       <div className="grid grid-cols-2 gap-6 mt-6 text-xs">
         <div>
           <SectionTitle>{docType === "sales_contract" ? "Seller" : "Exporter"}</SectionTitle>
-          <div className="font-semibold mt-1">Vaaldrin Exports</div>
-          <div className="text-[#6B7280]">India</div>
+          <div className="font-semibold mt-1">{s.companyName || "Vaaldrin Exports"}</div>
+          {s.companyAddress && <div className="text-[#6B7280] whitespace-pre-line">{s.companyAddress}</div>}
+          {(s.companyEmail || s.companyPhone) && (
+            <div className="text-[#6B7280]">
+              {s.companyEmail}{s.companyEmail && s.companyPhone ? " · " : ""}{s.companyPhone}
+            </div>
+          )}
+          {s.companyIec && <div className="text-[#6B7280]">IEC: {s.companyIec}</div>}
+          {s.companyGstin && <div className="text-[#6B7280]">GSTIN: {s.companyGstin}</div>}
+          {s.companyFssai && <div className="text-[#6B7280]">FSSAI: {s.companyFssai}</div>}
         </div>
         <div>
           <SectionTitle>{counterpartyLabel}</SectionTitle>
           <div className="font-semibold mt-1">{s.buyerCompany || "—"}</div>
           {s.buyerName && <div>{s.buyerName}</div>}
+          {s.buyerAddress && <div className="text-[#6B7280] whitespace-pre-line">{s.buyerAddress}</div>}
           {s.buyerCountry && <div>{s.buyerCountry}</div>}
           {s.buyerEmail && <div className="text-[#6B7280]">{s.buyerEmail}</div>}
+          {s.buyerPhone && <div className="text-[#6B7280]">{s.buyerPhone}</div>}
         </div>
       </div>
 
