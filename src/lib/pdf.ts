@@ -355,10 +355,10 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
   const yBank = lastY(doc) + 18;
   drawSectionHeader(doc, "Bank Details", margin, yBank);
   drawFieldBlock(doc, margin, yBank + 18, [
-    ["Bank Name", "Axis Bank"],
-    ["Account No.", "—"],
-    ["SWIFT", "AXISINBB"],
-    ["Branch", "—"],
+    ["Bank Name", s.companyBankName || "—"],
+    ["Account No.", s.companyBankAccount || "—"],
+    ["SWIFT", s.companyBankSwift || "—"],
+    ["Branch", s.companyBankBranch || "—"],
   ], 80);
 
   // Declaration
