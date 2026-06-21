@@ -388,8 +388,10 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
 
   drawSectionHeader(doc, "Exporter", margin, 140);
   drawFieldBlock(doc, margin, 158, [
-    ["Company", "Vaaldrin Exports"],
-    ["Country", "India"],
+    ["Company", s.companyName || "Vaaldrin Exports"],
+    ["Address", s.companyAddress || "India"],
+    ...(s.companyIec ? [["IEC", s.companyIec] as [string, string]] : []),
+    ...(s.companyGstin ? [["GSTIN", s.companyGstin] as [string, string]] : []),
   ]);
 
   drawSectionHeader(doc, "Consignee", W / 3 + 10, 140);
