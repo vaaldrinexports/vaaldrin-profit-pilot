@@ -303,10 +303,11 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
 
   drawSectionHeader(doc, "Exporter", margin, 140);
   drawFieldBlock(doc, margin, 158, [
-    ["Company", "Vaaldrin Exports"],
-    ["Address", "India"],
-    ["IEC", "—"],
-    ["GSTIN", "—"],
+    ["Company", s.companyName || "Vaaldrin Exports"],
+    ["Address", s.companyAddress || "India"],
+    ["IEC", s.companyIec || "—"],
+    ["GSTIN", s.companyGstin || "—"],
+    ...(s.companyFssai ? [["FSSAI", s.companyFssai] as [string, string]] : []),
   ]);
 
   drawSectionHeader(doc, "Buyer", W / 2 + 10, 140);
