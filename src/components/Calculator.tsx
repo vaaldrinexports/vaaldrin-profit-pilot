@@ -1661,7 +1661,7 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
           <div className="mt-2"><span className="font-bold">1. Goods:</span> {s.productName || "—"}{s.productGrade ? ` (${s.productGrade})` : ""}, HS {s.hsCode || "—"}</div>
           <div><span className="font-bold">2. Quantity:</span> {s.quantity} {s.uom}</div>
           <div><span className="font-bold">3. Price:</span> {s.contractCurrency} {fmtCurrency(unitPrice, s.contractCurrency)} per {s.uom}</div>
-          <div><span className="font-bold">4. Payment:</span> 30% advance with order; 70% against B/L copy via SWIFT</div>
+          <div><span className="font-bold">4. Payment:</span> {s.paymentTerms || "To be agreed with buyer"}</div>
           <div><span className="font-bold">5. Delivery:</span> {s.incoterm} as per Incoterms 2020</div>
           <div><span className="font-bold">6. Inspection:</span> Pre-shipment inspection at seller's premises</div>
           <div><span className="font-bold">7. Force Majeure:</span> Standard exclusion clause applies</div>
