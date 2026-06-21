@@ -906,8 +906,9 @@ export default function Calculator() {
                         if (!rate || typeof rate !== "number") throw new Error("No INR rate in response");
                         const rounded = Math.round(rate * 100) / 100;
                         set(marketKey, rounded);
-                        const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toLocaleString() : "today";
-                        toast.success(`Live ${cc}/INR = ₹${rounded} (as of ${ts})`, { id: "fx" });
+                        const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString();
+                        set("fxLastUpdated", ts);
+                        toast.success(`Live ${cc}/INR = ₹${rounded} (as of ${new Date(ts).toLocaleString()})`, { id: "fx" });
                       } catch (e) {
                         toast.error(`Could not fetch live ${cc} rate. Enter manually.`, { id: "fx" });
                       }
@@ -926,6 +927,8 @@ export default function Calculator() {
                           const inrPer = rates[code] ? 1 / rates[code] : null;
                           if (inrPer) set(key, Math.round(inrPer * 100) / 100);
                         }
+                        const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString();
+                        set("fxLastUpdated", ts);
                         toast.success("Updated USD, EUR, GBP & AED market rates", { id: "fxall" });
                       } catch {
                         toast.error("Could not fetch live rates", { id: "fxall" });
