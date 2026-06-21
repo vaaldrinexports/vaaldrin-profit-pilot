@@ -746,7 +746,7 @@ export async function generateSalesContractPDF(s: CalculatorState) {
   doc.setFontSize(9.5);
   doc.setTextColor(...BRAND.text);
   doc.text("Buyer", margin, yy);
-  doc.text("Seller (Vaaldrin Exports)", W / 2 + 10, yy);
+  doc.text(`Seller (${s.companyName || "Vaaldrin Exports"})`, W / 2 + 10, yy);
   doc.setDrawColor(...BRAND.text);
   doc.setLineWidth(0.5);
   doc.line(margin, yy + 36, margin + 200, yy + 36);
