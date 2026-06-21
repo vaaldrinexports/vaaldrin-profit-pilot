@@ -411,6 +411,24 @@ export default function Calculator() {
       const now = new Date();
       setS((current) => ({ ...current, quotationNumber: `VX-${now.getFullYear()}-0001`, quotationDate: now.toISOString().slice(0, 10) }));
     }
+    // Auto-fetch live FX rates on first mount so the user is never quoting against a stale rate
+    (async () => {
+      try {
+        const r = await fetch(`https://open.er-api.com/v6/latest/INR`);
+        const j = await r.json();
+        const rates = j?.rates;
+        if (!rates) return;
+        const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString();
+        setS((prev) => ({
+          ...prev,
+          marketUsdRate: rates.USD ? Math.round((1 / rates.USD) * 100) / 100 : prev.marketUsdRate,
+          marketEurRate: rates.EUR ? Math.round((1 / rates.EUR) * 100) / 100 : prev.marketEurRate,
+          marketGbpRate: rates.GBP ? Math.round((1 / rates.GBP) * 100) / 100 : prev.marketGbpRate,
+          marketAedRate: rates.AED ? Math.round((1 / rates.AED) * 100) / 100 : prev.marketAedRate,
+          fxLastUpdated: ts,
+        }));
+      } catch { /* silent — user can still fetch manually */ }
+    })();
   }, []);
 
   const c = useMemo(() => compute(s), [s]);
@@ -888,8 +906,9 @@ export default function Calculator() {
                         if (!rate || typeof rate !== "number") throw new Error("No INR rate in response");
                         const rounded = Math.round(rate * 100) / 100;
                         set(marketKey, rounded);
-                        const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toLocaleString() : "today";
-                        toast.success(`Live ${cc}/INR = ₹${rounded} (as of ${ts})`, { id: "fx" });
+                        const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString();
+                        set("fxLastUpdated", ts);
+                        toast.success(`Live ${cc}/INR = ₹${rounded} (as of ${new Date(ts).toLocaleString()})`, { id: "fx" });
                       } catch (e) {
                         toast.error(`Could not fetch live ${cc} rate. Enter manually.`, { id: "fx" });
                       }
@@ -908,6 +927,8 @@ export default function Calculator() {
                           const inrPer = rates[code] ? 1 / rates[code] : null;
                           if (inrPer) set(key, Math.round(inrPer * 100) / 100);
                         }
+                        const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString();
+                        set("fxLastUpdated", ts);
                         toast.success("Updated USD, EUR, GBP & AED market rates", { id: "fxall" });
                       } catch {
                         toast.error("Could not fetch live rates", { id: "fxall" });
@@ -935,7 +956,9 @@ export default function Calculator() {
                           <NumField label="Forex exposure (informational)" value={calculateForexExposure(c.expectedRevenue, s)} onChange={() => {}} readOnly suffix="₹" />
                         </div>
                         <p className="mt-3 text-xs text-muted-foreground italic">
-                          Selected {cc}: market ₹{fmtNum(getMarketRate(cc, s))}, bank ₹{fmtNum(getActualBankRate(cc, s))}. Forex is informational and never changes core INR pricing unless entered as a banking cost.
+                          Selected {cc}: market ₹{fmtNum(getMarketRate(cc, s))}, bank ₹{fmtNum(getActualBankRate(cc, s))}.
+                          {s.fxLastUpdated ? ` Live rate as of ${new Date(s.fxLastUpdated).toLocaleString()}.` : " ⚠ No live rate fetched yet — using stored value."}
+                          {" "}Forex is informational and never changes core INR pricing unless entered as a banking cost.
                         </p>
                       </>
                     );
@@ -1265,6 +1288,37 @@ export default function Calculator() {
 
           {/* ADMIN — Banking tariff editor */}
           <TabsContent value="admin" className="space-y-5">
+            <GroupCard icon={Landmark} title="Company profile" subtitle="Appears on every generated document — quotation, invoice, contract">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <TextField label="Company name" value={s.companyName} onChange={(v) => set("companyName", v)} />
+                <TextField label="Registered address" value={s.companyAddress} onChange={(v) => set("companyAddress", v)} />
+                <TextField label="IEC code" value={s.companyIec} onChange={(v) => set("companyIec", v)} placeholder="10-digit IEC issued by DGFT" />
+                <TextField label="GSTIN" value={s.companyGstin} onChange={(v) => set("companyGstin", v)} placeholder="15-digit GSTIN" />
+                <TextField label="FSSAI licence" value={s.companyFssai} onChange={(v) => set("companyFssai", v)} placeholder="14-digit FSSAI (when available)" />
+                <TextField label="Company email" value={s.companyEmail} onChange={(v) => set("companyEmail", v)} placeholder="exports@vaaldrin.com" />
+                <TextField label="Company phone" value={s.companyPhone} onChange={(v) => set("companyPhone", v)} placeholder="+91 ..." />
+              </div>
+            </GroupCard>
+
+            <GroupCard icon={Wallet} title="Bank details (for Proforma Invoice)" subtitle="Shown on Proforma Invoice for buyer remittance">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <TextField label="Bank name" value={s.companyBankName} onChange={(v) => set("companyBankName", v)} />
+                <TextField label="Account number" value={s.companyBankAccount} onChange={(v) => set("companyBankAccount", v)} />
+                <TextField label="SWIFT code" value={s.companyBankSwift} onChange={(v) => set("companyBankSwift", v)} />
+                <TextField label="Branch" value={s.companyBankBranch} onChange={(v) => set("companyBankBranch", v)} />
+              </div>
+            </GroupCard>
+
+            <GroupCard icon={FileText} title="Document defaults" subtitle="Payment terms and validity printed on quotations and contracts">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <TextField label="Payment terms" value={s.paymentTerms} onChange={(v) => set("paymentTerms", v)} placeholder="e.g. 30% advance, 70% against B/L copy" />
+                <NumField label="Quotation validity (days)" value={s.quotationValidityDays} onChange={(v) => set("quotationValidityDays", v)} suffix="days" />
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground italic">
+                Tip: keep payment terms generic (e.g. "To be agreed with buyer") until you have negotiated with the specific buyer — pre-printing terms anchors the negotiation.
+              </p>
+            </GroupCard>
+
             <Card className="p-4 border-warning/40 bg-warning/5 flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-warning mt-0.5 shrink-0" />
               <div className="text-sm">
@@ -1346,7 +1400,7 @@ export default function Calculator() {
 
         <footer className="text-center text-xs text-muted-foreground py-6 border-t mt-8">
           <div className="font-semibold tracking-widest" style={{ color: "var(--gold)" }}>VAALDRIN EXPORTS</div>
-          <div className="mt-1">Export Pricing & Profit Control · CFO-grade financial control</div>
+          <div className="mt-1">Export costing & quotation system for Vaaldrin Exports</div>
         </footer>
 
         <div className="print-area hidden print:block">
@@ -1501,15 +1555,25 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
       <div className="grid grid-cols-2 gap-6 mt-6 text-xs">
         <div>
           <SectionTitle>{docType === "sales_contract" ? "Seller" : "Exporter"}</SectionTitle>
-          <div className="font-semibold mt-1">Vaaldrin Exports</div>
-          <div className="text-[#6B7280]">India</div>
+          <div className="font-semibold mt-1">{s.companyName || "Vaaldrin Exports"}</div>
+          {s.companyAddress && <div className="text-[#6B7280] whitespace-pre-line">{s.companyAddress}</div>}
+          {(s.companyEmail || s.companyPhone) && (
+            <div className="text-[#6B7280]">
+              {s.companyEmail}{s.companyEmail && s.companyPhone ? " · " : ""}{s.companyPhone}
+            </div>
+          )}
+          {s.companyIec && <div className="text-[#6B7280]">IEC: {s.companyIec}</div>}
+          {s.companyGstin && <div className="text-[#6B7280]">GSTIN: {s.companyGstin}</div>}
+          {s.companyFssai && <div className="text-[#6B7280]">FSSAI: {s.companyFssai}</div>}
         </div>
         <div>
           <SectionTitle>{counterpartyLabel}</SectionTitle>
           <div className="font-semibold mt-1">{s.buyerCompany || "—"}</div>
           {s.buyerName && <div>{s.buyerName}</div>}
+          {s.buyerAddress && <div className="text-[#6B7280] whitespace-pre-line">{s.buyerAddress}</div>}
           {s.buyerCountry && <div>{s.buyerCountry}</div>}
           {s.buyerEmail && <div className="text-[#6B7280]">{s.buyerEmail}</div>}
+          {s.buyerPhone && <div className="text-[#6B7280]">{s.buyerPhone}</div>}
         </div>
       </div>
 
@@ -1579,8 +1643,8 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
             <div className="mt-2 space-y-1">
               <KV k="Incoterm" v={`${s.incoterm} (Incoterms 2020)`} />
               <KV k="Currency" v={s.contractCurrency} />
-              <KV k="Payment Terms" v="30% Advance / 70% against B/L" />
-              {showValidity && <KV k="Validity" v="30 days from issue date" />}
+              <KV k="Payment Terms" v={s.paymentTerms || "To be agreed"} />
+              {showValidity && <KV k="Validity" v={`${s.quotationValidityDays} days from issue date`} />}
               <KV k="Country of Origin" v="India" />
             </div>
           </div>
@@ -1588,10 +1652,10 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
             <div>
               <SectionTitle>Bank Details</SectionTitle>
               <div className="mt-2 space-y-1">
-                <KV k="Bank Name" v="Axis Bank" />
-                <KV k="Account No." v="—" />
-                <KV k="SWIFT" v="AXISINBB" />
-                <KV k="Branch" v="—" />
+                <KV k="Bank Name" v={s.companyBankName || "—"} />
+                <KV k="Account No." v={s.companyBankAccount || "—"} />
+                <KV k="SWIFT" v={s.companyBankSwift || "—"} />
+                <KV k="Branch" v={s.companyBankBranch || "—"} />
               </div>
             </div>
           )}
@@ -1628,7 +1692,7 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
           <div className="mt-2"><span className="font-bold">1. Goods:</span> {s.productName || "—"}{s.productGrade ? ` (${s.productGrade})` : ""}, HS {s.hsCode || "—"}</div>
           <div><span className="font-bold">2. Quantity:</span> {s.quantity} {s.uom}</div>
           <div><span className="font-bold">3. Price:</span> {s.contractCurrency} {fmtCurrency(unitPrice, s.contractCurrency)} per {s.uom}</div>
-          <div><span className="font-bold">4. Payment:</span> 30% advance with order; 70% against B/L copy via SWIFT</div>
+          <div><span className="font-bold">4. Payment:</span> {s.paymentTerms || "To be agreed with buyer"}</div>
           <div><span className="font-bold">5. Delivery:</span> {s.incoterm} as per Incoterms 2020</div>
           <div><span className="font-bold">6. Inspection:</span> Pre-shipment inspection at seller's premises</div>
           <div><span className="font-bold">7. Force Majeure:</span> Standard exclusion clause applies</div>
@@ -1645,14 +1709,14 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
               <div className="border-t border-black/60 mt-10 pt-1 text-[10px] text-[#6B7280]">Authorized Signatory</div>
             </div>
             <div>
-              <div className="font-bold">Seller (Vaaldrin Exports)</div>
+              <div className="font-bold">Seller ({s.companyName || "Vaaldrin Exports"})</div>
               <div className="border-t border-black/60 mt-10 pt-1 text-[10px] text-[#6B7280]">Authorized Signatory</div>
             </div>
           </div>
         ) : !isInternal && (
           <div className="flex justify-end">
             <div className="text-right text-xs">
-              <div className="font-bold">For Vaaldrin Exports</div>
+              <div className="font-bold">For {s.companyName || "Vaaldrin Exports"}</div>
               <div className="border-t border-black/60 w-48 mt-10 pt-1 text-[10px] text-[#6B7280]">Authorized Signatory</div>
             </div>
           </div>

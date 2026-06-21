@@ -207,28 +207,37 @@ export async function generateQuotationPDF(s: CalculatorState) {
     docDate: s.quotationDate,
   });
 
-  // Buyer + Terms blocks
-  drawSectionHeader(doc, "Buyer", margin, 140);
+  // Exporter + Buyer blocks
+  drawSectionHeader(doc, "Exporter", margin, 140);
   drawFieldBlock(doc, margin, 158, [
+    ["Company", s.companyName || "Vaaldrin Exports"],
+    ["Address", s.companyAddress || "India"],
+    ...(s.companyIec ? [["IEC", s.companyIec] as [string, string]] : []),
+    ...(s.companyGstin ? [["GSTIN", s.companyGstin] as [string, string]] : []),
+    ...(s.companyFssai ? [["FSSAI", s.companyFssai] as [string, string]] : []),
+  ]);
+
+  drawSectionHeader(doc, "Buyer", W / 2 + 10, 140);
+  drawFieldBlock(doc, W / 2 + 10, 158, [
     ["Company", s.buyerCompany],
     ["Contact", s.buyerName],
     ["Country", s.buyerCountry],
     ["Email", s.buyerEmail],
   ]);
 
-  drawSectionHeader(doc, "Terms", W / 2 + 10, 140);
-  drawFieldBlock(doc, W / 2 + 10, 158, [
+  drawSectionHeader(doc, "Terms", margin, 235);
+  drawFieldBlock(doc, margin, 253, [
     ["Incoterm", `${s.incoterm} (Incoterms 2020)`],
     ["Currency", s.contractCurrency],
-    ["Validity", "30 days from quote date"],
-    ["Payment", "30% advance, 70% vs B/L"],
+    ["Validity", `${s.quotationValidityDays} days from quote date`],
+    ["Payment", s.paymentTerms || "To be agreed with buyer"],
   ]);
 
   // Product table
   const quote = getBuyerQuote(c.recommendedPrice, s.quantity, s);
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: 235,
+    startY: 330,
     head: [["Product", "Grade", "HS Code", "Qty", "UoM", `Unit Price (${s.contractCurrency})`, `Total (${s.contractCurrency})`]],
     body: [[
       s.productName || "—",
@@ -266,14 +275,14 @@ export async function generateQuotationPDF(s: CalculatorState) {
   doc.setFontSize(9);
   doc.setTextColor(...BRAND.text);
   doc.text([
-    `1. Payment Terms: 30% advance with order; 70% against B/L copy.`,
+    `1. Payment Terms: ${s.paymentTerms || "To be agreed with buyer"}.`,
     `2. Delivery Terms: ${s.incoterm} as per Incoterms 2020.`,
-    `3. Validity: This quotation is valid for 30 days from the date of issue.`,
+    `3. Validity: This quotation is valid for ${s.quotationValidityDays} days from the date of issue.`,
     `4. Subject to product availability at the time of order confirmation.`,
     `5. All disputes are subject to the exclusive jurisdiction of issuing office.`,
   ], margin, yTerms + 18, { lineHeightFactor: 1.5 });
 
-  drawSignatureBlock(doc, W, yTerms + 110);
+  drawSignatureBlock(doc, W, yTerms + 110, "For " + (s.companyName || "Vaaldrin Exports"));
   drawFooter(doc, W, H, margin);
   doc.save(`${s.quotationNumber || "quotation"}.pdf`);
 }
@@ -294,10 +303,11 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
 
   drawSectionHeader(doc, "Exporter", margin, 140);
   drawFieldBlock(doc, margin, 158, [
-    ["Company", "Vaaldrin Exports"],
-    ["Address", "India"],
-    ["IEC", "—"],
-    ["GSTIN", "—"],
+    ["Company", s.companyName || "Vaaldrin Exports"],
+    ["Address", s.companyAddress || "India"],
+    ["IEC", s.companyIec || "—"],
+    ["GSTIN", s.companyGstin || "—"],
+    ...(s.companyFssai ? [["FSSAI", s.companyFssai] as [string, string]] : []),
   ]);
 
   drawSectionHeader(doc, "Buyer", W / 2 + 10, 140);
@@ -345,10 +355,10 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
   const yBank = lastY(doc) + 18;
   drawSectionHeader(doc, "Bank Details", margin, yBank);
   drawFieldBlock(doc, margin, yBank + 18, [
-    ["Bank Name", "Axis Bank"],
-    ["Account No.", "—"],
-    ["SWIFT", "AXISINBB"],
-    ["Branch", "—"],
+    ["Bank Name", s.companyBankName || "—"],
+    ["Account No.", s.companyBankAccount || "—"],
+    ["SWIFT", s.companyBankSwift || "—"],
+    ["Branch", s.companyBankBranch || "—"],
   ], 80);
 
   // Declaration
@@ -358,7 +368,7 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
   doc.setTextColor(...BRAND.muted);
   doc.text("This is a Proforma Invoice and not a tax invoice.", margin, yDecl);
 
-  drawSignatureBlock(doc, W, yDecl + 10);
+  drawSignatureBlock(doc, W, yDecl + 10, "For " + (s.companyName || "Vaaldrin Exports"));
   drawFooter(doc, W, H, margin);
   doc.save(`proforma-${s.quotationNumber}.pdf`);
 }
@@ -378,8 +388,10 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
 
   drawSectionHeader(doc, "Exporter", margin, 140);
   drawFieldBlock(doc, margin, 158, [
-    ["Company", "Vaaldrin Exports"],
-    ["Country", "India"],
+    ["Company", s.companyName || "Vaaldrin Exports"],
+    ["Address", s.companyAddress || "India"],
+    ...(s.companyIec ? [["IEC", s.companyIec] as [string, string]] : []),
+    ...(s.companyGstin ? [["GSTIN", s.companyGstin] as [string, string]] : []),
   ]);
 
   drawSectionHeader(doc, "Consignee", W / 3 + 10, 140);
@@ -431,7 +443,7 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
   doc.setTextColor(...BRAND.muted);
   doc.text("We hereby certify that the goods described above are of Indian origin.", margin, yDecl);
 
-  drawSignatureBlock(doc, W, yDecl + 20);
+  drawSignatureBlock(doc, W, yDecl + 20, "For " + (s.companyName || "Vaaldrin Exports"));
   drawFooter(doc, W, H, margin);
   doc.save(`commercial-invoice-${s.quotationNumber}.pdf`);
 }
@@ -449,8 +461,8 @@ export async function generatePackingListPDF(s: CalculatorState) {
 
   drawSectionHeader(doc, "Exporter", margin, 140);
   drawFieldBlock(doc, margin, 158, [
-    ["Company", "Vaaldrin Exports"],
-    ["Country", "India"],
+    ["Company", s.companyName || "Vaaldrin Exports"],
+    ["Address", s.companyAddress || "India"],
   ]);
 
   drawSectionHeader(doc, "Buyer", W / 2 + 10, 140);
@@ -496,7 +508,7 @@ export async function generatePackingListPDF(s: CalculatorState) {
     columnStyles: { 1: { halign: "right" } },
   });
 
-  drawSignatureBlock(doc, W, lastY(doc) + 30);
+  drawSignatureBlock(doc, W, lastY(doc) + 30, "For " + (s.companyName || "Vaaldrin Exports"));
   drawFooter(doc, W, H, margin);
   doc.save(`packing-list-${s.quotationNumber}.pdf`);
 }
@@ -628,10 +640,11 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
     ["Contact", "—"],
   ]);
 
-  drawSectionHeader(doc, "Buyer (Vaaldrin)", W / 2 + 10, 140);
+  drawSectionHeader(doc, `Buyer (${s.companyName || "Vaaldrin"})`, W / 2 + 10, 140);
   drawFieldBlock(doc, W / 2 + 10, 158, [
-    ["Company", "Vaaldrin Exports"],
-    ["Country", "India"],
+    ["Company", s.companyName || "Vaaldrin Exports"],
+    ["Address", s.companyAddress || "India"],
+    ...(s.companyGstin ? [["GSTIN", s.companyGstin] as [string, string]] : []),
   ]);
 
   const lineTotal = s.supplierPricePerUnit * s.quantity;
@@ -668,7 +681,7 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
     `Quality: Material to meet contracted specifications and grade.`,
   ], margin, y + 18, { lineHeightFactor: 1.5 });
 
-  drawSignatureBlock(doc, W, y + 80, "Authorized By — Vaaldrin Exports");
+  drawSignatureBlock(doc, W, y + 80, `Authorized By — ${s.companyName || "Vaaldrin Exports"}`);
   drawFooter(doc, W, H, margin);
   doc.save(`purchase-order-${s.quotationNumber}.pdf`);
 }
@@ -688,8 +701,10 @@ export async function generateSalesContractPDF(s: CalculatorState) {
 
   drawSectionHeader(doc, "Seller", margin, 140);
   drawFieldBlock(doc, margin, 158, [
-    ["Company", "Vaaldrin Exports"],
-    ["Country", "India"],
+    ["Company", s.companyName || "Vaaldrin Exports"],
+    ["Address", s.companyAddress || "India"],
+    ...(s.companyIec ? [["IEC", s.companyIec] as [string, string]] : []),
+    ...(s.companyGstin ? [["GSTIN", s.companyGstin] as [string, string]] : []),
   ]);
 
   drawSectionHeader(doc, "Buyer", W / 2 + 10, 140);
@@ -706,7 +721,7 @@ export async function generateSalesContractPDF(s: CalculatorState) {
     ["1. Goods", `${s.productName || "—"}${s.productGrade ? ` (${s.productGrade})` : ""}, HS ${s.hsCode || "—"}.`],
     ["2. Quantity", `${s.quantity} ${s.uom}.`],
     ["3. Price", `${s.contractCurrency} ${fmtCurrency(quote.unitPrice, s.contractCurrency)} per ${s.uom}; total ${s.contractCurrency} ${fmtCurrency(quote.totalContractValue, s.contractCurrency)}.`],
-    ["4. Payment", "30% advance with order; 70% against B/L copy via SWIFT."],
+    ["4. Payment", `${s.paymentTerms || "To be agreed with buyer"}.`],
     ["5. Delivery", `${s.incoterm} as per Incoterms 2020.`],
     ["6. Inspection", "Pre-shipment inspection at seller's premises by buyer-nominated agency at buyer's cost."],
     ["7. Force Majeure", "Neither party liable for delays caused by events beyond reasonable control."],
@@ -731,7 +746,7 @@ export async function generateSalesContractPDF(s: CalculatorState) {
   doc.setFontSize(9.5);
   doc.setTextColor(...BRAND.text);
   doc.text("Buyer", margin, yy);
-  doc.text("Seller (Vaaldrin Exports)", W / 2 + 10, yy);
+  doc.text(`Seller (${s.companyName || "Vaaldrin Exports"})`, W / 2 + 10, yy);
   doc.setDrawColor(...BRAND.text);
   doc.setLineWidth(0.5);
   doc.line(margin, yy + 36, margin + 200, yy + 36);
