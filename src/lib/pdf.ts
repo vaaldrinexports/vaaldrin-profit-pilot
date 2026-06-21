@@ -720,7 +720,7 @@ export async function generateSalesContractPDF(s: CalculatorState) {
     ["1. Goods", `${s.productName || "—"}${s.productGrade ? ` (${s.productGrade})` : ""}, HS ${s.hsCode || "—"}.`],
     ["2. Quantity", `${s.quantity} ${s.uom}.`],
     ["3. Price", `${s.contractCurrency} ${fmtCurrency(quote.unitPrice, s.contractCurrency)} per ${s.uom}; total ${s.contractCurrency} ${fmtCurrency(quote.totalContractValue, s.contractCurrency)}.`],
-    ["4. Payment", "30% advance with order; 70% against B/L copy via SWIFT."],
+    ["4. Payment", `${s.paymentTerms || "To be agreed with buyer"}.`],
     ["5. Delivery", `${s.incoterm} as per Incoterms 2020.`],
     ["6. Inspection", "Pre-shipment inspection at seller's premises by buyer-nominated agency at buyer's cost."],
     ["7. Force Majeure", "Neither party liable for delays caused by events beyond reasonable control."],
