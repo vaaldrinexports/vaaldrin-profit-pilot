@@ -640,10 +640,11 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
     ["Contact", "—"],
   ]);
 
-  drawSectionHeader(doc, "Buyer (Vaaldrin)", W / 2 + 10, 140);
+  drawSectionHeader(doc, `Buyer (${s.companyName || "Vaaldrin"})`, W / 2 + 10, 140);
   drawFieldBlock(doc, W / 2 + 10, 158, [
-    ["Company", "Vaaldrin Exports"],
-    ["Country", "India"],
+    ["Company", s.companyName || "Vaaldrin Exports"],
+    ["Address", s.companyAddress || "India"],
+    ...(s.companyGstin ? [["GSTIN", s.companyGstin] as [string, string]] : []),
   ]);
 
   const lineTotal = s.supplierPricePerUnit * s.quantity;
