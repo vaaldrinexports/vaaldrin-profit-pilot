@@ -411,6 +411,24 @@ export default function Calculator() {
       const now = new Date();
       setS((current) => ({ ...current, quotationNumber: `VX-${now.getFullYear()}-0001`, quotationDate: now.toISOString().slice(0, 10) }));
     }
+    // Auto-fetch live FX rates on first mount so the user is never quoting against a stale rate
+    (async () => {
+      try {
+        const r = await fetch(`https://open.er-api.com/v6/latest/INR`);
+        const j = await r.json();
+        const rates = j?.rates;
+        if (!rates) return;
+        const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString();
+        setS((prev) => ({
+          ...prev,
+          marketUsdRate: rates.USD ? Math.round((1 / rates.USD) * 100) / 100 : prev.marketUsdRate,
+          marketEurRate: rates.EUR ? Math.round((1 / rates.EUR) * 100) / 100 : prev.marketEurRate,
+          marketGbpRate: rates.GBP ? Math.round((1 / rates.GBP) * 100) / 100 : prev.marketGbpRate,
+          marketAedRate: rates.AED ? Math.round((1 / rates.AED) * 100) / 100 : prev.marketAedRate,
+          fxLastUpdated: ts,
+        }));
+      } catch { /* silent — user can still fetch manually */ }
+    })();
   }, []);
 
   const c = useMemo(() => compute(s), [s]);
