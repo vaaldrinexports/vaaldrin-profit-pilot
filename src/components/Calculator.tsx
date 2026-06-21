@@ -20,6 +20,7 @@ import {
 } from "@/lib/pdf";
 import logoAsset from "@/assets/vaaldrin-logo.png.asset.json";
 import MarketIntelligence from "@/components/MarketIntelligence";
+import BuyerIntelligence from "@/components/BuyerIntelligence";
 
 type DocType =
   | "quotation"
