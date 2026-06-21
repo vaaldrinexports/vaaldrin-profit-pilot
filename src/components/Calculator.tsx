@@ -759,6 +759,17 @@ export default function Calculator() {
               <DestinationDutyCard country={s.buyerCountry} hsCode={s.hsCode} />
             </GroupCard>
 
+            <BuyerIntelligence
+              company={s.buyerCompany}
+              country={s.buyerCountry}
+              email={s.buyerEmail}
+              website={s.buyerWebsite}
+              phone={s.buyerPhone}
+              address={s.buyerAddress}
+              notes={s.buyerNotes}
+              onNotesChange={(v) => set("buyerNotes", v)}
+            />
+
             <MarketIntelligence
               productName={s.productName}
               supplierPricePerKg={s.supplierPricePerUnit}
