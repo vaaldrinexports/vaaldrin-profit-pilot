@@ -91,6 +91,10 @@ export interface CalculatorState {
   buyerCompany: string;
   buyerCountry: string;
   buyerEmail: string;
+  buyerWebsite: string;
+  buyerPhone: string;
+  buyerAddress: string;
+  buyerNotes: string;
   productName: string;
   productGrade: string;
   hsCode: string;
@@ -193,6 +197,10 @@ export const defaultState: CalculatorState = {
   buyerCompany: "",
   buyerCountry: "",
   buyerEmail: "",
+  buyerWebsite: "",
+  buyerPhone: "",
+  buyerAddress: "",
+  buyerNotes: "",
   productName: "",
   productGrade: "",
   hsCode: "",

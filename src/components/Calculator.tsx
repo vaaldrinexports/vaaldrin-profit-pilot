@@ -20,6 +20,7 @@ import {
 } from "@/lib/pdf";
 import logoAsset from "@/assets/vaaldrin-logo.png.asset.json";
 import MarketIntelligence from "@/components/MarketIntelligence";
+import BuyerIntelligence from "@/components/BuyerIntelligence";
 
 type DocType =
   | "quotation"
@@ -735,6 +736,9 @@ export default function Calculator() {
                   })()}
                 </div>
                 <TextField label="Buyer email" value={s.buyerEmail} onChange={(v) => set("buyerEmail", v)} type="email" />
+                <TextField label="Buyer website" value={s.buyerWebsite} onChange={(v) => set("buyerWebsite", v)} placeholder="https://abctrading.com" />
+                <TextField label="Buyer phone" value={s.buyerPhone} onChange={(v) => set("buyerPhone", v)} placeholder="+49 30 1234567" />
+                <TextField label="Buyer address" value={s.buyerAddress} onChange={(v) => set("buyerAddress", v)} placeholder="Street, City, Country" />
                 <HsProductSearch
                   productName={s.productName}
                   hsCode={s.hsCode}
@@ -754,6 +758,17 @@ export default function Calculator() {
               </div>
               <DestinationDutyCard country={s.buyerCountry} hsCode={s.hsCode} />
             </GroupCard>
+
+            <BuyerIntelligence
+              company={s.buyerCompany}
+              country={s.buyerCountry}
+              email={s.buyerEmail}
+              website={s.buyerWebsite}
+              phone={s.buyerPhone}
+              address={s.buyerAddress}
+              notes={s.buyerNotes}
+              onNotesChange={(v) => set("buyerNotes", v)}
+            />
 
             <MarketIntelligence
               productName={s.productName}
