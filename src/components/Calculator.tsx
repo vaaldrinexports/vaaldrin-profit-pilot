@@ -1685,7 +1685,7 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
         ) : !isInternal && (
           <div className="flex justify-end">
             <div className="text-right text-xs">
-              <div className="font-bold">For Vaaldrin Exports</div>
+              <div className="font-bold">For {s.companyName || "Vaaldrin Exports"}</div>
               <div className="border-t border-black/60 w-48 mt-10 pt-1 text-[10px] text-[#6B7280]">Authorized Signatory</div>
             </div>
           </div>
