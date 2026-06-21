@@ -1369,7 +1369,7 @@ export default function Calculator() {
 
         <footer className="text-center text-xs text-muted-foreground py-6 border-t mt-8">
           <div className="font-semibold tracking-widest" style={{ color: "var(--gold)" }}>VAALDRIN EXPORTS</div>
-          <div className="mt-1">Export Pricing & Profit Control · CFO-grade financial control</div>
+          <div className="mt-1">Export costing & quotation system for Vaaldrin Exports</div>
         </footer>
 
         <div className="print-area hidden print:block">
