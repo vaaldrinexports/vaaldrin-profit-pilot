@@ -956,7 +956,9 @@ export default function Calculator() {
                           <NumField label="Forex exposure (informational)" value={calculateForexExposure(c.expectedRevenue, s)} onChange={() => {}} readOnly suffix="₹" />
                         </div>
                         <p className="mt-3 text-xs text-muted-foreground italic">
-                          Selected {cc}: market ₹{fmtNum(getMarketRate(cc, s))}, bank ₹{fmtNum(getActualBankRate(cc, s))}. Forex is informational and never changes core INR pricing unless entered as a banking cost.
+                          Selected {cc}: market ₹{fmtNum(getMarketRate(cc, s))}, bank ₹{fmtNum(getActualBankRate(cc, s))}.
+                          {s.fxLastUpdated ? ` Live rate as of ${new Date(s.fxLastUpdated).toLocaleString()}.` : " ⚠ No live rate fetched yet — using stored value."}
+                          {" "}Forex is informational and never changes core INR pricing unless entered as a banking cost.
                         </p>
                       </>
                     );
