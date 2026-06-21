@@ -735,6 +735,9 @@ export default function Calculator() {
                   })()}
                 </div>
                 <TextField label="Buyer email" value={s.buyerEmail} onChange={(v) => set("buyerEmail", v)} type="email" />
+                <TextField label="Buyer website" value={s.buyerWebsite} onChange={(v) => set("buyerWebsite", v)} placeholder="https://abctrading.com" />
+                <TextField label="Buyer phone" value={s.buyerPhone} onChange={(v) => set("buyerPhone", v)} placeholder="+49 30 1234567" />
+                <TextField label="Buyer address" value={s.buyerAddress} onChange={(v) => set("buyerAddress", v)} placeholder="Street, City, Country" />
                 <HsProductSearch
                   productName={s.productName}
                   hsCode={s.hsCode}
