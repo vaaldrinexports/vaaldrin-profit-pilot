@@ -1288,6 +1288,37 @@ export default function Calculator() {
 
           {/* ADMIN — Banking tariff editor */}
           <TabsContent value="admin" className="space-y-5">
+            <GroupCard icon={Landmark} title="Company profile" subtitle="Appears on every generated document — quotation, invoice, contract">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <TextField label="Company name" value={s.companyName} onChange={(v) => set("companyName", v)} />
+                <TextField label="Registered address" value={s.companyAddress} onChange={(v) => set("companyAddress", v)} />
+                <TextField label="IEC code" value={s.companyIec} onChange={(v) => set("companyIec", v)} placeholder="10-digit IEC issued by DGFT" />
+                <TextField label="GSTIN" value={s.companyGstin} onChange={(v) => set("companyGstin", v)} placeholder="15-digit GSTIN" />
+                <TextField label="FSSAI licence" value={s.companyFssai} onChange={(v) => set("companyFssai", v)} placeholder="14-digit FSSAI (when available)" />
+                <TextField label="Company email" value={s.companyEmail} onChange={(v) => set("companyEmail", v)} placeholder="exports@vaaldrin.com" />
+                <TextField label="Company phone" value={s.companyPhone} onChange={(v) => set("companyPhone", v)} placeholder="+91 ..." />
+              </div>
+            </GroupCard>
+
+            <GroupCard icon={Wallet} title="Bank details (for Proforma Invoice)" subtitle="Shown on Proforma Invoice for buyer remittance">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <TextField label="Bank name" value={s.companyBankName} onChange={(v) => set("companyBankName", v)} />
+                <TextField label="Account number" value={s.companyBankAccount} onChange={(v) => set("companyBankAccount", v)} />
+                <TextField label="SWIFT code" value={s.companyBankSwift} onChange={(v) => set("companyBankSwift", v)} />
+                <TextField label="Branch" value={s.companyBankBranch} onChange={(v) => set("companyBankBranch", v)} />
+              </div>
+            </GroupCard>
+
+            <GroupCard icon={FileText} title="Document defaults" subtitle="Payment terms and validity printed on quotations and contracts">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <TextField label="Payment terms" value={s.paymentTerms} onChange={(v) => set("paymentTerms", v)} placeholder="e.g. 30% advance, 70% against B/L copy" />
+                <NumField label="Quotation validity (days)" value={s.quotationValidityDays} onChange={(v) => set("quotationValidityDays", v)} suffix="days" />
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground italic">
+                Tip: keep payment terms generic (e.g. "To be agreed with buyer") until you have negotiated with the specific buyer — pre-printing terms anchors the negotiation.
+              </p>
+            </GroupCard>
+
             <Card className="p-4 border-warning/40 bg-warning/5 flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-warning mt-0.5 shrink-0" />
               <div className="text-sm">
