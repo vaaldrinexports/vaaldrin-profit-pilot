@@ -1612,8 +1612,8 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
             <div className="mt-2 space-y-1">
               <KV k="Incoterm" v={`${s.incoterm} (Incoterms 2020)`} />
               <KV k="Currency" v={s.contractCurrency} />
-              <KV k="Payment Terms" v="30% Advance / 70% against B/L" />
-              {showValidity && <KV k="Validity" v="30 days from issue date" />}
+              <KV k="Payment Terms" v={s.paymentTerms || "To be agreed"} />
+              {showValidity && <KV k="Validity" v={`${s.quotationValidityDays} days from issue date`} />}
               <KV k="Country of Origin" v="India" />
             </div>
           </div>
