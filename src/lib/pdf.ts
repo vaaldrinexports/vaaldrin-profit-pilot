@@ -207,28 +207,37 @@ export async function generateQuotationPDF(s: CalculatorState) {
     docDate: s.quotationDate,
   });
 
-  // Buyer + Terms blocks
-  drawSectionHeader(doc, "Buyer", margin, 140);
+  // Exporter + Buyer blocks
+  drawSectionHeader(doc, "Exporter", margin, 140);
   drawFieldBlock(doc, margin, 158, [
+    ["Company", s.companyName || "Vaaldrin Exports"],
+    ["Address", s.companyAddress || "India"],
+    ...(s.companyIec ? [["IEC", s.companyIec] as [string, string]] : []),
+    ...(s.companyGstin ? [["GSTIN", s.companyGstin] as [string, string]] : []),
+    ...(s.companyFssai ? [["FSSAI", s.companyFssai] as [string, string]] : []),
+  ]);
+
+  drawSectionHeader(doc, "Buyer", W / 2 + 10, 140);
+  drawFieldBlock(doc, W / 2 + 10, 158, [
     ["Company", s.buyerCompany],
     ["Contact", s.buyerName],
     ["Country", s.buyerCountry],
     ["Email", s.buyerEmail],
   ]);
 
-  drawSectionHeader(doc, "Terms", W / 2 + 10, 140);
-  drawFieldBlock(doc, W / 2 + 10, 158, [
+  drawSectionHeader(doc, "Terms", margin, 235);
+  drawFieldBlock(doc, margin, 253, [
     ["Incoterm", `${s.incoterm} (Incoterms 2020)`],
     ["Currency", s.contractCurrency],
-    ["Validity", "30 days from quote date"],
-    ["Payment", "30% advance, 70% vs B/L"],
+    ["Validity", `${s.quotationValidityDays} days from quote date`],
+    ["Payment", s.paymentTerms || "To be agreed with buyer"],
   ]);
 
   // Product table
   const quote = getBuyerQuote(c.recommendedPrice, s.quantity, s);
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: 235,
+    startY: 330,
     head: [["Product", "Grade", "HS Code", "Qty", "UoM", `Unit Price (${s.contractCurrency})`, `Total (${s.contractCurrency})`]],
     body: [[
       s.productName || "—",
@@ -266,9 +275,9 @@ export async function generateQuotationPDF(s: CalculatorState) {
   doc.setFontSize(9);
   doc.setTextColor(...BRAND.text);
   doc.text([
-    `1. Payment Terms: 30% advance with order; 70% against B/L copy.`,
+    `1. Payment Terms: ${s.paymentTerms || "To be agreed with buyer"}.`,
     `2. Delivery Terms: ${s.incoterm} as per Incoterms 2020.`,
-    `3. Validity: This quotation is valid for 30 days from the date of issue.`,
+    `3. Validity: This quotation is valid for ${s.quotationValidityDays} days from the date of issue.`,
     `4. Subject to product availability at the time of order confirmation.`,
     `5. All disputes are subject to the exclusive jurisdiction of issuing office.`,
   ], margin, yTerms + 18, { lineHeightFactor: 1.5 });
