@@ -681,7 +681,7 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
     `Quality: Material to meet contracted specifications and grade.`,
   ], margin, y + 18, { lineHeightFactor: 1.5 });
 
-  drawSignatureBlock(doc, W, y + 80, "Authorized By — Vaaldrin Exports");
+  drawSignatureBlock(doc, W, y + 80, `Authorized By — ${s.companyName || "Vaaldrin Exports"}`);
   drawFooter(doc, W, H, margin);
   doc.save(`purchase-order-${s.quotationNumber}.pdf`);
 }
