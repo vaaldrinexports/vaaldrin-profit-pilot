@@ -187,10 +187,30 @@ export interface CalculatorState {
 
   // Container size (kg) for per-container metric
   containerKg: number;
+
+  // Company profile (editable, used in all generated documents)
+  companyName: string;
+  companyAddress: string;
+  companyGstin: string;
+  companyIec: string;
+  companyFssai: string;
+  companyEmail: string;
+  companyPhone: string;
+  companyBankName: string;
+  companyBankAccount: string;
+  companyBankSwift: string;
+  companyBankBranch: string;
+
+  // Document defaults
+  paymentTerms: string;
+  quotationValidityDays: number;
+
+  // FX provenance (when the live rate was last fetched)
+  fxLastUpdated: string;
 }
 
 export const defaultState: CalculatorState = {
-  quotationNumber: "VX-0001",
+  quotationNumber: `VX-${new Date().getFullYear()}-0001`,
   // Filled on the client to keep the server-rendered markup deterministic.
   quotationDate: "",
   buyerName: "",
@@ -218,8 +238,8 @@ export const defaultState: CalculatorState = {
   swiftCharges: 0, bankCharges: 0, exportRealization: 0, currencyConversion: 0, otherBanking: 0,
   miscCost: 0, contingencyPct: 2,
   rodtepPct: 0, dutyDrawbackPct: 0, otherIncentives: 0,
-  marketUsdRate: 83.5, actualBankUsdRate: 83, marketEurRate: 90.5, actualBankEurRate: 90,
-  marketGbpRate: 105.5, actualBankGbpRate: 105, marketAedRate: 22.8, actualBankAedRate: 22.6,
+  marketUsdRate: 84.2, actualBankUsdRate: 83.9, marketEurRate: 91.0, actualBankEurRate: 90.5,
+  marketGbpRate: 106.5, actualBankGbpRate: 106.0, marketAedRate: 22.9, actualBankAedRate: 22.7,
   forexBufferPct: 2,
   targetProfitPct: 18, minProfitAmount: 0, minProfitPct: 8, marginLock: false,
   buyerCounterOffer: 0, requestedDiscountPct: 0,
@@ -227,6 +247,22 @@ export const defaultState: CalculatorState = {
   paymentMethod: "SWIFT",
   bankingTariff: defaultBankingTariff,
 
+  companyName: "Vaaldrin Exports",
+  companyAddress: "Malur, Karnataka, India",
+  companyGstin: "",
+  companyIec: "",
+  companyFssai: "",
+  companyEmail: "",
+  companyPhone: "",
+  companyBankName: "Axis Bank",
+  companyBankAccount: "",
+  companyBankSwift: "AXISINBB",
+  companyBankBranch: "",
+
+  paymentTerms: "To be agreed with buyer",
+  quotationValidityDays: 30,
+
+  fxLastUpdated: "",
 };
 
 const num = (n: number) => (isFinite(n) ? n : 0);
