@@ -461,8 +461,8 @@ export async function generatePackingListPDF(s: CalculatorState) {
 
   drawSectionHeader(doc, "Exporter", margin, 140);
   drawFieldBlock(doc, margin, 158, [
-    ["Company", "Vaaldrin Exports"],
-    ["Country", "India"],
+    ["Company", s.companyName || "Vaaldrin Exports"],
+    ["Address", s.companyAddress || "India"],
   ]);
 
   drawSectionHeader(doc, "Buyer", W / 2 + 10, 140);
