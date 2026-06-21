@@ -282,7 +282,7 @@ export async function generateQuotationPDF(s: CalculatorState) {
     `5. All disputes are subject to the exclusive jurisdiction of issuing office.`,
   ], margin, yTerms + 18, { lineHeightFactor: 1.5 });
 
-  drawSignatureBlock(doc, W, yTerms + 110);
+  drawSignatureBlock(doc, W, yTerms + 110, "For " + (s.companyName || "Vaaldrin Exports"));
   drawFooter(doc, W, H, margin);
   doc.save(`${s.quotationNumber || "quotation"}.pdf`);
 }
@@ -368,7 +368,7 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
   doc.setTextColor(...BRAND.muted);
   doc.text("This is a Proforma Invoice and not a tax invoice.", margin, yDecl);
 
-  drawSignatureBlock(doc, W, yDecl + 10);
+  drawSignatureBlock(doc, W, yDecl + 10, "For " + (s.companyName || "Vaaldrin Exports"));
   drawFooter(doc, W, H, margin);
   doc.save(`proforma-${s.quotationNumber}.pdf`);
 }
@@ -443,7 +443,7 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
   doc.setTextColor(...BRAND.muted);
   doc.text("We hereby certify that the goods described above are of Indian origin.", margin, yDecl);
 
-  drawSignatureBlock(doc, W, yDecl + 20);
+  drawSignatureBlock(doc, W, yDecl + 20, "For " + (s.companyName || "Vaaldrin Exports"));
   drawFooter(doc, W, H, margin);
   doc.save(`commercial-invoice-${s.quotationNumber}.pdf`);
 }
@@ -508,7 +508,7 @@ export async function generatePackingListPDF(s: CalculatorState) {
     columnStyles: { 1: { halign: "right" } },
   });
 
-  drawSignatureBlock(doc, W, lastY(doc) + 30);
+  drawSignatureBlock(doc, W, lastY(doc) + 30, "For " + (s.companyName || "Vaaldrin Exports"));
   drawFooter(doc, W, H, margin);
   doc.save(`packing-list-${s.quotationNumber}.pdf`);
 }
