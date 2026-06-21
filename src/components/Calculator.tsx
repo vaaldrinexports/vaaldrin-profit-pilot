@@ -1678,7 +1678,7 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
               <div className="border-t border-black/60 mt-10 pt-1 text-[10px] text-[#6B7280]">Authorized Signatory</div>
             </div>
             <div>
-              <div className="font-bold">Seller (Vaaldrin Exports)</div>
+              <div className="font-bold">Seller ({s.companyName || "Vaaldrin Exports"})</div>
               <div className="border-t border-black/60 mt-10 pt-1 text-[10px] text-[#6B7280]">Authorized Signatory</div>
             </div>
           </div>
