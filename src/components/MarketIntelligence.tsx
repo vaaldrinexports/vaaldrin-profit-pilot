@@ -116,6 +116,9 @@ export default function MarketIntelligence({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Badge variant="outline" className="bg-[#FFF7E6] border-[#C99A2E]/50 text-[10px] font-semibold" style={{ color: RED }}>
+            Benchmark Price · Static Reference
+          </Badge>
           <ConfidenceBadge level={benchmark.confidence} />
           <Button
             size="sm"
