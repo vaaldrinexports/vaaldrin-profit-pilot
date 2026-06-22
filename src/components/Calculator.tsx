@@ -795,15 +795,15 @@ export default function Calculator() {
 
 
         <Tabs defaultValue="inputs" className="space-y-5">
-          <TabsList className="grid grid-cols-2 md:grid-cols-8 w-full h-auto p-1 bg-secondary">
-            <TabsTrigger value="inputs" className="py-2.5">1. Inputs</TabsTrigger>
-            <TabsTrigger value="banking" className="py-2.5">2. Banking & Forex</TabsTrigger>
-            <TabsTrigger value="profit" className="py-2.5">3. Profit</TabsTrigger>
-            <TabsTrigger value="incoterms" className="py-2.5">4. Incoterms</TabsTrigger>
-            <TabsTrigger value="negotiation" className="py-2.5">5. Negotiation</TabsTrigger>
-            <TabsTrigger value="scenario" className="py-2.5">6. Scenarios</TabsTrigger>
-            <TabsTrigger value="audit" className="py-2.5">7. Audit</TabsTrigger>
-            <TabsTrigger value="admin" className="py-2.5">8. Admin</TabsTrigger>
+          <TabsList className="flex md:grid md:grid-cols-8 w-full h-auto p-1 bg-secondary overflow-x-auto whitespace-nowrap gap-1">
+            <TabsTrigger value="inputs" className="py-2.5 shrink-0">1.<span className="hidden sm:inline ml-1">Inputs</span></TabsTrigger>
+            <TabsTrigger value="banking" className="py-2.5 shrink-0">2.<span className="hidden sm:inline ml-1">Banking &amp; Forex</span></TabsTrigger>
+            <TabsTrigger value="profit" className="py-2.5 shrink-0">3.<span className="hidden sm:inline ml-1">Profit</span></TabsTrigger>
+            <TabsTrigger value="incoterms" className="py-2.5 shrink-0">4.<span className="hidden sm:inline ml-1">Incoterms</span></TabsTrigger>
+            <TabsTrigger value="negotiation" className="py-2.5 shrink-0">5.<span className="hidden sm:inline ml-1">Negotiation</span></TabsTrigger>
+            <TabsTrigger value="scenario" className="py-2.5 shrink-0">6.<span className="hidden sm:inline ml-1">Scenarios</span></TabsTrigger>
+            <TabsTrigger value="audit" className="py-2.5 shrink-0">7.<span className="hidden sm:inline ml-1">Audit</span></TabsTrigger>
+            <TabsTrigger value="admin" className="py-2.5 shrink-0">8.<span className="hidden sm:inline ml-1">Admin</span></TabsTrigger>
           </TabsList>
 
 
