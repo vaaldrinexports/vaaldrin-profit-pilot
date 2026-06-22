@@ -60,7 +60,7 @@ import {
 import {
   FileDown, Printer, Save, Upload, Copy, RotateCcw, ShieldCheck, AlertTriangle,
   TrendingUp, Lock, Sparkles, MoreHorizontal, HelpCircle, Package, Truck, FileText,
-  Ship, Anchor, Landmark, Wallet, Coins, Globe2, Info,
+  Ship, Anchor, Landmark, Wallet, Coins, Globe2, Info, Trash2, FolderOpen, History,
 } from "lucide-react";
 
 const STORAGE_KEY = "vaaldrin.calc.v1";
