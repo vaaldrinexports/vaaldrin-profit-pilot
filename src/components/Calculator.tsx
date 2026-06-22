@@ -1288,6 +1288,15 @@ export default function Calculator() {
 
           {/* ADMIN — Banking tariff editor */}
           <TabsContent value="admin" className="space-y-5">
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-[#C99A2E]/40 bg-[#FAF5EC] px-4 py-3">
+              <div className="text-sm">
+                <div className="font-semibold text-[#1A1A1A]">Admin settings</div>
+                <div className="text-xs text-muted-foreground">Save changes to company profile, banking and document defaults.</div>
+              </div>
+              <Button onClick={save} className="bg-[#A61D24] hover:bg-[#8a181e] text-white">
+                <Save className="w-4 h-4 mr-2" />Save settings
+              </Button>
+            </div>
             <GroupCard icon={Landmark} title="Company profile" subtitle="Appears on every generated document — quotation, invoice, contract">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <TextField label="Company name" value={s.companyName} onChange={(v) => set("companyName", v)} />
