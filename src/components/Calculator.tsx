@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  compute, defaultState, fmtINR, fmtCurrency, fmtNum,
+  compute, defaultState, demoState, fmtINR, fmtCurrency, fmtNum,
   applyScenario, evaluatePrice, evaluateDiscount, profitVariance, convertToINR, convertFromINR,
   calculateForexExposure, getActualBankRate, getBuyerQuote, getMarketRate, type CalculatorState, type Incoterm, type ContractCurrency,
 } from "@/lib/calculations";
+import { listQuotes, saveQuoteSnapshot, loadQuote, deleteQuote, type SavedQuote } from "@/lib/quote-store";
 import {
   searchHsCodes, lookupDuty, findCountryByName, COUNTRIES, INDIAN_PORTS,
   type HsCodeEntry,
