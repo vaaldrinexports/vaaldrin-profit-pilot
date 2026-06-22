@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +47,7 @@ export default function MarketIntelligence({
   uom: string;
 }) {
   const [tick, setTick] = useState(0);
+  const [refreshedAt, setRefreshedAt] = useState<string | null>(null);
   const benchmark = useMemo(() => findBenchmark(productName), [productName, tick]);
 
   if (!productName?.trim()) {
@@ -115,7 +117,14 @@ export default function MarketIntelligence({
             size="sm"
             variant="outline"
             className="h-7 text-xs gap-1.5"
-            onClick={() => setTick((t) => t + 1)}
+            onClick={() => {
+              setTick((t) => t + 1);
+              const now = new Date();
+              setRefreshedAt(now.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }));
+              toast.success("Benchmark refreshed", {
+                description: benchmark ? `${benchmark.name} · ${benchmark.primaryMarket}` : "Re-checked benchmark data",
+              });
+            }}
           >
             <RefreshCw className="w-3 h-3" /> Refresh
           </Button>
@@ -245,7 +254,7 @@ export default function MarketIntelligence({
           {/* Source */}
           <div className="text-[10px] text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
             <span><strong className="text-foreground">Source:</strong> {benchmark.source}</span>
-            <span><strong className="text-foreground">Updated:</strong> {benchmark.lastUpdated}</span>
+            <span><strong className="text-foreground">Updated:</strong> {refreshedAt ?? benchmark.lastUpdated}</span>
             <span className="italic">
               {benchmark.category === "live" ? "Live Market Reference" : "Benchmark Price"}
             </span>
