@@ -47,6 +47,7 @@ export default function MarketIntelligence({
   uom: string;
 }) {
   const [tick, setTick] = useState(0);
+  const [refreshedAt, setRefreshedAt] = useState<string | null>(null);
   const benchmark = useMemo(() => findBenchmark(productName), [productName, tick]);
 
   if (!productName?.trim()) {
