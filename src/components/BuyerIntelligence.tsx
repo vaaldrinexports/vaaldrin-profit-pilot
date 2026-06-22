@@ -97,15 +97,28 @@ export default function BuyerIntelligence(p: Props) {
             <p className="text-xs text-muted-foreground">Public-signal due diligence · Not a credit rating</p>
           </div>
         </div>
-        <Button size="sm" variant="outline" onClick={() => {
-          setRefreshKey((k) => k + 1);
-          toast.success("Buyer verification refreshed", {
-            description: p.company ? `Re-checked public signals for ${p.company}` : "Re-ran verification checks",
-          });
-        }}
-          className="border-[#A61D24]/40 text-[#A61D24] hover:bg-[#A61D24]/5">
-          <RefreshCw className="mr-2 h-3.5 w-3.5" />Verify Buyer
-        </Button>
+        <div className="flex items-center gap-2">
+          {p.company && (
+            <a
+              href={`https://opencorporates.com/companies?q=${encodeURIComponent(p.company)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center rounded-md border border-[#A61D24]/40 px-2.5 h-8 text-xs text-[#A61D24] hover:bg-[#A61D24]/5"
+              title="Open formal company registry search"
+            >
+              <Globe className="mr-1.5 h-3.5 w-3.5" />OpenCorporates
+            </a>
+          )}
+          <Button size="sm" variant="outline" onClick={() => {
+            setRefreshKey((k) => k + 1);
+            toast.success("Buyer verification refreshed", {
+              description: p.company ? `Re-checked public signals for ${p.company}` : "Re-ran verification checks",
+            });
+          }}
+            className="border-[#A61D24]/40 text-[#A61D24] hover:bg-[#A61D24]/5">
+            <RefreshCw className="mr-2 h-3.5 w-3.5" />Verify Buyer
+          </Button>
+        </div>
       </div>
 
       {/* Score & summary */}
