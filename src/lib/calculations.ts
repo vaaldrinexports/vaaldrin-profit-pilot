@@ -200,6 +200,8 @@ export interface CalculatorState {
   companyBankAccount: string;
   companyBankSwift: string;
   companyBankBranch: string;
+  companyBankIfsc: string;
+  companyAdCode: string;
 
   // Document defaults
   paymentTerms: string;
