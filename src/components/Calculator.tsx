@@ -1428,6 +1428,8 @@ export default function Calculator() {
                 <TextField label="Account number" value={s.companyBankAccount} onChange={(v) => set("companyBankAccount", v)} />
                 <TextField label="SWIFT code" value={s.companyBankSwift} onChange={(v) => set("companyBankSwift", v)} />
                 <TextField label="Branch" value={s.companyBankBranch} onChange={(v) => set("companyBankBranch", v)} />
+                <TextField label="IFSC code" value={s.companyBankIfsc} onChange={(v) => set("companyBankIfsc", v)} placeholder="11-character IFSC" />
+                <TextField label="AD Code" value={s.companyAdCode} onChange={(v) => set("companyAdCode", v)} placeholder="14-digit AD Code from your AD bank" hint="Authorised Dealer code issued by your bank for export remittance" />
               </div>
             </GroupCard>
 
