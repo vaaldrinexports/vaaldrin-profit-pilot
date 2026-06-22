@@ -358,6 +358,8 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
     ["Bank Name", s.companyBankName || "—"],
     ["Account No.", s.companyBankAccount || "—"],
     ["SWIFT", s.companyBankSwift || "—"],
+    ["IFSC", s.companyBankIfsc || "—"],
+    ["AD Code", s.companyAdCode || "—"],
     ["Branch", s.companyBankBranch || "—"],
   ], 80);
 
