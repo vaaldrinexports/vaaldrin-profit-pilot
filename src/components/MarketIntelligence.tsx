@@ -60,6 +60,10 @@ export default function MarketIntelligence({
             <p className="text-xs text-muted-foreground mt-1">
               Select a product to load South India procurement benchmarks.
             </p>
+            <p className="text-[11px] text-muted-foreground mt-1 italic">
+              Benchmarks are static reference prices compiled from APEDA, Spices Board India and state APMC
+              sources. Each card shows the exact source and last-updated date — these are not live mandi feeds.
+            </p>
           </div>
         </div>
       </Card>
