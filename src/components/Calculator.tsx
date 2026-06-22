@@ -1561,8 +1561,8 @@ function QuoteFact({ label, value }: { label: string; value: string }) {
   return <div><div className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground/55">{label}</div><div className="mt-0.5 font-semibold">{value}</div></div>;
 }
 
-function DirectorCell({ label, value, tone, big, pct }: {
-  label: string; value: string; tone?: "gold" | "warn" | "danger"; big?: boolean; pct?: number;
+function DirectorCell({ label, value, tone, big, pct, hint }: {
+  label: string; value: string; tone?: "gold" | "warn" | "danger"; big?: boolean; pct?: number; hint?: string;
 }) {
   const cls =
     tone === "gold" ? "border-gold/60 bg-gold/15" :
@@ -1570,8 +1570,11 @@ function DirectorCell({ label, value, tone, big, pct }: {
     tone === "danger" ? "border-deep-red/50 bg-deep-red/10" :
     "border-primary-foreground/15 bg-primary-foreground/5";
   return (
-    <div className={"rounded-lg border p-4 " + cls}>
-      <div className="text-[10px] uppercase tracking-widest text-primary-foreground/70 font-semibold">{label}</div>
+    <div className={"rounded-lg border p-4 " + cls} title={hint}>
+      <div className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-primary-foreground/70 font-semibold">
+        {label}
+        {hint && <HelpCircle className="w-3 h-3 opacity-60" />}
+      </div>
       <div className={"font-bold mt-1.5 tabular-nums " + (big ? "text-xl sm:text-2xl" : "text-base")}>{value}</div>
       <div className="text-xs text-primary-foreground/60 tabular-nums mt-0.5">
         {pct !== undefined && (
