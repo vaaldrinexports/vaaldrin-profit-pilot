@@ -283,7 +283,7 @@ export async function generateQuotationPDF(s: CalculatorState) {
   ], margin, yTerms + 18, { lineHeightFactor: 1.5 });
 
   drawSignatureBlock(doc, W, yTerms + 110, "For " + (s.companyName || "Vaaldrin Exports"));
-  drawFooter(doc, W, H, margin);
+  drawFooter(doc, W, H, margin, "E&OE — Errors & Omissions Excepted");
   doc.save(`${s.quotationNumber || "quotation"}.pdf`);
 }
 
@@ -358,6 +358,8 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
     ["Bank Name", s.companyBankName || "—"],
     ["Account No.", s.companyBankAccount || "—"],
     ["SWIFT", s.companyBankSwift || "—"],
+    ["IFSC", s.companyBankIfsc || "—"],
+    ["AD Code", s.companyAdCode || "—"],
     ["Branch", s.companyBankBranch || "—"],
   ], 80);
 

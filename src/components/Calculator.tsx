@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  compute, defaultState, fmtINR, fmtCurrency, fmtNum,
+  compute, defaultState, demoState, fmtINR, fmtCurrency, fmtNum,
   applyScenario, evaluatePrice, evaluateDiscount, profitVariance, convertToINR, convertFromINR,
   calculateForexExposure, getActualBankRate, getBuyerQuote, getMarketRate, type CalculatorState, type Incoterm, type ContractCurrency,
 } from "@/lib/calculations";
+import { listQuotes, saveQuoteSnapshot, loadQuote, deleteQuote, type SavedQuote } from "@/lib/quote-store";
 import {
   searchHsCodes, lookupDuty, findCountryByName, COUNTRIES, INDIAN_PORTS,
   type HsCodeEntry,
@@ -59,7 +60,7 @@ import {
 import {
   FileDown, Printer, Save, Upload, Copy, RotateCcw, ShieldCheck, AlertTriangle,
   TrendingUp, Lock, Sparkles, MoreHorizontal, HelpCircle, Package, Truck, FileText,
-  Ship, Anchor, Landmark, Wallet, Coins, Globe2, Info,
+  Ship, Anchor, Landmark, Wallet, Coins, Globe2, Info, Trash2, FolderOpen, History,
 } from "lucide-react";
 
 const STORAGE_KEY = "vaaldrin.calc.v1";
@@ -402,6 +403,33 @@ function PortWeatherCard() {
 export default function Calculator() {
   const [s, setS] = useState<CalculatorState>(defaultState);
   const [docType, setDocType] = useState<DocType>("quotation");
+  const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([]);
+  const [fxStatus, setFxStatus] = useState<"loading" | "live" | "cached" | "stale">("loading");
+
+  const fetchLiveFx = async (showToast = false): Promise<boolean> => {
+    try {
+      if (showToast) toast.loading("Fetching live FX rates…", { id: "fxbar" });
+      const r = await fetch(`https://open.er-api.com/v6/latest/INR`);
+      const j = await r.json();
+      const rates = j?.rates;
+      if (!rates) throw new Error("No rates");
+      const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString();
+      setS((prev) => ({
+        ...prev,
+        marketUsdRate: rates.USD ? Math.round((1 / rates.USD) * 100) / 100 : prev.marketUsdRate,
+        marketEurRate: rates.EUR ? Math.round((1 / rates.EUR) * 100) / 100 : prev.marketEurRate,
+        marketGbpRate: rates.GBP ? Math.round((1 / rates.GBP) * 100) / 100 : prev.marketGbpRate,
+        marketAedRate: rates.AED ? Math.round((1 / rates.AED) * 100) / 100 : prev.marketAedRate,
+        fxLastUpdated: ts,
+      }));
+      setFxStatus("live");
+      if (showToast) toast.success("Live FX rates updated", { id: "fxbar" });
+      return true;
+    } catch {
+      if (showToast) toast.error("Couldn't fetch live rates — using cached values", { id: "fxbar" });
+      return false;
+    }
+  };
 
   useEffect(() => {
     const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
@@ -411,28 +439,27 @@ export default function Calculator() {
       const now = new Date();
       setS((current) => ({ ...current, quotationNumber: `VX-${now.getFullYear()}-0001`, quotationDate: now.toISOString().slice(0, 10) }));
     }
-    // Auto-fetch live FX rates on first mount so the user is never quoting against a stale rate
+    setSavedQuotes(listQuotes());
     (async () => {
-      try {
-        const r = await fetch(`https://open.er-api.com/v6/latest/INR`);
-        const j = await r.json();
-        const rates = j?.rates;
-        if (!rates) return;
-        const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString();
-        setS((prev) => ({
-          ...prev,
-          marketUsdRate: rates.USD ? Math.round((1 / rates.USD) * 100) / 100 : prev.marketUsdRate,
-          marketEurRate: rates.EUR ? Math.round((1 / rates.EUR) * 100) / 100 : prev.marketEurRate,
-          marketGbpRate: rates.GBP ? Math.round((1 / rates.GBP) * 100) / 100 : prev.marketGbpRate,
-          marketAedRate: rates.AED ? Math.round((1 / rates.AED) * 100) / 100 : prev.marketAedRate,
-          fxLastUpdated: ts,
-        }));
-      } catch { /* silent — user can still fetch manually */ }
+      const ok = await fetchLiveFx(false);
+      if (!ok) setFxStatus("cached");
     })();
   }, []);
 
+  // Mark FX as stale if >12h old
+  useEffect(() => {
+    if (!s.fxLastUpdated) return;
+    const ageMs = Date.now() - new Date(s.fxLastUpdated).getTime();
+    if (ageMs > 12 * 60 * 60 * 1000) setFxStatus("stale");
+  }, [s.fxLastUpdated]);
+
   const c = useMemo(() => compute(s), [s]);
   const set = <K extends keyof CalculatorState>(k: K, v: CalculatorState[K]) => setS((p) => ({ ...p, [k]: v }));
+
+  // Inputs gate — until quantity & supplier price are set, the entire
+  // dashboard renders as an empty state instead of a broken-looking
+  // -₹X profit / Deal Quality 0 display.
+  const inputsReady = s.quantity > 0 && s.supplierPricePerUnit > 0;
 
   const contractValue = (inr: number) => convertFromINR(inr, s.contractCurrency, s);
   const fmtContract = (inr: number) => fmtCurrency(contractValue(inr), s.contractCurrency);
@@ -466,7 +493,51 @@ export default function Calculator() {
     { name: "= Profit", value: c.profitPerUnit, color: "var(--success)" },
   ];
 
-  const save = () => { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); toast.success("Calculation saved"); };
+  const save = () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    if (inputsReady) {
+      saveQuoteSnapshot(s);
+      setSavedQuotes(listQuotes());
+      toast.success("Saved · snapshot added to history");
+    } else {
+      toast.success("Draft saved");
+    }
+  };
+  const loadDemo = () => {
+    setS({
+      ...demoState,
+      quotationNumber: s.quotationNumber || `VX-${new Date().getFullYear()}-0001`,
+      quotationDate: s.quotationDate || new Date().toISOString().slice(0, 10),
+      // Preserve any company settings the user already filled in
+      companyName: s.companyName, companyAddress: s.companyAddress,
+      companyGstin: s.companyGstin, companyIec: s.companyIec, companyFssai: s.companyFssai,
+      companyEmail: s.companyEmail, companyPhone: s.companyPhone,
+      companyBankName: s.companyBankName, companyBankAccount: s.companyBankAccount,
+      companyBankSwift: s.companyBankSwift, companyBankBranch: s.companyBankBranch,
+      companyBankIfsc: s.companyBankIfsc, companyAdCode: s.companyAdCode,
+    });
+    toast.success("Demo shipment loaded — 1,000 kg green cardamom to UAE");
+  };
+  const loadSavedQuote = (id: string) => {
+    const q = loadQuote(id);
+    if (!q) { toast.error("Quote not found"); return; }
+    setS(q.state);
+    toast.success(`Loaded ${q.quotationNumber || q.id}`);
+  };
+  const deleteSavedQuote = (id: string) => {
+    if (!confirm("Delete this saved quote?")) return;
+    deleteQuote(id);
+    setSavedQuotes(listQuotes());
+    toast.success("Deleted");
+  };
+  const duplicateSavedQuote = (id: string) => {
+    const q = loadQuote(id);
+    if (!q) return;
+    const n = parseInt(q.state.quotationNumber.split("-").pop() || "0", 10) + 1;
+    const base = q.state.quotationNumber.replace(/-\d+$/, "");
+    setS({ ...q.state, quotationNumber: `${base}-${String(n).padStart(4, "0")}` });
+    toast.success("Duplicated — edit and save to create a new revision");
+  };
   const exportJSON = () => {
     const blob = new Blob([JSON.stringify(s, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -574,6 +645,63 @@ export default function Calculator() {
       </header>
 
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-6">
+        {/* Validation banner — pulled to the very top so critical errors aren't buried mid-page */}
+        {c.validationErrors.length > 0 && (
+          <div className="rounded-lg border-2 border-deep-red bg-deep-red/10 p-4 flex items-start gap-3" role="alert">
+            <AlertTriangle className="w-5 h-5 text-deep-red mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <div className="font-bold text-deep-red">{c.isConsistent ? "Pricing Validation Error" : "Calculation Inconsistency Detected"}</div>
+              <ul className="mt-1 text-sm text-foreground/80 list-disc list-inside">
+                {c.validationErrors.map((error) => <li key={error}>{error}</li>)}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* FX status bar — always visible so user knows freshness */}
+        <div className="flex flex-wrap items-center gap-2 rounded-md border bg-card px-3 py-2 text-xs">
+          <Globe2 className="w-3.5 h-3.5 text-gold" />
+          <span className="font-semibold text-foreground/80">FX rates:</span>
+          <span className="tabular-nums">USD ₹{fmtNum(s.marketUsdRate)} · EUR ₹{fmtNum(s.marketEurRate)} · GBP ₹{fmtNum(s.marketGbpRate)} · AED ₹{fmtNum(s.marketAedRate)}</span>
+          {fxStatus === "live" && <Badge className="bg-success/15 text-success hover:bg-success/15 border-0">Live</Badge>}
+          {fxStatus === "cached" && <Badge className="bg-warning/15 text-warning hover:bg-warning/15 border-0">Cached</Badge>}
+          {fxStatus === "stale" && <Badge className="bg-deep-red/15 text-deep-red hover:bg-deep-red/15 border-0">Stale &gt;12h</Badge>}
+          {fxStatus === "loading" && <Badge variant="outline">Fetching…</Badge>}
+          {s.fxLastUpdated && <span className="text-muted-foreground">· as of {new Date(s.fxLastUpdated).toLocaleString()}</span>}
+          <Button size="sm" variant="outline" className="h-7 ml-auto" onClick={() => fetchLiveFx(true)}>
+            <RotateCcw className="w-3 h-3 mr-1.5" /> Refresh rates
+          </Button>
+        </div>
+
+        {!inputsReady ? (
+          /* EMPTY STATE — replaces broken-looking dashboard when no shipment is configured */
+          <Card className="overflow-hidden border-gold/40 shadow-md">
+            <div className="bg-gradient-to-br from-primary to-primary/95 text-primary-foreground p-8 text-center">
+              <div className="mx-auto inline-flex items-center justify-center w-14 h-14 rounded-full bg-gold/15 mb-4">
+                <Package className="w-7 h-7 text-gold" />
+              </div>
+              <h2 className="text-2xl font-semibold">Start a new quotation</h2>
+              <p className="mt-2 text-sm text-primary-foreground/70 max-w-xl mx-auto">
+                Enter <strong className="text-gold">quantity</strong> and <strong className="text-gold">supplier price</strong> in the
+                Inputs tab — the pricing engine, deal-quality score and walk-away thresholds will activate automatically.
+              </p>
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                <Button onClick={loadDemo} className="bg-gold hover:bg-gold/90 text-gold-foreground font-semibold">
+                  <Sparkles className="w-4 h-4 mr-2" /> Load demo shipment
+                </Button>
+                <Button variant="secondary" onClick={() => {
+                  document.querySelector('[data-state][value="inputs"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}>
+                  Configure manually
+                </Button>
+              </div>
+              <p className="mt-4 text-[11px] text-primary-foreground/50">
+                Demo loads 1,000 kg of Green Cardamom (AGMARK 8mm Bold) shipped FOB Chennai → UAE.
+              </p>
+            </div>
+          </Card>
+        ) : (
+          <>
         {/* Executive Summary — simpler, more spacious */}
         <Card className="overflow-hidden border-gold/30 shadow-md">
           <div className="bg-gradient-to-br from-primary to-primary/95 text-primary-foreground p-6">
@@ -621,10 +749,14 @@ export default function Calculator() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <DirectorCell label="Recommended price" value={fmtContract(incotermPrice)} tone="gold" big />
-              <DirectorCell label="Expected profit (internal)" value={fmtINR(c.netProfit)} pct={c.profitPct} big />
-              <DirectorCell label="Minimum acceptable" value={fmtContract(minIncotermPrice)} tone="warn" big />
-              <DirectorCell label="Walk-away price" value={fmtContract(walkPrice)} tone="danger" big />
+              <DirectorCell label="Recommended price" value={fmtContract(incotermPrice)} tone="gold" big
+                hint="Final selling price you should quote — built on your target margin." />
+              <DirectorCell label="Expected profit (internal)" value={fmtINR(c.netProfit)} pct={c.profitPct} big
+                hint="Revenue minus all costs & buffers. Never shown on buyer documents." />
+              <DirectorCell label="Minimum acceptable" value={fmtContract(minIncotermPrice)} tone="warn" big
+                hint={`Walk-away + ${fmtNum(s.minProfitPct)}% minimum margin floor. Below this, profit is too thin.`} />
+              <DirectorCell label="Walk-away price" value={fmtContract(walkPrice)} tone="danger" big
+                hint="Net profit = 0 after all costs, duties, banking & forex spread. Never sell below this." />
             </div>
           </div>
 
@@ -658,39 +790,20 @@ export default function Calculator() {
             </div>
           </div>
         )}
-
-        {c.validationErrors.length > 0 && (
-          <div className="rounded-lg border-2 border-deep-red bg-deep-red/10 p-4 flex items-start gap-3" role="alert">
-            <AlertTriangle className="w-5 h-5 text-deep-red mt-0.5 shrink-0" />
-            <div>
-              <div className="font-bold text-deep-red">{c.isConsistent ? "Pricing Validation Error" : "Calculation Inconsistency Detected"}</div>
-              <ul className="mt-1 text-sm text-foreground/80 list-disc list-inside">
-                {c.validationErrors.map((error) => <li key={error}>{error}</li>)}
-              </ul>
-            </div>
-          </div>
+          </>
         )}
 
-        {/* Quick-start hint when empty */}
-        {!s.productName && !s.quantity && (
-          <Card className="p-4 border-gold/30 bg-gold/5 flex items-start gap-3">
-            <Info className="w-5 h-5 text-gold mt-0.5 shrink-0" />
-            <div className="text-sm text-foreground/80">
-              <span className="font-semibold">Getting started:</span> open the <span className="font-semibold">Inputs</span> tab below and fill in shipment details, supplier price and quantity. The other sections (logistics, freight, etc.) are collapsed — expand only the ones you need.
-            </div>
-          </Card>
-        )}
 
         <Tabs defaultValue="inputs" className="space-y-5">
-          <TabsList className="grid grid-cols-2 md:grid-cols-8 w-full h-auto p-1 bg-secondary">
-            <TabsTrigger value="inputs" className="py-2.5">1. Inputs</TabsTrigger>
-            <TabsTrigger value="banking" className="py-2.5">2. Banking & Forex</TabsTrigger>
-            <TabsTrigger value="profit" className="py-2.5">3. Profit</TabsTrigger>
-            <TabsTrigger value="incoterms" className="py-2.5">4. Incoterms</TabsTrigger>
-            <TabsTrigger value="negotiation" className="py-2.5">5. Negotiation</TabsTrigger>
-            <TabsTrigger value="scenario" className="py-2.5">6. Scenarios</TabsTrigger>
-            <TabsTrigger value="audit" className="py-2.5">7. Audit</TabsTrigger>
-            <TabsTrigger value="admin" className="py-2.5">8. Admin</TabsTrigger>
+          <TabsList className="flex md:grid md:grid-cols-8 w-full h-auto p-1 bg-secondary overflow-x-auto whitespace-nowrap gap-1">
+            <TabsTrigger value="inputs" className="py-2.5 shrink-0">1.<span className="hidden sm:inline ml-1">Inputs</span></TabsTrigger>
+            <TabsTrigger value="banking" className="py-2.5 shrink-0">2.<span className="hidden sm:inline ml-1">Banking &amp; Forex</span></TabsTrigger>
+            <TabsTrigger value="profit" className="py-2.5 shrink-0">3.<span className="hidden sm:inline ml-1">Profit</span></TabsTrigger>
+            <TabsTrigger value="incoterms" className="py-2.5 shrink-0">4.<span className="hidden sm:inline ml-1">Incoterms</span></TabsTrigger>
+            <TabsTrigger value="negotiation" className="py-2.5 shrink-0">5.<span className="hidden sm:inline ml-1">Negotiation</span></TabsTrigger>
+            <TabsTrigger value="scenario" className="py-2.5 shrink-0">6.<span className="hidden sm:inline ml-1">Scenarios</span></TabsTrigger>
+            <TabsTrigger value="audit" className="py-2.5 shrink-0">7.<span className="hidden sm:inline ml-1">Audit</span></TabsTrigger>
+            <TabsTrigger value="admin" className="py-2.5 shrink-0">8.<span className="hidden sm:inline ml-1">Admin</span></TabsTrigger>
           </TabsList>
 
 
@@ -1180,6 +1293,61 @@ export default function Calculator() {
           </TabsContent>
 
           <TabsContent value="audit" className="space-y-5">
+            <GroupCard icon={History} title="Saved quotations" subtitle="Snapshots captured each time you Save. Load to re-open or duplicate for a revision.">
+              {savedQuotes.length === 0 ? (
+                <div className="rounded-md border border-dashed bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
+                  No saved quotations yet. Click <strong className="text-foreground">Save</strong> in the header to capture a snapshot.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm min-w-[760px]">
+                    <thead>
+                      <tr className="border-b bg-secondary/50 text-left">
+                        <th className="p-3">Quote #</th>
+                        <th className="p-3">Buyer</th>
+                        <th className="p-3">Product</th>
+                        <th className="p-3 text-right">Qty</th>
+                        <th className="p-3 text-right">Unit price</th>
+                        <th className="p-3 text-right">Total</th>
+                        <th className="p-3 text-right">Profit</th>
+                        <th className="p-3">Saved</th>
+                        <th className="p-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {savedQuotes.map((q) => (
+                        <tr key={q.id} className="border-b hover:bg-muted/30">
+                          <td className="p-3 font-semibold">{q.quotationNumber || "—"}</td>
+                          <td className="p-3">{q.buyerCompany || "—"}</td>
+                          <td className="p-3 text-muted-foreground">{q.productName || "—"}</td>
+                          <td className="p-3 text-right tabular-nums">{fmtNum(q.quantity, 0)} {q.uom}</td>
+                          <td className="p-3 text-right tabular-nums">{fmtCurrency(q.unitPrice, q.contractCurrency as ContractCurrency)}</td>
+                          <td className="p-3 text-right tabular-nums">{fmtCurrency(q.totalContractValue, q.contractCurrency as ContractCurrency)}</td>
+                          <td className={"p-3 text-right tabular-nums font-semibold " + (q.profitPct > 15 ? "text-success" : q.profitPct >= 8 ? "text-warning" : "text-deep-red")}>
+                            {fmtINR(q.netProfitINR)} <span className="text-xs opacity-70">({fmtNum(q.profitPct)}%)</span>
+                          </td>
+                          <td className="p-3 text-xs text-muted-foreground">{new Date(q.savedAt).toLocaleString()}</td>
+                          <td className="p-3 text-right">
+                            <div className="inline-flex gap-1">
+                              <Button size="sm" variant="outline" className="h-7" onClick={() => loadSavedQuote(q.id)} title="Load this quotation">
+                                <FolderOpen className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-7" onClick={() => duplicateSavedQuote(q.id)} title="Duplicate as new revision">
+                                <Copy className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-7 text-deep-red hover:text-deep-red" onClick={() => deleteSavedQuote(q.id)} title="Delete">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </GroupCard>
+
             <GroupCard icon={FileText} title="Calculation audit report" subtitle="Every value follows one documented formula from the central pricing engine">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
                 <KPI label="Reconciliation" value={c.isConsistent ? "Passed" : "Failed"} tone={c.isConsistent ? "green" : "red"} />
@@ -1315,6 +1483,8 @@ export default function Calculator() {
                 <TextField label="Account number" value={s.companyBankAccount} onChange={(v) => set("companyBankAccount", v)} />
                 <TextField label="SWIFT code" value={s.companyBankSwift} onChange={(v) => set("companyBankSwift", v)} />
                 <TextField label="Branch" value={s.companyBankBranch} onChange={(v) => set("companyBankBranch", v)} />
+                <TextField label="IFSC code" value={s.companyBankIfsc} onChange={(v) => set("companyBankIfsc", v)} placeholder="11-character IFSC" />
+                <TextField label="AD Code" value={s.companyAdCode} onChange={(v) => set("companyAdCode", v)} placeholder="14-digit AD Code from your AD bank" hint="Authorised Dealer code issued by your bank for export remittance" />
               </div>
             </GroupCard>
 
@@ -1448,8 +1618,8 @@ function QuoteFact({ label, value }: { label: string; value: string }) {
   return <div><div className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground/55">{label}</div><div className="mt-0.5 font-semibold">{value}</div></div>;
 }
 
-function DirectorCell({ label, value, tone, big, pct }: {
-  label: string; value: string; tone?: "gold" | "warn" | "danger"; big?: boolean; pct?: number;
+function DirectorCell({ label, value, tone, big, pct, hint }: {
+  label: string; value: string; tone?: "gold" | "warn" | "danger"; big?: boolean; pct?: number; hint?: string;
 }) {
   const cls =
     tone === "gold" ? "border-gold/60 bg-gold/15" :
@@ -1457,8 +1627,11 @@ function DirectorCell({ label, value, tone, big, pct }: {
     tone === "danger" ? "border-deep-red/50 bg-deep-red/10" :
     "border-primary-foreground/15 bg-primary-foreground/5";
   return (
-    <div className={"rounded-lg border p-4 " + cls}>
-      <div className="text-[10px] uppercase tracking-widest text-primary-foreground/70 font-semibold">{label}</div>
+    <div className={"rounded-lg border p-4 " + cls} title={hint}>
+      <div className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-primary-foreground/70 font-semibold">
+        {label}
+        {hint && <HelpCircle className="w-3 h-3 opacity-60" />}
+      </div>
       <div className={"font-bold mt-1.5 tabular-nums " + (big ? "text-xl sm:text-2xl" : "text-base")}>{value}</div>
       <div className="text-xs text-primary-foreground/60 tabular-nums mt-0.5">
         {pct !== undefined && (

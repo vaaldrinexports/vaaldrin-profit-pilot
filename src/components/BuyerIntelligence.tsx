@@ -48,8 +48,33 @@ export default function BuyerIntelligence(p: Props) {
           <h3 className="text-base font-semibold text-[#1A1A1A]">Buyer Intelligence</h3>
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
-          Enter buyer company name, email, website or country to run automated verification.
+          Run public-signal checks on a prospective buyer (domain, email, phone, country risk).
+          <span className="ml-1 italic">Not a credit rating or legal verification.</span>
         </p>
+        <details className="mt-3 text-xs text-muted-foreground">
+          <summary className="cursor-pointer font-semibold text-[#A61D24]">What this checks</summary>
+          <ul className="mt-2 list-inside list-disc space-y-0.5">
+            <li>Website validity &amp; HTTPS</li>
+            <li>Business vs. personal email domain</li>
+            <li>Domain age estimation (heuristic)</li>
+            <li>Contact information completeness</li>
+            <li>Country consistency (TLD / phone / email vs. selected country)</li>
+            <li>Sanctions-keyword screen on free-text fields</li>
+            <li>Country risk band (in-app risk database)</li>
+            <li>Business type &amp; maturity heuristic</li>
+          </ul>
+          <p className="mt-2">
+            For formal corporate identity checks, use{" "}
+            <a
+              href="https://opencorporates.com/companies"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-[#A61D24]"
+            >
+              OpenCorporates
+            </a>{" "}or your local registry.
+          </p>
+        </details>
       </Card>
     );
   }
@@ -72,15 +97,28 @@ export default function BuyerIntelligence(p: Props) {
             <p className="text-xs text-muted-foreground">Public-signal due diligence · Not a credit rating</p>
           </div>
         </div>
-        <Button size="sm" variant="outline" onClick={() => {
-          setRefreshKey((k) => k + 1);
-          toast.success("Buyer verification refreshed", {
-            description: p.company ? `Re-checked public signals for ${p.company}` : "Re-ran verification checks",
-          });
-        }}
-          className="border-[#A61D24]/40 text-[#A61D24] hover:bg-[#A61D24]/5">
-          <RefreshCw className="mr-2 h-3.5 w-3.5" />Verify Buyer
-        </Button>
+        <div className="flex items-center gap-2">
+          {p.company && (
+            <a
+              href={`https://opencorporates.com/companies?q=${encodeURIComponent(p.company)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center rounded-md border border-[#A61D24]/40 px-2.5 h-8 text-xs text-[#A61D24] hover:bg-[#A61D24]/5"
+              title="Open formal company registry search"
+            >
+              <Globe className="mr-1.5 h-3.5 w-3.5" />OpenCorporates
+            </a>
+          )}
+          <Button size="sm" variant="outline" onClick={() => {
+            setRefreshKey((k) => k + 1);
+            toast.success("Buyer verification refreshed", {
+              description: p.company ? `Re-checked public signals for ${p.company}` : "Re-ran verification checks",
+            });
+          }}
+            className="border-[#A61D24]/40 text-[#A61D24] hover:bg-[#A61D24]/5">
+            <RefreshCw className="mr-2 h-3.5 w-3.5" />Verify Buyer
+          </Button>
+        </div>
       </div>
 
       {/* Score & summary */}
