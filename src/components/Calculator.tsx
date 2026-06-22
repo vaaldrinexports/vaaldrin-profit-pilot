@@ -493,7 +493,51 @@ export default function Calculator() {
     { name: "= Profit", value: c.profitPerUnit, color: "var(--success)" },
   ];
 
-  const save = () => { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); toast.success("Calculation saved"); };
+  const save = () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    if (inputsReady) {
+      saveQuoteSnapshot(s);
+      setSavedQuotes(listQuotes());
+      toast.success("Saved · snapshot added to history");
+    } else {
+      toast.success("Draft saved");
+    }
+  };
+  const loadDemo = () => {
+    setS({
+      ...demoState,
+      quotationNumber: s.quotationNumber || `VX-${new Date().getFullYear()}-0001`,
+      quotationDate: s.quotationDate || new Date().toISOString().slice(0, 10),
+      // Preserve any company settings the user already filled in
+      companyName: s.companyName, companyAddress: s.companyAddress,
+      companyGstin: s.companyGstin, companyIec: s.companyIec, companyFssai: s.companyFssai,
+      companyEmail: s.companyEmail, companyPhone: s.companyPhone,
+      companyBankName: s.companyBankName, companyBankAccount: s.companyBankAccount,
+      companyBankSwift: s.companyBankSwift, companyBankBranch: s.companyBankBranch,
+      companyBankIfsc: s.companyBankIfsc, companyAdCode: s.companyAdCode,
+    });
+    toast.success("Demo shipment loaded — 1,000 kg green cardamom to UAE");
+  };
+  const loadSavedQuote = (id: string) => {
+    const q = loadQuote(id);
+    if (!q) { toast.error("Quote not found"); return; }
+    setS(q.state);
+    toast.success(`Loaded ${q.quotationNumber || q.id}`);
+  };
+  const deleteSavedQuote = (id: string) => {
+    if (!confirm("Delete this saved quote?")) return;
+    deleteQuote(id);
+    setSavedQuotes(listQuotes());
+    toast.success("Deleted");
+  };
+  const duplicateSavedQuote = (id: string) => {
+    const q = loadQuote(id);
+    if (!q) return;
+    const n = parseInt(q.state.quotationNumber.split("-").pop() || "0", 10) + 1;
+    const base = q.state.quotationNumber.replace(/-\d+$/, "");
+    setS({ ...q.state, quotationNumber: `${base}-${String(n).padStart(4, "0")}` });
+    toast.success("Duplicated — edit and save to create a new revision");
+  };
   const exportJSON = () => {
     const blob = new Blob([JSON.stringify(s, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
