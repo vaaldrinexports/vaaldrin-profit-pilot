@@ -117,7 +117,14 @@ export default function MarketIntelligence({
             size="sm"
             variant="outline"
             className="h-7 text-xs gap-1.5"
-            onClick={() => setTick((t) => t + 1)}
+            onClick={() => {
+              setTick((t) => t + 1);
+              const now = new Date();
+              setRefreshedAt(now.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }));
+              toast.success("Benchmark refreshed", {
+                description: benchmark ? `${benchmark.name} · ${benchmark.primaryMarket}` : "Re-checked benchmark data",
+              });
+            }}
           >
             <RefreshCw className="w-3 h-3" /> Refresh
           </Button>
