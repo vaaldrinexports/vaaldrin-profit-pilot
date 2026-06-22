@@ -1293,6 +1293,61 @@ export default function Calculator() {
           </TabsContent>
 
           <TabsContent value="audit" className="space-y-5">
+            <GroupCard icon={History} title="Saved quotations" subtitle="Snapshots captured each time you Save. Load to re-open or duplicate for a revision.">
+              {savedQuotes.length === 0 ? (
+                <div className="rounded-md border border-dashed bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
+                  No saved quotations yet. Click <strong className="text-foreground">Save</strong> in the header to capture a snapshot.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm min-w-[760px]">
+                    <thead>
+                      <tr className="border-b bg-secondary/50 text-left">
+                        <th className="p-3">Quote #</th>
+                        <th className="p-3">Buyer</th>
+                        <th className="p-3">Product</th>
+                        <th className="p-3 text-right">Qty</th>
+                        <th className="p-3 text-right">Unit price</th>
+                        <th className="p-3 text-right">Total</th>
+                        <th className="p-3 text-right">Profit</th>
+                        <th className="p-3">Saved</th>
+                        <th className="p-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {savedQuotes.map((q) => (
+                        <tr key={q.id} className="border-b hover:bg-muted/30">
+                          <td className="p-3 font-semibold">{q.quotationNumber || "—"}</td>
+                          <td className="p-3">{q.buyerCompany || "—"}</td>
+                          <td className="p-3 text-muted-foreground">{q.productName || "—"}</td>
+                          <td className="p-3 text-right tabular-nums">{fmtNum(q.quantity, 0)} {q.uom}</td>
+                          <td className="p-3 text-right tabular-nums">{fmtCurrency(q.unitPrice, q.contractCurrency as ContractCurrency)}</td>
+                          <td className="p-3 text-right tabular-nums">{fmtCurrency(q.totalContractValue, q.contractCurrency as ContractCurrency)}</td>
+                          <td className={"p-3 text-right tabular-nums font-semibold " + (q.profitPct > 15 ? "text-success" : q.profitPct >= 8 ? "text-warning" : "text-deep-red")}>
+                            {fmtINR(q.netProfitINR)} <span className="text-xs opacity-70">({fmtNum(q.profitPct)}%)</span>
+                          </td>
+                          <td className="p-3 text-xs text-muted-foreground">{new Date(q.savedAt).toLocaleString()}</td>
+                          <td className="p-3 text-right">
+                            <div className="inline-flex gap-1">
+                              <Button size="sm" variant="outline" className="h-7" onClick={() => loadSavedQuote(q.id)} title="Load this quotation">
+                                <FolderOpen className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-7" onClick={() => duplicateSavedQuote(q.id)} title="Duplicate as new revision">
+                                <Copy className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-7 text-deep-red hover:text-deep-red" onClick={() => deleteSavedQuote(q.id)} title="Delete">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </GroupCard>
+
             <GroupCard icon={FileText} title="Calculation audit report" subtitle="Every value follows one documented formula from the central pricing engine">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
                 <KPI label="Reconciliation" value={c.isConsistent ? "Passed" : "Failed"} tone={c.isConsistent ? "green" : "red"} />
