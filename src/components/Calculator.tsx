@@ -403,6 +403,33 @@ function PortWeatherCard() {
 export default function Calculator() {
   const [s, setS] = useState<CalculatorState>(defaultState);
   const [docType, setDocType] = useState<DocType>("quotation");
+  const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([]);
+  const [fxStatus, setFxStatus] = useState<"loading" | "live" | "cached" | "stale">("loading");
+
+  const fetchLiveFx = async (showToast = false): Promise<boolean> => {
+    try {
+      if (showToast) toast.loading("Fetching live FX rates…", { id: "fxbar" });
+      const r = await fetch(`https://open.er-api.com/v6/latest/INR`);
+      const j = await r.json();
+      const rates = j?.rates;
+      if (!rates) throw new Error("No rates");
+      const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString();
+      setS((prev) => ({
+        ...prev,
+        marketUsdRate: rates.USD ? Math.round((1 / rates.USD) * 100) / 100 : prev.marketUsdRate,
+        marketEurRate: rates.EUR ? Math.round((1 / rates.EUR) * 100) / 100 : prev.marketEurRate,
+        marketGbpRate: rates.GBP ? Math.round((1 / rates.GBP) * 100) / 100 : prev.marketGbpRate,
+        marketAedRate: rates.AED ? Math.round((1 / rates.AED) * 100) / 100 : prev.marketAedRate,
+        fxLastUpdated: ts,
+      }));
+      setFxStatus("live");
+      if (showToast) toast.success("Live FX rates updated", { id: "fxbar" });
+      return true;
+    } catch {
+      if (showToast) toast.error("Couldn't fetch live rates — using cached values", { id: "fxbar" });
+      return false;
+    }
+  };
 
   useEffect(() => {
     const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
@@ -412,28 +439,27 @@ export default function Calculator() {
       const now = new Date();
       setS((current) => ({ ...current, quotationNumber: `VX-${now.getFullYear()}-0001`, quotationDate: now.toISOString().slice(0, 10) }));
     }
-    // Auto-fetch live FX rates on first mount so the user is never quoting against a stale rate
+    setSavedQuotes(listQuotes());
     (async () => {
-      try {
-        const r = await fetch(`https://open.er-api.com/v6/latest/INR`);
-        const j = await r.json();
-        const rates = j?.rates;
-        if (!rates) return;
-        const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString();
-        setS((prev) => ({
-          ...prev,
-          marketUsdRate: rates.USD ? Math.round((1 / rates.USD) * 100) / 100 : prev.marketUsdRate,
-          marketEurRate: rates.EUR ? Math.round((1 / rates.EUR) * 100) / 100 : prev.marketEurRate,
-          marketGbpRate: rates.GBP ? Math.round((1 / rates.GBP) * 100) / 100 : prev.marketGbpRate,
-          marketAedRate: rates.AED ? Math.round((1 / rates.AED) * 100) / 100 : prev.marketAedRate,
-          fxLastUpdated: ts,
-        }));
-      } catch { /* silent — user can still fetch manually */ }
+      const ok = await fetchLiveFx(false);
+      if (!ok) setFxStatus("cached");
     })();
   }, []);
 
+  // Mark FX as stale if >12h old
+  useEffect(() => {
+    if (!s.fxLastUpdated) return;
+    const ageMs = Date.now() - new Date(s.fxLastUpdated).getTime();
+    if (ageMs > 12 * 60 * 60 * 1000) setFxStatus("stale");
+  }, [s.fxLastUpdated]);
+
   const c = useMemo(() => compute(s), [s]);
   const set = <K extends keyof CalculatorState>(k: K, v: CalculatorState[K]) => setS((p) => ({ ...p, [k]: v }));
+
+  // Inputs gate — until quantity & supplier price are set, the entire
+  // dashboard renders as an empty state instead of a broken-looking
+  // -₹X profit / Deal Quality 0 display.
+  const inputsReady = s.quantity > 0 && s.supplierPricePerUnit > 0;
 
   const contractValue = (inr: number) => convertFromINR(inr, s.contractCurrency, s);
   const fmtContract = (inr: number) => fmtCurrency(contractValue(inr), s.contractCurrency);
