@@ -254,7 +254,7 @@ export default function MarketIntelligence({
           {/* Source */}
           <div className="text-[10px] text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
             <span><strong className="text-foreground">Source:</strong> {benchmark.source}</span>
-            <span><strong className="text-foreground">Updated:</strong> {benchmark.lastUpdated}</span>
+            <span><strong className="text-foreground">Updated:</strong> {refreshedAt ?? benchmark.lastUpdated}</span>
             <span className="italic">
               {benchmark.category === "live" ? "Live Market Reference" : "Benchmark Price"}
             </span>
