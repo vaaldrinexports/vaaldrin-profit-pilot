@@ -645,6 +645,63 @@ export default function Calculator() {
       </header>
 
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-6">
+        {/* Validation banner — pulled to the very top so critical errors aren't buried mid-page */}
+        {c.validationErrors.length > 0 && (
+          <div className="rounded-lg border-2 border-deep-red bg-deep-red/10 p-4 flex items-start gap-3" role="alert">
+            <AlertTriangle className="w-5 h-5 text-deep-red mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <div className="font-bold text-deep-red">{c.isConsistent ? "Pricing Validation Error" : "Calculation Inconsistency Detected"}</div>
+              <ul className="mt-1 text-sm text-foreground/80 list-disc list-inside">
+                {c.validationErrors.map((error) => <li key={error}>{error}</li>)}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* FX status bar — always visible so user knows freshness */}
+        <div className="flex flex-wrap items-center gap-2 rounded-md border bg-card px-3 py-2 text-xs">
+          <Globe2 className="w-3.5 h-3.5 text-gold" />
+          <span className="font-semibold text-foreground/80">FX rates:</span>
+          <span className="tabular-nums">USD ₹{fmtNum(s.marketUsdRate)} · EUR ₹{fmtNum(s.marketEurRate)} · GBP ₹{fmtNum(s.marketGbpRate)} · AED ₹{fmtNum(s.marketAedRate)}</span>
+          {fxStatus === "live" && <Badge className="bg-success/15 text-success hover:bg-success/15 border-0">Live</Badge>}
+          {fxStatus === "cached" && <Badge className="bg-warning/15 text-warning hover:bg-warning/15 border-0">Cached</Badge>}
+          {fxStatus === "stale" && <Badge className="bg-deep-red/15 text-deep-red hover:bg-deep-red/15 border-0">Stale &gt;12h</Badge>}
+          {fxStatus === "loading" && <Badge variant="outline">Fetching…</Badge>}
+          {s.fxLastUpdated && <span className="text-muted-foreground">· as of {new Date(s.fxLastUpdated).toLocaleString()}</span>}
+          <Button size="sm" variant="outline" className="h-7 ml-auto" onClick={() => fetchLiveFx(true)}>
+            <RotateCcw className="w-3 h-3 mr-1.5" /> Refresh rates
+          </Button>
+        </div>
+
+        {!inputsReady ? (
+          /* EMPTY STATE — replaces broken-looking dashboard when no shipment is configured */
+          <Card className="overflow-hidden border-gold/40 shadow-md">
+            <div className="bg-gradient-to-br from-primary to-primary/95 text-primary-foreground p-8 text-center">
+              <div className="mx-auto inline-flex items-center justify-center w-14 h-14 rounded-full bg-gold/15 mb-4">
+                <Package className="w-7 h-7 text-gold" />
+              </div>
+              <h2 className="text-2xl font-semibold">Start a new quotation</h2>
+              <p className="mt-2 text-sm text-primary-foreground/70 max-w-xl mx-auto">
+                Enter <strong className="text-gold">quantity</strong> and <strong className="text-gold">supplier price</strong> in the
+                Inputs tab — the pricing engine, deal-quality score and walk-away thresholds will activate automatically.
+              </p>
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                <Button onClick={loadDemo} className="bg-gold hover:bg-gold/90 text-gold-foreground font-semibold">
+                  <Sparkles className="w-4 h-4 mr-2" /> Load demo shipment
+                </Button>
+                <Button variant="secondary" onClick={() => {
+                  document.querySelector('[data-state][value="inputs"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}>
+                  Configure manually
+                </Button>
+              </div>
+              <p className="mt-4 text-[11px] text-primary-foreground/50">
+                Demo loads 1,000 kg of Green Cardamom (AGMARK 8mm Bold) shipped FOB Chennai → UAE.
+              </p>
+            </div>
+          </Card>
+        ) : (
+          <>
         {/* Executive Summary — simpler, more spacious */}
         <Card className="overflow-hidden border-gold/30 shadow-md">
           <div className="bg-gradient-to-br from-primary to-primary/95 text-primary-foreground p-6">
@@ -692,10 +749,14 @@ export default function Calculator() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <DirectorCell label="Recommended price" value={fmtContract(incotermPrice)} tone="gold" big />
-              <DirectorCell label="Expected profit (internal)" value={fmtINR(c.netProfit)} pct={c.profitPct} big />
-              <DirectorCell label="Minimum acceptable" value={fmtContract(minIncotermPrice)} tone="warn" big />
-              <DirectorCell label="Walk-away price" value={fmtContract(walkPrice)} tone="danger" big />
+              <DirectorCell label="Recommended price" value={fmtContract(incotermPrice)} tone="gold" big
+                hint="Final selling price you should quote — built on your target margin." />
+              <DirectorCell label="Expected profit (internal)" value={fmtINR(c.netProfit)} pct={c.profitPct} big
+                hint="Revenue minus all costs & buffers. Never shown on buyer documents." />
+              <DirectorCell label="Minimum acceptable" value={fmtContract(minIncotermPrice)} tone="warn" big
+                hint={`Walk-away + ${fmtNum(s.minProfitPct)}% minimum margin floor. Below this, profit is too thin.`} />
+              <DirectorCell label="Walk-away price" value={fmtContract(walkPrice)} tone="danger" big
+                hint="Net profit = 0 after all costs, duties, banking & forex spread. Never sell below this." />
             </div>
           </div>
 
@@ -729,28 +790,9 @@ export default function Calculator() {
             </div>
           </div>
         )}
-
-        {c.validationErrors.length > 0 && (
-          <div className="rounded-lg border-2 border-deep-red bg-deep-red/10 p-4 flex items-start gap-3" role="alert">
-            <AlertTriangle className="w-5 h-5 text-deep-red mt-0.5 shrink-0" />
-            <div>
-              <div className="font-bold text-deep-red">{c.isConsistent ? "Pricing Validation Error" : "Calculation Inconsistency Detected"}</div>
-              <ul className="mt-1 text-sm text-foreground/80 list-disc list-inside">
-                {c.validationErrors.map((error) => <li key={error}>{error}</li>)}
-              </ul>
-            </div>
-          </div>
+          </>
         )}
 
-        {/* Quick-start hint when empty */}
-        {!s.productName && !s.quantity && (
-          <Card className="p-4 border-gold/30 bg-gold/5 flex items-start gap-3">
-            <Info className="w-5 h-5 text-gold mt-0.5 shrink-0" />
-            <div className="text-sm text-foreground/80">
-              <span className="font-semibold">Getting started:</span> open the <span className="font-semibold">Inputs</span> tab below and fill in shipment details, supplier price and quantity. The other sections (logistics, freight, etc.) are collapsed — expand only the ones you need.
-            </div>
-          </Card>
-        )}
 
         <Tabs defaultValue="inputs" className="space-y-5">
           <TabsList className="grid grid-cols-2 md:grid-cols-8 w-full h-auto p-1 bg-secondary">
