@@ -64,6 +64,33 @@ import {
 } from "lucide-react";
 
 const STORAGE_KEY = "vaaldrin.calc.v1";
+const ADMIN_STORAGE_KEY = "vaaldrin.admin.v1";
+
+type AdminSettings = Pick<CalculatorState,
+  | "companyName" | "companyAddress" | "companyGstin" | "companyIec" | "companyFssai" | "companyEmail" | "companyPhone"
+  | "companyBankName" | "companyBankAccount" | "companyBankSwift" | "companyBankBranch" | "companyBankIfsc" | "companyAdCode"
+  | "paymentTerms" | "quotationValidityDays" | "bankingTariff"
+>;
+
+const adminKeys: (keyof AdminSettings)[] = [
+  "companyName", "companyAddress", "companyGstin", "companyIec", "companyFssai", "companyEmail", "companyPhone",
+  "companyBankName", "companyBankAccount", "companyBankSwift", "companyBankBranch", "companyBankIfsc", "companyAdCode",
+  "paymentTerms", "quotationValidityDays", "bankingTariff",
+];
+
+const pickAdminSettings = (state: CalculatorState): AdminSettings => adminKeys.reduce((acc, key) => ({ ...acc, [key]: state[key] }), {} as AdminSettings);
+
+const readJson = <T,>(key: string): Partial<T> => {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const bankRateFromMarket = (marketRate: number, spreadPct: number) => Math.round((marketRate * (1 - Math.max(0, spreadPct) / 100)) * 100) / 100;
 
 /* ---------- Tiny field primitives — bigger, friendlier ---------- */
 
@@ -417,9 +444,13 @@ export default function Calculator() {
       setS((prev) => ({
         ...prev,
         marketUsdRate: rates.USD ? Math.round((1 / rates.USD) * 100) / 100 : prev.marketUsdRate,
+        actualBankUsdRate: rates.USD ? bankRateFromMarket(1 / rates.USD, prev.bankingTariff.forex_spread_percent) : prev.actualBankUsdRate,
         marketEurRate: rates.EUR ? Math.round((1 / rates.EUR) * 100) / 100 : prev.marketEurRate,
+        actualBankEurRate: rates.EUR ? bankRateFromMarket(1 / rates.EUR, prev.bankingTariff.forex_spread_percent) : prev.actualBankEurRate,
         marketGbpRate: rates.GBP ? Math.round((1 / rates.GBP) * 100) / 100 : prev.marketGbpRate,
+        actualBankGbpRate: rates.GBP ? bankRateFromMarket(1 / rates.GBP, prev.bankingTariff.forex_spread_percent) : prev.actualBankGbpRate,
         marketAedRate: rates.AED ? Math.round((1 / rates.AED) * 100) / 100 : prev.marketAedRate,
+        actualBankAedRate: rates.AED ? bankRateFromMarket(1 / rates.AED, prev.bankingTariff.forex_spread_percent) : prev.actualBankAedRate,
         fxLastUpdated: ts,
       }));
       setFxStatus("live");
@@ -432,9 +463,12 @@ export default function Calculator() {
   };
 
   useEffect(() => {
-    const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-    if (raw) {
-      try { setS({ ...defaultState, ...JSON.parse(raw) }); } catch {}
+    const draft = readJson<CalculatorState>(STORAGE_KEY);
+    const admin = readJson<AdminSettings>(ADMIN_STORAGE_KEY);
+    const draftTariff = draft.bankingTariff;
+    const adminTariff = admin.bankingTariff;
+    if (Object.keys(draft).length > 0 || Object.keys(admin).length > 0) {
+      setS({ ...defaultState, ...draft, ...admin, bankingTariff: { ...defaultState.bankingTariff, ...draftTariff, ...adminTariff } });
     } else {
       const now = new Date();
       setS((current) => ({ ...current, quotationNumber: `VX-${now.getFullYear()}-0001`, quotationDate: now.toISOString().slice(0, 10) }));
@@ -492,6 +526,7 @@ export default function Calculator() {
 
   const save = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(pickAdminSettings(s)));
     if (inputsReady) {
       saveQuoteSnapshot(s);
       setSavedQuotes(listQuotes());
@@ -573,6 +608,12 @@ export default function Calculator() {
   const dq = c.dealQualityScore;
   const dqLabel = dq >= 90 ? "Excellent" : dq >= 75 ? "Good" : dq >= 60 ? "Acceptable" : "High Risk";
   const dqTone = dq >= 75 ? "text-success" : dq >= 60 ? "text-warning" : "text-deep-red";
+
+  const saveAdminSettings = () => {
+    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(pickAdminSettings(s)));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    toast.success("Admin settings saved");
+  };
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -937,7 +978,7 @@ export default function Calculator() {
 
 
 
-                <AccItem value="misc" icon={Wallet} title="Miscellaneous & contingency" summary={fmtINR(c.miscTotal + c.contingencyAmount)}>
+                <AccItem value="misc" icon={Wallet} title="Miscellaneous & contingency" summary={`${fmtINR(c.miscTotal)} + ${fmtNum(s.contingencyPct)}%`}>
                   <div className="grid grid-cols-2 gap-4">
                     <NumField label="Miscellaneous cost" value={s.miscCost} onChange={(v) => set("miscCost", v)} suffix="₹" />
                     <NumField label="Contingency buffer" value={s.contingencyPct} onChange={(v) => set("contingencyPct", v)} suffix="%" step={0.1} hint="Safety margin added to total cost" />
@@ -954,7 +995,7 @@ export default function Calculator() {
                   </div>
                 </AccItem>
 
-                <AccItem value="forex" icon={Globe2} title="Currency & forex protection" summary={`${s.contractCurrency} @ ${fmtNum(getActualBankRate(s.contractCurrency, s))}`}>
+                <AccItem value="forex" icon={Globe2} title="Currency & forex protection" summary={`${s.contractCurrency} market ${fmtNum(getMarketRate(s.contractCurrency, s))} / bank ${fmtNum(getActualBankRate(s.contractCurrency, s))}`}>
                   {(() => {
                     const cc = s.contractCurrency;
                     const marketKey = `market${cc.charAt(0)}${cc.slice(1).toLowerCase()}Rate` as
@@ -969,10 +1010,11 @@ export default function Calculator() {
                         const rate = j?.rates?.INR;
                         if (!rate || typeof rate !== "number") throw new Error("No INR rate in response");
                         const rounded = Math.round(rate * 100) / 100;
-                        set(marketKey, rounded);
+                        const bankRate = bankRateFromMarket(rounded, s.bankingTariff.forex_spread_percent);
+                        setS((prev) => ({ ...prev, [marketKey]: rounded, [bankKey]: bankRate }));
                         const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString();
                         set("fxLastUpdated", ts);
-                        toast.success(`Live ${cc}/INR = ₹${rounded} (as of ${new Date(ts).toLocaleString()})`, { id: "fx" });
+                        toast.success(`Live ${cc}/INR = ₹${rounded}; bank rate = ₹${bankRate}`, { id: "fx" });
                       } catch (e) {
                         toast.error(`Could not fetch live ${cc} rate. Enter manually.`, { id: "fx" });
                       }
@@ -989,7 +1031,12 @@ export default function Calculator() {
                         ];
                         for (const [code, key] of pairs) {
                           const inrPer = rates[code] ? 1 / rates[code] : null;
-                          if (inrPer) set(key, Math.round(inrPer * 100) / 100);
+                          if (inrPer) {
+                            const marketRate = Math.round(inrPer * 100) / 100;
+                            const actualKey = `actualBank${code.charAt(0)}${code.slice(1).toLowerCase()}Rate` as
+                              | "actualBankUsdRate" | "actualBankEurRate" | "actualBankGbpRate" | "actualBankAedRate";
+                            setS((prev) => ({ ...prev, [key]: marketRate, [actualKey]: bankRateFromMarket(marketRate, prev.bankingTariff.forex_spread_percent) }));
+                          }
                         }
                         const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString();
                         set("fxLastUpdated", ts);
@@ -1412,7 +1459,7 @@ export default function Calculator() {
                 <div className="font-semibold text-[#1A1A1A]">Admin settings</div>
                 <div className="text-xs text-muted-foreground">Save changes to company profile, banking and document defaults.</div>
               </div>
-              <Button onClick={save} className="bg-[#A61D24] hover:bg-[#8a181e] text-white">
+              <Button onClick={saveAdminSettings} className="bg-[#A61D24] hover:bg-[#8a181e] text-white">
                 <Save className="w-4 h-4 mr-2" />Save settings
               </Button>
             </div>
