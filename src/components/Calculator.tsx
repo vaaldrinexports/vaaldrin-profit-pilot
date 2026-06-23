@@ -609,6 +609,12 @@ export default function Calculator() {
   const dqLabel = dq >= 90 ? "Excellent" : dq >= 75 ? "Good" : dq >= 60 ? "Acceptable" : "High Risk";
   const dqTone = dq >= 75 ? "text-success" : dq >= 60 ? "text-warning" : "text-deep-red";
 
+  const saveAdminSettings = () => {
+    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(pickAdminSettings(s)));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    toast.success("Admin settings saved");
+  };
+
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Header — cleaner, fewer buttons */}
