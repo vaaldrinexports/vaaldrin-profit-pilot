@@ -978,7 +978,7 @@ export default function Calculator() {
 
 
 
-                <AccItem value="misc" icon={Wallet} title="Miscellaneous & contingency" summary={fmtINR(c.miscTotal + c.contingencyAmount)}>
+                <AccItem value="misc" icon={Wallet} title="Miscellaneous & contingency" summary={`${fmtINR(c.miscTotal)} + ${fmtNum(s.contingencyPct)}%`}>
                   <div className="grid grid-cols-2 gap-4">
                     <NumField label="Miscellaneous cost" value={s.miscCost} onChange={(v) => set("miscCost", v)} suffix="₹" />
                     <NumField label="Contingency buffer" value={s.contingencyPct} onChange={(v) => set("contingencyPct", v)} suffix="%" step={0.1} hint="Safety margin added to total cost" />
@@ -995,7 +995,7 @@ export default function Calculator() {
                   </div>
                 </AccItem>
 
-                <AccItem value="forex" icon={Globe2} title="Currency & forex protection" summary={`${s.contractCurrency} @ ${fmtNum(getActualBankRate(s.contractCurrency, s))}`}>
+                <AccItem value="forex" icon={Globe2} title="Currency & forex protection" summary={`${s.contractCurrency} market ${fmtNum(getMarketRate(s.contractCurrency, s))} / bank ${fmtNum(getActualBankRate(s.contractCurrency, s))}`}>
                   {(() => {
                     const cc = s.contractCurrency;
                     const marketKey = `market${cc.charAt(0)}${cc.slice(1).toLowerCase()}Rate` as
@@ -1459,7 +1459,7 @@ export default function Calculator() {
                 <div className="font-semibold text-[#1A1A1A]">Admin settings</div>
                 <div className="text-xs text-muted-foreground">Save changes to company profile, banking and document defaults.</div>
               </div>
-              <Button onClick={save} className="bg-[#A61D24] hover:bg-[#8a181e] text-white">
+              <Button onClick={saveAdminSettings} className="bg-[#A61D24] hover:bg-[#8a181e] text-white">
                 <Save className="w-4 h-4 mr-2" />Save settings
               </Button>
             </div>
