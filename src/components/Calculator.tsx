@@ -743,8 +743,6 @@ export default function Calculator() {
             </div>
           </div>
         )}
-          </>
-        )}
 
 
         <Tabs defaultValue="inputs" className="space-y-5">
