@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  compute, defaultState, demoState, fmtINR, fmtCurrency, fmtNum,
+  compute, defaultState, fmtINR, fmtCurrency, fmtNum,
   applyScenario, evaluatePrice, evaluateDiscount, profitVariance, convertToINR, convertFromINR,
   calculateForexExposure, getActualBankRate, getBuyerQuote, getMarketRate, type CalculatorState, type Incoterm, type ContractCurrency,
 } from "@/lib/calculations";
@@ -503,21 +503,6 @@ export default function Calculator() {
       toast.success("Draft saved");
     }
   };
-  const loadDemo = () => {
-    setS({
-      ...demoState,
-      quotationNumber: s.quotationNumber || `VX-${new Date().getFullYear()}-0001`,
-      quotationDate: s.quotationDate || new Date().toISOString().slice(0, 10),
-      // Preserve any company settings the user already filled in
-      companyName: s.companyName, companyAddress: s.companyAddress,
-      companyGstin: s.companyGstin, companyIec: s.companyIec, companyFssai: s.companyFssai,
-      companyEmail: s.companyEmail, companyPhone: s.companyPhone,
-      companyBankName: s.companyBankName, companyBankAccount: s.companyBankAccount,
-      companyBankSwift: s.companyBankSwift, companyBankBranch: s.companyBankBranch,
-      companyBankIfsc: s.companyBankIfsc, companyAdCode: s.companyAdCode,
-    });
-    toast.success("Demo shipment loaded — 1,000 kg green cardamom to UAE");
-  };
   const loadSavedQuote = (id: string) => {
     const q = loadQuote(id);
     if (!q) { toast.error("Quote not found"); return; }
@@ -686,21 +671,16 @@ export default function Calculator() {
                 Inputs tab — the pricing engine, deal-quality score and walk-away thresholds will activate automatically.
               </p>
               <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-                <Button onClick={loadDemo} className="bg-gold hover:bg-gold/90 text-gold-foreground font-semibold">
-                  <Sparkles className="w-4 h-4 mr-2" /> Load demo shipment
-                </Button>
                 <Button variant="secondary" onClick={() => {
                   document.querySelector('[data-state][value="inputs"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}>
                   Configure manually
                 </Button>
               </div>
-              <p className="mt-4 text-[11px] text-primary-foreground/50">
-                Demo loads 1,000 kg of Green Cardamom (AGMARK 8mm Bold) shipped FOB Chennai → UAE.
-              </p>
             </div>
           </Card>
         ) : (
+
           <>
         {/* Executive Summary — simpler, more spacious */}
         <Card className="overflow-hidden border-gold/30 shadow-md">

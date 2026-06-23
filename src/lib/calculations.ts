@@ -269,35 +269,6 @@ export const defaultState: CalculatorState = {
   fxLastUpdated: "",
 };
 
-/* ---------- Demo shipment seed ---------- */
-// Used by the empty-state "Load demo shipment" button so a brand-new
-// user sees a realistic, balanced quote instead of zeros & negative profit.
-export const demoState: CalculatorState = {
-  ...defaultState,
-  buyerCompany: "Demo Buyer Trading LLC",
-  buyerName: "Ahmed Al-Mansouri",
-  buyerCountry: "United Arab Emirates",
-  buyerEmail: "purchasing@demobuyer.ae",
-  buyerWebsite: "https://demobuyer.ae",
-  buyerPhone: "+971 4 555 0123",
-  buyerAddress: "Jebel Ali Free Zone, Dubai, UAE",
-  productName: "Green Cardamom",
-  productGrade: "8mm Bold AGMARK",
-  hsCode: "09083110",
-  quantity: 1000,
-  uom: "KG",
-  supplierPricePerUnit: 2200,
-  incoterm: "FOB",
-  contractCurrency: "USD",
-  pouchCost: 8000, cartonCost: 12000, palletCost: 5000,
-  factoryToWarehouse: 6000, warehouseToPort: 15000, loadingCharges: 3000,
-  certificateOfOrigin: 1500, phytosanitary: 2000, fumigation: 4000, labTesting: 6000, exportDocs: 2500,
-  chaCharges: 8000, portHandling: 5000, terminalHandling: 6500, customsClearance: 3500,
-  oceanFreight: 0, freightForwarderFee: 5000,
-  cargoInsurance: 0,
-  rodtepPct: 1.4, dutyDrawbackPct: 1.0,
-  targetProfitPct: 18, minProfitPct: 8,
-};
 
 const num = (n: number) => (isFinite(n) ? n : 0);
 
