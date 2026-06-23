@@ -459,9 +459,10 @@ export default function Calculator() {
   };
 
   useEffect(() => {
-    const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-    if (raw) {
-      try { setS({ ...defaultState, ...JSON.parse(raw) }); } catch {}
+    const draft = readJson<CalculatorState>(STORAGE_KEY);
+    const admin = readJson<AdminSettings>(ADMIN_STORAGE_KEY);
+    if (Object.keys(draft).length > 0 || Object.keys(admin).length > 0) {
+      setS({ ...defaultState, ...draft, ...admin, bankingTariff: { ...defaultState.bankingTariff, ...draft.bankingTariff, ...admin.bankingTariff } });
     } else {
       const now = new Date();
       setS((current) => ({ ...current, quotationNumber: `VX-${now.getFullYear()}-0001`, quotationDate: now.toISOString().slice(0, 10) }));
@@ -519,6 +520,7 @@ export default function Calculator() {
 
   const save = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(pickAdminSettings(s)));
     if (inputsReady) {
       saveQuoteSnapshot(s);
       setSavedQuotes(listQuotes());
