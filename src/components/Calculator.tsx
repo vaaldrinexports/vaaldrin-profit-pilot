@@ -461,8 +461,10 @@ export default function Calculator() {
   useEffect(() => {
     const draft = readJson<CalculatorState>(STORAGE_KEY);
     const admin = readJson<AdminSettings>(ADMIN_STORAGE_KEY);
+    const draftTariff = draft.bankingTariff;
+    const adminTariff = admin.bankingTariff;
     if (Object.keys(draft).length > 0 || Object.keys(admin).length > 0) {
-      setS({ ...defaultState, ...draft, ...admin, bankingTariff: { ...defaultState.bankingTariff, ...draft.bankingTariff, ...admin.bankingTariff } });
+      setS({ ...defaultState, ...draft, ...admin, bankingTariff: { ...defaultState.bankingTariff, ...draftTariff, ...adminTariff } });
     } else {
       const now = new Date();
       setS((current) => ({ ...current, quotationNumber: `VX-${now.getFullYear()}-0001`, quotationDate: now.toISOString().slice(0, 10) }));
