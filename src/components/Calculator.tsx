@@ -456,9 +456,6 @@ export default function Calculator() {
   const c = useMemo(() => compute(s), [s]);
   const set = <K extends keyof CalculatorState>(k: K, v: CalculatorState[K]) => setS((p) => ({ ...p, [k]: v }));
 
-  // Inputs gate — until quantity & supplier price are set, the entire
-  // dashboard renders as an empty state instead of a broken-looking
-  // -₹X profit / Deal Quality 0 display.
   const inputsReady = s.quantity > 0 && s.supplierPricePerUnit > 0;
 
   const contractValue = (inr: number) => convertFromINR(inr, s.contractCurrency, s);
@@ -658,30 +655,6 @@ export default function Calculator() {
           </Button>
         </div>
 
-        {!inputsReady ? (
-          /* EMPTY STATE — replaces broken-looking dashboard when no shipment is configured */
-          <Card className="overflow-hidden border-gold/40 shadow-md">
-            <div className="bg-gradient-to-br from-primary to-primary/95 text-primary-foreground p-8 text-center">
-              <div className="mx-auto inline-flex items-center justify-center w-14 h-14 rounded-full bg-gold/15 mb-4">
-                <Package className="w-7 h-7 text-gold" />
-              </div>
-              <h2 className="text-2xl font-semibold">Start a new quotation</h2>
-              <p className="mt-2 text-sm text-primary-foreground/70 max-w-xl mx-auto">
-                Enter <strong className="text-gold">quantity</strong> and <strong className="text-gold">supplier price</strong> in the
-                Inputs tab — the pricing engine, deal-quality score and walk-away thresholds will activate automatically.
-              </p>
-              <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-                <Button variant="secondary" onClick={() => {
-                  document.querySelector('[data-state][value="inputs"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}>
-                  Configure manually
-                </Button>
-              </div>
-            </div>
-          </Card>
-        ) : (
-
-          <>
         {/* Executive Summary — simpler, more spacious */}
         <Card className="overflow-hidden border-gold/30 shadow-md">
           <div className="bg-gradient-to-br from-primary to-primary/95 text-primary-foreground p-6">
