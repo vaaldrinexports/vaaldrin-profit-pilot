@@ -444,9 +444,13 @@ export default function Calculator() {
       setS((prev) => ({
         ...prev,
         marketUsdRate: rates.USD ? Math.round((1 / rates.USD) * 100) / 100 : prev.marketUsdRate,
+        actualBankUsdRate: rates.USD ? bankRateFromMarket(1 / rates.USD, prev.bankingTariff.forex_spread_percent) : prev.actualBankUsdRate,
         marketEurRate: rates.EUR ? Math.round((1 / rates.EUR) * 100) / 100 : prev.marketEurRate,
+        actualBankEurRate: rates.EUR ? bankRateFromMarket(1 / rates.EUR, prev.bankingTariff.forex_spread_percent) : prev.actualBankEurRate,
         marketGbpRate: rates.GBP ? Math.round((1 / rates.GBP) * 100) / 100 : prev.marketGbpRate,
+        actualBankGbpRate: rates.GBP ? bankRateFromMarket(1 / rates.GBP, prev.bankingTariff.forex_spread_percent) : prev.actualBankGbpRate,
         marketAedRate: rates.AED ? Math.round((1 / rates.AED) * 100) / 100 : prev.marketAedRate,
+        actualBankAedRate: rates.AED ? bankRateFromMarket(1 / rates.AED, prev.bankingTariff.forex_spread_percent) : prev.actualBankAedRate,
         fxLastUpdated: ts,
       }));
       setFxStatus("live");
