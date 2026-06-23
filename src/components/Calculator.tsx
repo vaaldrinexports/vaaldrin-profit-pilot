@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  compute, defaultState, demoState, fmtINR, fmtCurrency, fmtNum,
+  compute, defaultState, fmtINR, fmtCurrency, fmtNum,
   applyScenario, evaluatePrice, evaluateDiscount, profitVariance, convertToINR, convertFromINR,
   calculateForexExposure, getActualBankRate, getBuyerQuote, getMarketRate, type CalculatorState, type Incoterm, type ContractCurrency,
 } from "@/lib/calculations";
@@ -502,21 +502,6 @@ export default function Calculator() {
     } else {
       toast.success("Draft saved");
     }
-  };
-  const loadDemo = () => {
-    setS({
-      ...demoState,
-      quotationNumber: s.quotationNumber || `VX-${new Date().getFullYear()}-0001`,
-      quotationDate: s.quotationDate || new Date().toISOString().slice(0, 10),
-      // Preserve any company settings the user already filled in
-      companyName: s.companyName, companyAddress: s.companyAddress,
-      companyGstin: s.companyGstin, companyIec: s.companyIec, companyFssai: s.companyFssai,
-      companyEmail: s.companyEmail, companyPhone: s.companyPhone,
-      companyBankName: s.companyBankName, companyBankAccount: s.companyBankAccount,
-      companyBankSwift: s.companyBankSwift, companyBankBranch: s.companyBankBranch,
-      companyBankIfsc: s.companyBankIfsc, companyAdCode: s.companyAdCode,
-    });
-    toast.success("Demo shipment loaded — 1,000 kg green cardamom to UAE");
   };
   const loadSavedQuote = (id: string) => {
     const q = loadQuote(id);
