@@ -64,6 +64,33 @@ import {
 } from "lucide-react";
 
 const STORAGE_KEY = "vaaldrin.calc.v1";
+const ADMIN_STORAGE_KEY = "vaaldrin.admin.v1";
+
+type AdminSettings = Pick<CalculatorState,
+  | "companyName" | "companyAddress" | "companyGstin" | "companyIec" | "companyFssai" | "companyEmail" | "companyPhone"
+  | "companyBankName" | "companyBankAccount" | "companyBankSwift" | "companyBankBranch" | "companyBankIfsc" | "companyAdCode"
+  | "paymentTerms" | "quotationValidityDays" | "bankingTariff"
+>;
+
+const adminKeys: (keyof AdminSettings)[] = [
+  "companyName", "companyAddress", "companyGstin", "companyIec", "companyFssai", "companyEmail", "companyPhone",
+  "companyBankName", "companyBankAccount", "companyBankSwift", "companyBankBranch", "companyBankIfsc", "companyAdCode",
+  "paymentTerms", "quotationValidityDays", "bankingTariff",
+];
+
+const pickAdminSettings = (state: CalculatorState): AdminSettings => adminKeys.reduce((acc, key) => ({ ...acc, [key]: state[key] }), {} as AdminSettings);
+
+const readJson = <T,>(key: string): Partial<T> => {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const bankRateFromMarket = (marketRate: number, spreadPct: number) => Math.round((marketRate * (1 - Math.max(0, spreadPct) / 100)) * 100) / 100;
 
 /* ---------- Tiny field primitives — bigger, friendlier ---------- */
 
