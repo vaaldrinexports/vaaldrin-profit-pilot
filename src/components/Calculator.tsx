@@ -671,21 +671,16 @@ export default function Calculator() {
                 Inputs tab — the pricing engine, deal-quality score and walk-away thresholds will activate automatically.
               </p>
               <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-                <Button onClick={loadDemo} className="bg-gold hover:bg-gold/90 text-gold-foreground font-semibold">
-                  <Sparkles className="w-4 h-4 mr-2" /> Load demo shipment
-                </Button>
                 <Button variant="secondary" onClick={() => {
                   document.querySelector('[data-state][value="inputs"]')?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}>
                   Configure manually
                 </Button>
               </div>
-              <p className="mt-4 text-[11px] text-primary-foreground/50">
-                Demo loads 1,000 kg of Green Cardamom (AGMARK 8mm Bold) shipped FOB Chennai → UAE.
-              </p>
             </div>
           </Card>
         ) : (
+
           <>
         {/* Executive Summary — simpler, more spacious */}
         <Card className="overflow-hidden border-gold/30 shadow-md">
