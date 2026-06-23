@@ -1010,10 +1010,11 @@ export default function Calculator() {
                         const rate = j?.rates?.INR;
                         if (!rate || typeof rate !== "number") throw new Error("No INR rate in response");
                         const rounded = Math.round(rate * 100) / 100;
-                        set(marketKey, rounded);
+                        const bankRate = bankRateFromMarket(rounded, s.bankingTariff.forex_spread_percent);
+                        setS((prev) => ({ ...prev, [marketKey]: rounded, [bankKey]: bankRate }));
                         const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString();
                         set("fxLastUpdated", ts);
-                        toast.success(`Live ${cc}/INR = ₹${rounded} (as of ${new Date(ts).toLocaleString()})`, { id: "fx" });
+                        toast.success(`Live ${cc}/INR = ₹${rounded}; bank rate = ₹${bankRate}`, { id: "fx" });
                       } catch (e) {
                         toast.error(`Could not fetch live ${cc} rate. Enter manually.`, { id: "fx" });
                       }
@@ -1030,7 +1031,12 @@ export default function Calculator() {
                         ];
                         for (const [code, key] of pairs) {
                           const inrPer = rates[code] ? 1 / rates[code] : null;
-                          if (inrPer) set(key, Math.round(inrPer * 100) / 100);
+                          if (inrPer) {
+                            const marketRate = Math.round(inrPer * 100) / 100;
+                            const actualKey = `actualBank${code.charAt(0)}${code.slice(1).toLowerCase()}Rate` as
+                              | "actualBankUsdRate" | "actualBankEurRate" | "actualBankGbpRate" | "actualBankAedRate";
+                            setS((prev) => ({ ...prev, [key]: marketRate, [actualKey]: bankRateFromMarket(marketRate, prev.bankingTariff.forex_spread_percent) }));
+                          }
                         }
                         const ts = j?.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString();
                         set("fxLastUpdated", ts);
