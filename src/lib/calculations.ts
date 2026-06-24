@@ -452,26 +452,46 @@ export function computeCoreINR(s: CalculatorState): Computed {
   // Banking is fully driven by the Banking & Forex module (Axis Bank tariffs + payment method).
   // The legacy manual "Banking costs" inputs have been removed to prevent double-counting.
   const contractRate = getActualBankRate(s.contractCurrency, s) || 1;
-  const proxyContractValueInr = supplierTotal * (1 + num(s.targetProfitPct) / 100) + packagingTotal + inlandTotal + documentationTotal + customsTotal + freightTotal + insuranceTotal;
-  const proxyForeign = proxyContractValueInr / contractRate;
-  const moduleBankingProxy = computeBankingCharges(s, proxyForeign);
-  const bankingTotal = moduleBankingProxy.total;
   const miscTotal = num(s.miscCost);
-
 
   const exwDirectCost = supplierTotal + packagingTotal;
   const fobDirectCost = exwDirectCost + inlandTotal + documentationTotal + customsTotal;
   const cfrDirectCost = fobDirectCost + freightTotal;
   const cifDirectCost = cfrDirectCost + insuranceTotal;
-  const sharedCost = bankingTotal + miscTotal;
   const directCostByIncoterm: Record<Incoterm, number> = {
     EXW: exwDirectCost,
     FOB: fobDirectCost,
     CFR: cfrDirectCost,
     CIF: cifDirectCost,
   };
+  const selectedDirect = directCostByIncoterm[s.incoterm];
+  const rodtepRate = (num(s.rodtepPct) + num(s.dutyDrawbackPct)) / 100;
+  const otherInc = num(s.otherIncentives);
+  const contingencyRate = num(s.contingencyPct) / 100;
+  const targetRate = num(s.targetProfitPct) / 100;
+
+  // Banking depends on revenue, and revenue depends on banking → fixed-point iteration.
+  // Converges in 2-4 passes; cap at 12 with a tight tolerance for export-grade accuracy.
+  let bankingTotal = 0;
+  let banking: BankingBreakdown = computeBankingCharges(s, 0);
+  for (let i = 0; i < 12; i++) {
+    const totalCostIter = selectedDirect + bankingTotal + miscTotal;
+    const incIter = Math.min(totalCostIter, supplierTotal * rodtepRate + otherInc);
+    const effIter = totalCostIter - incIter;
+    const protIter = effIter * (1 + contingencyRate);
+    const targetPriceIter = (protIter / divisor) * (1 + targetRate);
+    const revenueIter = targetPriceIter * q;
+    const foreignIter = revenueIter / contractRate;
+    const nextBanking = computeBankingCharges(s, foreignIter);
+    const delta = Math.abs(nextBanking.total - bankingTotal);
+    banking = nextBanking;
+    bankingTotal = nextBanking.total;
+    if (delta < 0.01) break;
+  }
+
+  const sharedCost = bankingTotal + miscTotal;
   // Only costs applicable to the selected Incoterm enter the quoted deal.
-  const totalCost = directCostByIncoterm[s.incoterm] + sharedCost;
+  const totalCost = selectedDirect + sharedCost;
 
   const incentiveValue = Math.min(totalCost,
     (supplierTotal * (num(s.rodtepPct) + num(s.dutyDrawbackPct)) / 100) + num(s.otherIncentives));
@@ -614,9 +634,8 @@ export function computeCoreINR(s: CalculatorState): Computed {
     { section: "Final", name: "Profit per Unit", formula: "Net Profit ÷ Shipment Quantity", result: profitPerUnit, unit: "INR/unit" },
     { section: "Final", name: "Projected Profit at Full Container Load", formula: "Profit per Unit × Container Size", result: projectedProfitAtFullContainer, unit: "INR" },
   ];
-  // Refine banking breakdown using actual expected revenue
+  // `banking` is already converged above against the actual recommended price.
   const foreignContractValue = expectedRevenue / contractRate;
-  const banking = computeBankingCharges(s, foreignContractValue);
   const forex = computeForexImpact(s, foreignContractValue, netProfit);
 
   return {
@@ -689,8 +708,13 @@ export function convertFromINR(amount: number, currency: ContractCurrency, s: Ca
 }
 
 export function getBuyerQuote(recommendedPriceINR: number, quantity: number, s: CalculatorState): BuyerQuote {
-  const unitPrice = Math.round(convertFromINR(recommendedPriceINR, s.contractCurrency, s) * 100) / 100;
-  return { currency: s.contractCurrency, unitPrice, totalContractValue: unitPrice * num(quantity) };
+  const rate = getActualBankRate(s.contractCurrency, s) || 1;
+  const unitPriceExact = num(recommendedPriceINR) / rate;
+  // Export-grade precision: 4 decimals on unit price (industry norm for FOB/CFR/CIF quotes),
+  // and total = exact unit × qty rounded to 2 dp so invoice line items reconcile.
+  const unitPrice = Math.round(unitPriceExact * 10000) / 10000;
+  const totalContractValue = Math.round(unitPriceExact * num(quantity) * 100) / 100;
+  return { currency: s.contractCurrency, unitPrice, totalContractValue };
 }
 
 export function calculateForexExposure(contractValueINR: number, s: CalculatorState) {

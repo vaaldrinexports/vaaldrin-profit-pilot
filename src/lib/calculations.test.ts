@@ -75,7 +75,8 @@ describe("currency display invariants", () => {
     const state = { ...sample, contractCurrency: "GBP" as const, actualBankGbpRate: 105 };
     const result = compute(state);
     const quote = getBuyerQuote(result.recommendedPrice, state.quantity, state);
-    expect(quote.unitPrice).toBe(Math.round(result.recommendedPrice / state.actualBankGbpRate * 100) / 100);
-    expect(quote.totalContractValue).toBeCloseTo(quote.unitPrice * state.quantity, 8);
+    const exact = result.recommendedPrice / state.actualBankGbpRate;
+    expect(quote.unitPrice).toBe(Math.round(exact * 10000) / 10000);
+    expect(quote.totalContractValue).toBeCloseTo(exact * state.quantity, 2);
   });
 });
