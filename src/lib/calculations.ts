@@ -634,9 +634,8 @@ export function computeCoreINR(s: CalculatorState): Computed {
     { section: "Final", name: "Profit per Unit", formula: "Net Profit ÷ Shipment Quantity", result: profitPerUnit, unit: "INR/unit" },
     { section: "Final", name: "Projected Profit at Full Container Load", formula: "Profit per Unit × Container Size", result: projectedProfitAtFullContainer, unit: "INR" },
   ];
-  // Refine banking breakdown using actual expected revenue
+  // `banking` is already converged above against the actual recommended price.
   const foreignContractValue = expectedRevenue / contractRate;
-  const banking = computeBankingCharges(s, foreignContractValue);
   const forex = computeForexImpact(s, foreignContractValue, netProfit);
 
   return {
