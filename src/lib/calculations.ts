@@ -708,8 +708,13 @@ export function convertFromINR(amount: number, currency: ContractCurrency, s: Ca
 }
 
 export function getBuyerQuote(recommendedPriceINR: number, quantity: number, s: CalculatorState): BuyerQuote {
-  const unitPrice = Math.round(convertFromINR(recommendedPriceINR, s.contractCurrency, s) * 100) / 100;
-  return { currency: s.contractCurrency, unitPrice, totalContractValue: unitPrice * num(quantity) };
+  const rate = getActualBankRate(s.contractCurrency, s) || 1;
+  const unitPriceExact = num(recommendedPriceINR) / rate;
+  // Export-grade precision: 4 decimals on unit price (industry norm for FOB/CFR/CIF quotes),
+  // and total = exact unit × qty rounded to 2 dp so invoice line items reconcile.
+  const unitPrice = Math.round(unitPriceExact * 10000) / 10000;
+  const totalContractValue = Math.round(unitPriceExact * num(quantity) * 100) / 100;
+  return { currency: s.contractCurrency, unitPrice, totalContractValue };
 }
 
 export function calculateForexExposure(contractValueINR: number, s: CalculatorState) {
