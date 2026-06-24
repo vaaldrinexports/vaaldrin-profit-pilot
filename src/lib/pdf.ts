@@ -196,6 +196,56 @@ function lastY(doc: jsPDF): number {
 }
 
 // ============================================================
+// Shared helpers for shipping documents
+// ============================================================
+
+function exporterRows(s: CalculatorState): Array<[string, string]> {
+  const rows: Array<[string, string]> = [
+    ["Company", s.companyName || "Vaaldrin Exports"],
+    ["Address", s.companyAddress || "—"],
+  ];
+  if (s.companyEmail) rows.push(["Email", s.companyEmail]);
+  if (s.companyPhone) rows.push(["Phone", s.companyPhone]);
+  if (s.companyIec) rows.push(["IEC", s.companyIec]);
+  if (s.companyGstin) rows.push(["GSTIN", s.companyGstin]);
+  if (s.companyFssai) rows.push(["FSSAI", s.companyFssai]);
+  if (s.companyAdCode) rows.push(["AD Code", s.companyAdCode]);
+  return rows;
+}
+
+function buyerRows(s: CalculatorState, opts: { includeContact?: boolean } = {}): Array<[string, string]> {
+  const rows: Array<[string, string]> = [["Company", s.buyerCompany || "—"]];
+  if (opts.includeContact && s.buyerName) rows.push(["Contact", s.buyerName]);
+  rows.push(["Address", s.buyerAddress || "(buyer address required)"]);
+  rows.push(["Country", s.buyerCountry || "—"]);
+  if (s.buyerEmail) rows.push(["Email", s.buyerEmail]);
+  if (s.buyerPhone) rows.push(["Phone", s.buyerPhone]);
+  return rows;
+}
+
+function shipmentRows(s: CalculatorState): Array<[string, string]> {
+  return [
+    ["Origin", s.countryOfOrigin || "India"],
+    ["Destination", s.buyerCountry || "—"],
+    ["Port of Loading", s.portOfLoading || "(to be confirmed)"],
+    ["Port of Discharge", s.portOfDischarge || "(to be confirmed)"],
+    ["Incoterm", `${s.incoterm} (Incoterms 2020)`],
+    ["Lead time", `${s.shipmentLeadTimeDays || 30} days from PO confirmation`],
+  ];
+}
+
+function packageSummary(s: CalculatorState) {
+  const qty = Math.max(0, s.quantity);
+  const netPerPkg = s.netWeightPerPackageKg > 0 ? s.netWeightPerPackageKg : 25;
+  const packages = s.packagesCountOverride > 0
+    ? s.packagesCountOverride
+    : Math.max(1, Math.ceil(qty / netPerPkg));
+  const netWeight = qty;
+  const grossWeight = qty * 1.05;
+  return { packages, netPerPkg, netWeight, grossWeight };
+}
+
+// ============================================================
 // Document 1 — EXPORT QUOTATION
 // ============================================================
 
@@ -207,42 +257,35 @@ export async function generateQuotationPDF(s: CalculatorState) {
     docDate: s.quotationDate,
   });
 
-  // Exporter + Buyer blocks
   drawSectionHeader(doc, "Exporter", margin, 140);
-  drawFieldBlock(doc, margin, 158, [
-    ["Company", s.companyName || "Vaaldrin Exports"],
-    ["Address", s.companyAddress || "India"],
-    ...(s.companyIec ? [["IEC", s.companyIec] as [string, string]] : []),
-    ...(s.companyGstin ? [["GSTIN", s.companyGstin] as [string, string]] : []),
-    ...(s.companyFssai ? [["FSSAI", s.companyFssai] as [string, string]] : []),
-  ]);
+  drawFieldBlock(doc, margin, 158, exporterRows(s));
 
   drawSectionHeader(doc, "Buyer", W / 2 + 10, 140);
-  drawFieldBlock(doc, W / 2 + 10, 158, [
-    ["Company", s.buyerCompany],
-    ["Contact", s.buyerName],
-    ["Country", s.buyerCountry],
-    ["Email", s.buyerEmail],
-  ]);
+  drawFieldBlock(doc, W / 2 + 10, 158, buyerRows(s, { includeContact: true }));
 
-  drawSectionHeader(doc, "Terms", margin, 235);
-  drawFieldBlock(doc, margin, 253, [
+  const yTerms = 260;
+  drawSectionHeader(doc, "Shipment & Terms", margin, yTerms);
+  drawFieldBlock(doc, margin, yTerms + 18, [
     ["Incoterm", `${s.incoterm} (Incoterms 2020)`],
+    ["Port of Loading", s.portOfLoading || "(to be confirmed)"],
+    ["Port of Discharge", s.portOfDischarge || "(to be confirmed)"],
+    ["Origin", s.countryOfOrigin || "India"],
     ["Currency", s.contractCurrency],
     ["Validity", `${s.quotationValidityDays} days from quote date`],
-    ["Payment", s.paymentTerms || "To be agreed with buyer"],
-  ]);
+    ["Lead time", `${s.shipmentLeadTimeDays || 30} days from PO confirmation`],
+    ["Payment", s.paymentTerms || "(to be finalised with buyer)"],
+  ], 110);
 
-  // Product table
   const quote = getBuyerQuote(c.recommendedPrice, s.quantity, s);
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: 330,
-    head: [["Product", "Grade", "HS Code", "Qty", "UoM", `Unit Price (${s.contractCurrency})`, `Total (${s.contractCurrency})`]],
+    startY: 388,
+    head: [["Product", "Grade", "HS Code", "Origin", "Qty", "UoM", `Unit Price (${s.contractCurrency})`, `Total (${s.contractCurrency})`]],
     body: [[
       s.productName || "—",
       s.productGrade || "—",
       s.hsCode || "—",
+      s.countryOfOrigin || "India",
       String(s.quantity),
       s.uom,
       fmtCurrency(quote.unitPrice, s.contractCurrency),
@@ -250,39 +293,29 @@ export async function generateQuotationPDF(s: CalculatorState) {
     ]],
   });
 
-  // Total
-  const yTotal = lastY(doc) + 12;
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: yTotal,
+    startY: lastY(doc) + 12,
     head: [[`TOTAL CONTRACT VALUE (${s.contractCurrency})`]],
     body: [[fmtCurrency(quote.totalContractValue, s.contractCurrency)]],
-    headStyles: {
-      fillColor: BRAND.tableHeader,
-      textColor: BRAND.red,
-      fontStyle: "bold",
-      halign: "center",
-      lineColor: BRAND.border,
-      lineWidth: 0.5,
-    },
+    headStyles: { fillColor: BRAND.tableHeader, textColor: BRAND.red, fontStyle: "bold", halign: "center", lineColor: BRAND.border, lineWidth: 0.5 },
     bodyStyles: { halign: "center", fontStyle: "bold", fontSize: 11, textColor: BRAND.text },
   });
 
-  // Terms & Conditions
-  const yTerms = lastY(doc) + 24;
-  drawSectionHeader(doc, "Terms & Conditions", margin, yTerms);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(...BRAND.text);
+  const yTC = lastY(doc) + 24;
+  drawSectionHeader(doc, "Terms & Conditions", margin, yTC);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...BRAND.text);
   doc.text([
-    `1. Payment Terms: ${s.paymentTerms || "To be agreed with buyer"}.`,
-    `2. Delivery Terms: ${s.incoterm} as per Incoterms 2020.`,
-    `3. Validity: This quotation is valid for ${s.quotationValidityDays} days from the date of issue.`,
-    `4. Subject to product availability at the time of order confirmation.`,
-    `5. All disputes are subject to the exclusive jurisdiction of issuing office.`,
-  ], margin, yTerms + 18, { lineHeightFactor: 1.5 });
+    `1. Payment: ${s.paymentTerms || "(to be finalised with buyer prior to order confirmation)"}.`,
+    `2. Delivery: ${s.incoterm} ${s.portOfLoading || "(POL TBC)"} → ${s.portOfDischarge || "(POD TBC)"}, Incoterms 2020.`,
+    `3. Validity: ${s.quotationValidityDays} days from issue date.`,
+    `4. Lead time: ${s.shipmentLeadTimeDays || 30} days from PO confirmation, subject to stock availability.`,
+    `5. Country of Origin: ${s.countryOfOrigin || "India"}. Certificate of Origin available on request (FIEO / Chamber of Commerce).`,
+    `6. Quality: as per agreed specification${s.qualityStandard ? ` (${s.qualityStandard})` : ""}. Pre-shipment inspection at buyer's option and cost.`,
+    `7. All disputes subject to ${s.governingLaw || "Indian Law"} and exclusive jurisdiction of seller's office.`,
+  ], margin, yTC + 18, { lineHeightFactor: 1.5 });
 
-  drawSignatureBlock(doc, W, yTerms + 110, "For " + (s.companyName || "Vaaldrin Exports"));
+  drawSignatureBlock(doc, W, yTC + 140, "For " + (s.companyName || "Vaaldrin Exports"));
   drawFooter(doc, W, H, margin, "E&OE — Errors & Omissions Excepted");
   doc.save(`${s.quotationNumber || "quotation"}.pdf`);
 }
@@ -302,29 +335,23 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
   });
 
   drawSectionHeader(doc, "Exporter", margin, 140);
-  drawFieldBlock(doc, margin, 158, [
-    ["Company", s.companyName || "Vaaldrin Exports"],
-    ["Address", s.companyAddress || "India"],
-    ["IEC", s.companyIec || "—"],
-    ["GSTIN", s.companyGstin || "—"],
-    ...(s.companyFssai ? [["FSSAI", s.companyFssai] as [string, string]] : []),
-  ]);
+  drawFieldBlock(doc, margin, 158, exporterRows(s));
 
-  drawSectionHeader(doc, "Buyer", W / 2 + 10, 140);
-  drawFieldBlock(doc, W / 2 + 10, 158, [
-    ["Company", s.buyerCompany],
-    ["Contact", s.buyerName],
-    ["Country", s.buyerCountry],
-    ["Email", s.buyerEmail],
-  ]);
+  drawSectionHeader(doc, "Buyer / Consignee", W / 2 + 10, 140);
+  drawFieldBlock(doc, W / 2 + 10, 158, buyerRows(s, { includeContact: true }));
+
+  const yShip = 260;
+  drawSectionHeader(doc, "Shipment", margin, yShip);
+  drawFieldBlock(doc, margin, yShip + 18, shipmentRows(s), 110);
 
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: 235,
-    head: [["HS Code", "Description", "Qty", "UoM", `Unit Price (${s.contractCurrency})`, `Total (${s.contractCurrency})`]],
+    startY: yShip + 130,
+    head: [["HS Code", "Description", "Origin", "Qty", "UoM", `Unit (${s.contractCurrency})`, `Amount (${s.contractCurrency})`]],
     body: [[
       s.hsCode || "—",
       `${s.productName || "—"}${s.productGrade ? ` — ${s.productGrade}` : ""}`,
+      s.countryOfOrigin || "India",
       String(s.quantity),
       s.uom,
       fmtCurrency(quote.unitPrice, s.contractCurrency),
@@ -332,28 +359,30 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
     ]],
   });
 
-  // Financial summary
   const subtotal = quote.totalContractValue;
-  const freight = s.incoterm === "CFR" || s.incoterm === "CIF" ? 0 : 0; // included in incoterm price
-  const insurance = s.incoterm === "CIF" ? 0 : 0;
-  const grand = subtotal + freight + insurance;
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: lastY(doc) + 12,
+    startY: lastY(doc) + 10,
     head: [["Summary", `Amount (${s.contractCurrency})`]],
     body: [
       ["Subtotal", fmtCurrency(subtotal, s.contractCurrency)],
-      [`Freight (${s.incoterm === "CFR" || s.incoterm === "CIF" ? "included" : "as agreed"})`, fmtCurrency(freight, s.contractCurrency)],
-      [`Insurance (${s.incoterm === "CIF" ? "included" : "as agreed"})`, fmtCurrency(insurance, s.contractCurrency)],
+      [`Freight (${s.incoterm === "CFR" || s.incoterm === "CIF" ? "included in price" : "to buyer's account"})`, "—"],
+      [`Insurance (${s.incoterm === "CIF" ? "included in price" : "to buyer's account"})`, "—"],
       [{ content: "GRAND TOTAL", styles: { fontStyle: "bold", textColor: BRAND.red } },
-       { content: fmtCurrency(grand, s.contractCurrency), styles: { fontStyle: "bold", textColor: BRAND.red } }],
+       { content: fmtCurrency(subtotal, s.contractCurrency), styles: { fontStyle: "bold", textColor: BRAND.red } }],
     ],
     columnStyles: { 1: { halign: "right" } },
   });
 
+  // Payment terms
+  const yPay = lastY(doc) + 16;
+  drawSectionHeader(doc, "Payment Terms", margin, yPay);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(...BRAND.text);
+  doc.text(doc.splitTextToSize(s.paymentTerms || "(To be finalised with buyer prior to order confirmation)", W - margin * 2), margin, yPay + 18);
+
   // Bank details
-  const yBank = lastY(doc) + 18;
-  drawSectionHeader(doc, "Bank Details", margin, yBank);
+  const yBank = yPay + 50;
+  drawSectionHeader(doc, "Bank Details (for remittance)", margin, yBank);
   drawFieldBlock(doc, margin, yBank + 18, [
     ["Bank Name", s.companyBankName || "—"],
     ["Account No.", s.companyBankAccount || "—"],
@@ -363,14 +392,11 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
     ["Branch", s.companyBankBranch || "—"],
   ], 80);
 
-  // Declaration
-  const yDecl = yBank + 90;
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(8.5);
-  doc.setTextColor(...BRAND.muted);
-  doc.text("This is a Proforma Invoice and not a tax invoice.", margin, yDecl);
+  const yDecl = yBank + 110;
+  doc.setFont("helvetica", "italic"); doc.setFontSize(8.5); doc.setTextColor(...BRAND.muted);
+  doc.text("This is a Proforma Invoice and not a tax invoice. Verify bank details with exporter before remittance.", margin, yDecl);
 
-  drawSignatureBlock(doc, W, yDecl + 10, "For " + (s.companyName || "Vaaldrin Exports"));
+  drawSignatureBlock(doc, W, yDecl + 16, "For " + (s.companyName || "Vaaldrin Exports"));
   drawFooter(doc, W, H, margin);
   doc.save(`proforma-${s.quotationNumber}.pdf`);
 }
@@ -389,63 +415,69 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
   });
 
   drawSectionHeader(doc, "Exporter", margin, 140);
-  drawFieldBlock(doc, margin, 158, [
-    ["Company", s.companyName || "Vaaldrin Exports"],
-    ["Address", s.companyAddress || "India"],
-    ...(s.companyIec ? [["IEC", s.companyIec] as [string, string]] : []),
-    ...(s.companyGstin ? [["GSTIN", s.companyGstin] as [string, string]] : []),
-  ]);
+  drawFieldBlock(doc, margin, 158, exporterRows(s));
 
-  drawSectionHeader(doc, "Consignee", W / 3 + 10, 140);
-  drawFieldBlock(doc, W / 3 + 10, 158, [
-    ["Company", s.buyerCompany],
-    ["Country", s.buyerCountry],
-  ]);
+  drawSectionHeader(doc, "Consignee", W / 2 + 10, 140);
+  drawFieldBlock(doc, W / 2 + 10, 158, buyerRows(s));
 
-  drawSectionHeader(doc, "Notify Party", (2 * W) / 3 + 10, 140);
-  drawFieldBlock(doc, (2 * W) / 3 + 10, 158, [
-    ["Same as", "Consignee"],
-  ], 60);
+  // Notify Party + Shipment row
+  const yMid = 270;
+  drawSectionHeader(doc, "Notify Party", margin, yMid);
+  const notify = s.notifyParty?.trim()
+    ? doc.splitTextToSize(s.notifyParty, W / 2 - margin - 10)
+    : doc.splitTextToSize("Same as Consignee", W / 2 - margin - 10);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(...BRAND.text);
+  doc.text(notify, margin, yMid + 16);
 
-  // Shipment details
-  drawSectionHeader(doc, "Shipment Details", margin, 215);
-  drawFieldBlock(doc, margin, 233, [
-    ["Origin", "India"],
-    ["Destination", s.buyerCountry],
-    ["Incoterm", `${s.incoterm} (Incoterms 2020)`],
-  ]);
+  drawSectionHeader(doc, "Shipment", W / 2 + 10, yMid);
+  drawFieldBlock(doc, W / 2 + 10, yMid + 18, shipmentRows(s), 100);
 
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: 290,
-    head: [["HS Code", "Description", "Qty", "UoM", `Unit Price (${s.contractCurrency})`, `Amount (${s.contractCurrency})`]],
+    startY: yMid + 150,
+    head: [["HS Code", "Description", "Country of Origin", "Marks & Nos.", "Qty", "UoM", `Unit (${s.contractCurrency})`, `Amount (${s.contractCurrency})`]],
     body: [[
       s.hsCode || "—",
       `${s.productName || "—"}${s.productGrade ? ` — ${s.productGrade}` : ""}`,
+      s.countryOfOrigin || "India",
+      s.marksAndNumbers || "—",
       String(s.quantity),
       s.uom,
       fmtCurrency(quote.unitPrice, s.contractCurrency),
       fmtCurrency(quote.totalContractValue, s.contractCurrency),
     ]],
+    styles: { fontSize: 8.5, cellPadding: 4 },
   });
 
   autoTable(doc, {
     ...applyTableTheme(),
     startY: lastY(doc) + 10,
-    body: [[
-      { content: "INVOICE TOTAL", styles: { fontStyle: "bold", textColor: BRAND.red, halign: "right" } },
-      { content: fmtCurrency(quote.totalContractValue, s.contractCurrency), styles: { fontStyle: "bold", halign: "right" } },
-    ]],
-    columnStyles: { 0: { cellWidth: W - 80 - 140 }, 1: { cellWidth: 140 } },
+    body: [
+      [{ content: `Currency: ${s.contractCurrency} · Payment: ${s.paymentTerms || "(as per contract)"}`, styles: { fontStyle: "italic", textColor: BRAND.muted, halign: "left" } }, ""],
+      [{ content: "INVOICE TOTAL", styles: { fontStyle: "bold", textColor: BRAND.red, halign: "right" } },
+       { content: `${s.contractCurrency} ${fmtCurrency(quote.totalContractValue, s.contractCurrency)}`, styles: { fontStyle: "bold", halign: "right" } }],
+    ],
+    columnStyles: { 0: { cellWidth: W - 80 - 160 }, 1: { cellWidth: 160 } },
   });
 
-  const yDecl = lastY(doc) + 24;
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(8.5);
-  doc.setTextColor(...BRAND.muted);
-  doc.text("We hereby certify that the goods described above are of Indian origin.", margin, yDecl);
+  // Shipping refs (placeholders for B/L, container, seal)
+  const yRef = lastY(doc) + 16;
+  drawSectionHeader(doc, "Shipping References", margin, yRef);
+  drawFieldBlock(doc, margin, yRef + 18, [
+    ["Vessel / Flight", s.vesselFlight || "(to be advised)"],
+    ["B/L or AWB No.", s.blAwbNumber || "(to be advised)"],
+    ["Container No.", s.containerNo || "(to be advised)"],
+    ["Seal No.", s.sealNo || "(to be advised)"],
+  ], 110);
 
-  drawSignatureBlock(doc, W, yDecl + 20, "For " + (s.companyName || "Vaaldrin Exports"));
+  const yDecl = yRef + 90;
+  doc.setFont("helvetica", "italic"); doc.setFontSize(8.5); doc.setTextColor(...BRAND.muted);
+  doc.text([
+    `We hereby certify that the goods described above are of ${s.countryOfOrigin || "Indian"} origin and that this invoice is true and correct.`,
+    "Formal Certificate of Origin issued by FIEO / Chamber of Commerce accompanies this shipment where required.",
+  ], margin, yDecl, { lineHeightFactor: 1.5 });
+
+  drawSignatureBlock(doc, W, yDecl + 26, "For " + (s.companyName || "Vaaldrin Exports"));
   drawFooter(doc, W, H, margin);
   doc.save(`commercial-invoice-${s.quotationNumber}.pdf`);
 }
@@ -462,40 +494,38 @@ export async function generatePackingListPDF(s: CalculatorState) {
   });
 
   drawSectionHeader(doc, "Exporter", margin, 140);
-  drawFieldBlock(doc, margin, 158, [
-    ["Company", s.companyName || "Vaaldrin Exports"],
-    ["Address", s.companyAddress || "India"],
-  ]);
+  drawFieldBlock(doc, margin, 158, exporterRows(s));
 
-  drawSectionHeader(doc, "Buyer", W / 2 + 10, 140);
-  drawFieldBlock(doc, W / 2 + 10, 158, [
-    ["Company", s.buyerCompany],
-    ["Country", s.buyerCountry],
-  ]);
+  drawSectionHeader(doc, "Consignee", W / 2 + 10, 140);
+  drawFieldBlock(doc, W / 2 + 10, 158, buyerRows(s));
 
-  drawSectionHeader(doc, "Shipment Details", margin, 210);
-  drawFieldBlock(doc, margin, 228, [
-    ["Container No.", "—"],
-    ["Seal No.", "—"],
-    ["Incoterm", s.incoterm],
-  ]);
+  const yShip = 260;
+  drawSectionHeader(doc, "Shipment", margin, yShip);
+  drawFieldBlock(doc, margin, yShip + 18, [
+    ...shipmentRows(s),
+    ["Vessel / Flight", s.vesselFlight || "(to be advised)"],
+    ["Container No.", s.containerNo || "(to be advised)"],
+    ["Seal No.", s.sealNo || "(to be advised)"],
+    ["B/L or AWB No.", s.blAwbNumber || "(to be advised)"],
+    ["Marks & Nos.", s.marksAndNumbers || "(as per buyer instructions)"],
+  ], 110);
 
-  const qty = Math.max(0, s.quantity);
-  const packages = Math.max(1, Math.ceil(qty / 25)); // assume 25 units/carton
-  const netWeight = qty;
-  const grossWeight = qty * 1.05;
+  const { packages, netPerPkg, netWeight, grossWeight } = packageSummary(s);
 
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: 290,
-    head: [["Description", "Packages", "Net Wt (kg)", "Gross Wt (kg)", "Dimensions (cm)"]],
+    startY: yShip + 180,
+    head: [["Description", "Packaging", "Packages", `Net/pkg (kg)`, "Net Wt (kg)", "Gross Wt (kg)", "Dim/pkg (cm)"]],
     body: [[
       `${s.productName || "—"}${s.productGrade ? ` — ${s.productGrade}` : ""}`,
+      s.packageType || "(specify packaging type)",
       String(packages),
+      netPerPkg.toFixed(2),
       netWeight.toFixed(2),
       grossWeight.toFixed(2),
-      "—",
+      s.packageDimensionsCm || "—",
     ]],
+    styles: { fontSize: 8.5, cellPadding: 4 },
   });
 
   autoTable(doc, {
@@ -504,8 +534,11 @@ export async function generatePackingListPDF(s: CalculatorState) {
     head: [["Totals", "Value"]],
     body: [
       ["Total Packages", String(packages)],
+      ["Packaging Type", s.packageType || "(specify)"],
+      ["Dimensions per package (cm)", s.packageDimensionsCm || "(specify)"],
       ["Total Net Weight (kg)", netWeight.toFixed(2)],
       ["Total Gross Weight (kg)", grossWeight.toFixed(2)],
+      ["Marks & Numbers", s.marksAndNumbers || "(as per buyer instructions)"],
     ],
     columnStyles: { 1: { halign: "right" } },
   });
