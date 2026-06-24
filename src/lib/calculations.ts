@@ -207,6 +207,50 @@ export interface CalculatorState {
   paymentTerms: string;
   quotationValidityDays: number;
 
+  // Shipment / Logistics (printed on every shipping document)
+  portOfLoading: string;
+  portOfDischarge: string;
+  countryOfOrigin: string;
+  shipmentLeadTimeDays: number;
+  vesselFlight: string;
+  containerNo: string;
+  sealNo: string;
+  blAwbNumber: string;
+  notifyParty: string;
+
+  // Packaging detail (printed on packing list & commercial invoice)
+  packageType: string;          // e.g. "PP woven bags", "Jute bags", "Cartons"
+  packageDimensionsCm: string;  // e.g. "60 x 40 x 25"
+  packagesCountOverride: number; // 0 = auto-calc, else exact package count
+  netWeightPerPackageKg: number; // 0 = auto-derive
+  marksAndNumbers: string;
+
+  // Quality specification (printed on sales contract & commercial invoice)
+  qualityStandard: string;       // e.g. "AGMARK", "ASTA cleanliness", "FSSAI"
+  qualityMoisturePct: number;
+  qualityActiveCompoundLabel: string; // e.g. "Piperine", "Curcumin"
+  qualityActiveCompoundPct: number;
+  qualityAdmixturePct: number;
+  qualityBulkDensity: string;    // freeform e.g. "550 g/L"
+  qualityNotes: string;
+
+  // Contract / Legal (sales contract)
+  governingLaw: string;
+  arbitrationVenue: string;
+
+  // Supplier profile (Purchase Order)
+  supplierName: string;
+  supplierAddress: string;
+  supplierGstin: string;
+  supplierContact: string;
+  supplierEmail: string;
+  supplierPhone: string;
+  supplierPaymentTerms: string;
+  supplierDeliveryDate: string;
+  supplierPlaceOfSupply: string;
+  supplierGstRate: number;
+  supplierGstType: "IGST" | "CGST_SGST" | "NONE";
+
   // FX provenance (when the live rate was last fetched)
   fxLastUpdated: string;
 }
@@ -256,15 +300,54 @@ export const defaultState: CalculatorState = {
   companyFssai: "",
   companyEmail: "",
   companyPhone: "",
-  companyBankName: "Axis Bank",
+  companyBankName: "",
   companyBankAccount: "",
-  companyBankSwift: "AXISINBB",
+  companyBankSwift: "",
   companyBankBranch: "",
   companyBankIfsc: "",
   companyAdCode: "",
 
-  paymentTerms: "To be agreed with buyer",
+  paymentTerms: "",
   quotationValidityDays: 30,
+
+  portOfLoading: "",
+  portOfDischarge: "",
+  countryOfOrigin: "India",
+  shipmentLeadTimeDays: 30,
+  vesselFlight: "",
+  containerNo: "",
+  sealNo: "",
+  blAwbNumber: "",
+  notifyParty: "",
+
+  packageType: "",
+  packageDimensionsCm: "",
+  packagesCountOverride: 0,
+  netWeightPerPackageKg: 0,
+  marksAndNumbers: "",
+
+  qualityStandard: "",
+  qualityMoisturePct: 0,
+  qualityActiveCompoundLabel: "",
+  qualityActiveCompoundPct: 0,
+  qualityAdmixturePct: 0,
+  qualityBulkDensity: "",
+  qualityNotes: "",
+
+  governingLaw: "Indian Law",
+  arbitrationVenue: "",
+
+  supplierName: "",
+  supplierAddress: "",
+  supplierGstin: "",
+  supplierContact: "",
+  supplierEmail: "",
+  supplierPhone: "",
+  supplierPaymentTerms: "Net 30 days from invoice receipt",
+  supplierDeliveryDate: "",
+  supplierPlaceOfSupply: "",
+  supplierGstRate: 5,
+  supplierGstType: "IGST",
 
   fxLastUpdated: "",
 };
