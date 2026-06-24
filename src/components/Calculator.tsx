@@ -1479,22 +1479,98 @@ export default function Calculator() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <TextField label="Bank name" value={s.companyBankName} onChange={(v) => set("companyBankName", v)} />
                 <TextField label="Account number" value={s.companyBankAccount} onChange={(v) => set("companyBankAccount", v)} />
-                <TextField label="SWIFT code" value={s.companyBankSwift} onChange={(v) => set("companyBankSwift", v)} />
+                <TextField label="SWIFT code" value={s.companyBankSwift} onChange={(v) => set("companyBankSwift", v)} placeholder="8 or 11 char SWIFT/BIC" hint="VERIFY directly with your bank branch — wrong SWIFT bounces the remittance" />
                 <TextField label="Branch" value={s.companyBankBranch} onChange={(v) => set("companyBankBranch", v)} />
                 <TextField label="IFSC code" value={s.companyBankIfsc} onChange={(v) => set("companyBankIfsc", v)} placeholder="11-character IFSC" />
                 <TextField label="AD Code" value={s.companyAdCode} onChange={(v) => set("companyAdCode", v)} placeholder="14-digit AD Code from your AD bank" hint="Authorised Dealer code issued by your bank for export remittance" />
               </div>
+              <p className="mt-3 text-xs text-warning italic">
+                ⚠ SWIFT codes vary by branch. Confirm the exact 8/11-character code in writing with your bank before sharing any Proforma Invoice — wrong SWIFT = bounced or delayed payment.
+              </p>
             </GroupCard>
 
             <GroupCard icon={FileText} title="Document defaults" subtitle="Payment terms and validity printed on quotations and contracts">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <TextField label="Payment terms" value={s.paymentTerms} onChange={(v) => set("paymentTerms", v)} placeholder="e.g. 30% advance, 70% against B/L copy" />
+                <TextField label="Payment terms" value={s.paymentTerms} onChange={(v) => set("paymentTerms", v)} placeholder="e.g. 30% TT advance, 70% against scanned B/L" hint="Be specific (LC at sight, TT 30/70, DP, DA). Open-ended terms get the deal rejected." />
                 <NumField label="Quotation validity (days)" value={s.quotationValidityDays} onChange={(v) => set("quotationValidityDays", v)} suffix="days" />
               </div>
-              <p className="mt-3 text-xs text-muted-foreground italic">
-                Tip: keep payment terms generic (e.g. "To be agreed with buyer") until you have negotiated with the specific buyer — pre-printing terms anchors the negotiation.
-              </p>
             </GroupCard>
+
+            <GroupCard icon={Globe2} title="Shipment & logistics" subtitle="Ports, origin and lead time printed on Quotation, Proforma, Commercial Invoice & Packing List">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <TextField label="Port of Loading" value={s.portOfLoading} onChange={(v) => set("portOfLoading", v)} placeholder="e.g. INNSA – Nhava Sheva / INMAA – Chennai" />
+                <TextField label="Port of Discharge" value={s.portOfDischarge} onChange={(v) => set("portOfDischarge", v)} placeholder="e.g. GBFXT – Felixstowe / DEHAM – Hamburg" />
+                <TextField label="Country of Origin" value={s.countryOfOrigin} onChange={(v) => set("countryOfOrigin", v)} placeholder="India" />
+                <NumField label="Shipment lead time" value={s.shipmentLeadTimeDays} onChange={(v) => set("shipmentLeadTimeDays", v)} suffix="days" hint="Days from PO confirmation to ready-for-shipment" />
+                <TextField label="Vessel / Flight" value={s.vesselFlight} onChange={(v) => set("vesselFlight", v)} placeholder="(once booked)" />
+                <TextField label="B/L or AWB number" value={s.blAwbNumber} onChange={(v) => set("blAwbNumber", v)} placeholder="(once issued)" />
+                <TextField label="Container number" value={s.containerNo} onChange={(v) => set("containerNo", v)} placeholder="e.g. MSCU1234567" />
+                <TextField label="Seal number" value={s.sealNo} onChange={(v) => set("sealNo", v)} placeholder="(once sealed at CFS)" />
+                <div className="sm:col-span-2">
+                  <TextField label="Notify party (full address)" value={s.notifyParty} onChange={(v) => set("notifyParty", v)} placeholder="Leave blank to print 'Same as Consignee'" />
+                </div>
+              </div>
+            </GroupCard>
+
+            <GroupCard icon={FileText} title="Packaging detail" subtitle="Printed on Packing List & Commercial Invoice — required for customs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <TextField label="Packaging type" value={s.packageType} onChange={(v) => set("packageType", v)} placeholder="e.g. PP woven bags, Jute bags, Cartons" />
+                <TextField label="Dimensions per package (cm)" value={s.packageDimensionsCm} onChange={(v) => set("packageDimensionsCm", v)} placeholder="L x W x H, e.g. 60 x 40 x 25" />
+                <NumField label="Packages count (override)" value={s.packagesCountOverride} onChange={(v) => set("packagesCountOverride", v)} hint="Leave 0 to auto-calculate from quantity ÷ net wt per pkg" />
+                <NumField label="Net weight per package (kg)" value={s.netWeightPerPackageKg} onChange={(v) => set("netWeightPerPackageKg", v)} suffix="kg" hint="0 = default 25 kg/pkg" />
+                <div className="sm:col-span-2">
+                  <TextField label="Marks & Numbers" value={s.marksAndNumbers} onChange={(v) => set("marksAndNumbers", v)} placeholder="e.g. VX/PEPPER/UK/2026 — 1 of 40" hint="Identifying marks stencilled on each package for customs correlation" />
+                </div>
+              </div>
+            </GroupCard>
+
+            <GroupCard icon={FileText} title="Quality specification" subtitle="Printed on Sales Contract & Purchase Order">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <TextField label="Quality standard" value={s.qualityStandard} onChange={(v) => set("qualityStandard", v)} placeholder="e.g. AGMARK Special / ASTA cleanliness / FSSAI" />
+                <NumField label="Max moisture %" value={s.qualityMoisturePct} onChange={(v) => set("qualityMoisturePct", v)} suffix="%" />
+                <TextField label="Active compound (label)" value={s.qualityActiveCompoundLabel} onChange={(v) => set("qualityActiveCompoundLabel", v)} placeholder="e.g. Piperine, Curcumin, Capsaicin" />
+                <NumField label="Min active compound %" value={s.qualityActiveCompoundPct} onChange={(v) => set("qualityActiveCompoundPct", v)} suffix="%" />
+                <NumField label="Max admixture %" value={s.qualityAdmixturePct} onChange={(v) => set("qualityAdmixturePct", v)} suffix="%" />
+                <TextField label="Bulk density" value={s.qualityBulkDensity} onChange={(v) => set("qualityBulkDensity", v)} placeholder="e.g. 550 g/L" />
+                <div className="sm:col-span-2">
+                  <TextField label="Additional quality notes" value={s.qualityNotes} onChange={(v) => set("qualityNotes", v)} placeholder="e.g. Pesticide residues per EU MRL; aflatoxin < 5 ppb" />
+                </div>
+              </div>
+            </GroupCard>
+
+            <GroupCard icon={FileText} title="Contract & legal" subtitle="Printed on Sales Contract">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <TextField label="Governing law" value={s.governingLaw} onChange={(v) => set("governingLaw", v)} placeholder="e.g. Indian Law / English Law" />
+                <TextField label="Arbitration venue" value={s.arbitrationVenue} onChange={(v) => set("arbitrationVenue", v)} placeholder="e.g. Bangalore, India / London, UK" />
+              </div>
+            </GroupCard>
+
+            <GroupCard icon={Landmark} title="Supplier profile (for Purchase Order)" subtitle="Required to issue PO to your domestic supplier under GST">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <TextField label="Supplier name" value={s.supplierName} onChange={(v) => set("supplierName", v)} placeholder="e.g. Qualfis Foodz Pvt Ltd" />
+                <TextField label="Supplier address" value={s.supplierAddress} onChange={(v) => set("supplierAddress", v)} />
+                <TextField label="Supplier GSTIN" value={s.supplierGstin} onChange={(v) => set("supplierGstin", v)} placeholder="15-digit GSTIN" />
+                <TextField label="Contact person" value={s.supplierContact} onChange={(v) => set("supplierContact", v)} />
+                <TextField label="Supplier email" value={s.supplierEmail} onChange={(v) => set("supplierEmail", v)} type="email" />
+                <TextField label="Supplier phone" value={s.supplierPhone} onChange={(v) => set("supplierPhone", v)} />
+                <TextField label="Payment terms" value={s.supplierPaymentTerms} onChange={(v) => set("supplierPaymentTerms", v)} placeholder="e.g. Net 30 days from invoice receipt" />
+                <TextField label="Required delivery date" value={s.supplierDeliveryDate} onChange={(v) => set("supplierDeliveryDate", v)} placeholder="DD-MMM-YYYY" />
+                <TextField label="Place of supply (GST)" value={s.supplierPlaceOfSupply} onChange={(v) => set("supplierPlaceOfSupply", v)} placeholder="State name + GST state code, e.g. Karnataka (29)" />
+                <NumField label="GST rate %" value={s.supplierGstRate} onChange={(v) => set("supplierGstRate", v)} suffix="%" hint="e.g. 5 for most spices, 12/18 for processed goods" />
+                <div className="space-y-1.5">
+                  <FieldLabel>GST type</FieldLabel>
+                  <Select value={s.supplierGstType} onValueChange={(v) => set("supplierGstType", v as "IGST" | "CGST_SGST" | "NONE")}>
+                    <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CGST_SGST">CGST + SGST (intra-state)</SelectItem>
+                      <SelectItem value="IGST">IGST (inter-state)</SelectItem>
+                      <SelectItem value="NONE">No GST</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </GroupCard>
+
 
             <Card className="p-4 border-warning/40 bg-warning/5 flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-warning mt-0.5 shrink-0" />
