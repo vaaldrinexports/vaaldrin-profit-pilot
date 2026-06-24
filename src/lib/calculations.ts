@@ -452,26 +452,46 @@ export function computeCoreINR(s: CalculatorState): Computed {
   // Banking is fully driven by the Banking & Forex module (Axis Bank tariffs + payment method).
   // The legacy manual "Banking costs" inputs have been removed to prevent double-counting.
   const contractRate = getActualBankRate(s.contractCurrency, s) || 1;
-  const proxyContractValueInr = supplierTotal * (1 + num(s.targetProfitPct) / 100) + packagingTotal + inlandTotal + documentationTotal + customsTotal + freightTotal + insuranceTotal;
-  const proxyForeign = proxyContractValueInr / contractRate;
-  const moduleBankingProxy = computeBankingCharges(s, proxyForeign);
-  const bankingTotal = moduleBankingProxy.total;
   const miscTotal = num(s.miscCost);
-
 
   const exwDirectCost = supplierTotal + packagingTotal;
   const fobDirectCost = exwDirectCost + inlandTotal + documentationTotal + customsTotal;
   const cfrDirectCost = fobDirectCost + freightTotal;
   const cifDirectCost = cfrDirectCost + insuranceTotal;
-  const sharedCost = bankingTotal + miscTotal;
   const directCostByIncoterm: Record<Incoterm, number> = {
     EXW: exwDirectCost,
     FOB: fobDirectCost,
     CFR: cfrDirectCost,
     CIF: cifDirectCost,
   };
+  const selectedDirect = directCostByIncoterm[s.incoterm];
+  const rodtepRate = (num(s.rodtepPct) + num(s.dutyDrawbackPct)) / 100;
+  const otherInc = num(s.otherIncentives);
+  const contingencyRate = num(s.contingencyPct) / 100;
+  const targetRate = num(s.targetProfitPct) / 100;
+
+  // Banking depends on revenue, and revenue depends on banking → fixed-point iteration.
+  // Converges in 2-4 passes; cap at 12 with a tight tolerance for export-grade accuracy.
+  let bankingTotal = 0;
+  let banking: BankingBreakdown = computeBankingCharges(s, 0);
+  for (let i = 0; i < 12; i++) {
+    const totalCostIter = selectedDirect + bankingTotal + miscTotal;
+    const incIter = Math.min(totalCostIter, supplierTotal * rodtepRate + otherInc);
+    const effIter = totalCostIter - incIter;
+    const protIter = effIter * (1 + contingencyRate);
+    const targetPriceIter = (protIter / divisor) * (1 + targetRate);
+    const revenueIter = targetPriceIter * q;
+    const foreignIter = revenueIter / contractRate;
+    const nextBanking = computeBankingCharges(s, foreignIter);
+    const delta = Math.abs(nextBanking.total - bankingTotal);
+    banking = nextBanking;
+    bankingTotal = nextBanking.total;
+    if (delta < 0.01) break;
+  }
+
+  const sharedCost = bankingTotal + miscTotal;
   // Only costs applicable to the selected Incoterm enter the quoted deal.
-  const totalCost = directCostByIncoterm[s.incoterm] + sharedCost;
+  const totalCost = selectedDirect + sharedCost;
 
   const incentiveValue = Math.min(totalCost,
     (supplierTotal * (num(s.rodtepPct) + num(s.dutyDrawbackPct)) / 100) + num(s.otherIncentives));
