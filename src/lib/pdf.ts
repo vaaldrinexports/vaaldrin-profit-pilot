@@ -668,27 +668,48 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
   });
 
   drawSectionHeader(doc, "Supplier", margin, 140);
-  drawFieldBlock(doc, margin, 158, [
-    ["Company", "—"],
-    ["Address", "—"],
-    ["GSTIN", "—"],
-    ["Contact", "—"],
-  ]);
+  const supRows: Array<[string, string]> = [
+    ["Company", s.supplierName || "(supplier name required)"],
+    ["Address", s.supplierAddress || "(supplier address required)"],
+  ];
+  if (s.supplierGstin) supRows.push(["GSTIN", s.supplierGstin]);
+  if (s.supplierContact) supRows.push(["Contact", s.supplierContact]);
+  if (s.supplierEmail) supRows.push(["Email", s.supplierEmail]);
+  if (s.supplierPhone) supRows.push(["Phone", s.supplierPhone]);
+  drawFieldBlock(doc, margin, 158, supRows);
 
   drawSectionHeader(doc, `Buyer (${s.companyName || "Vaaldrin"})`, W / 2 + 10, 140);
-  drawFieldBlock(doc, W / 2 + 10, 158, [
+  const buyerSelfRows: Array<[string, string]> = [
     ["Company", s.companyName || "Vaaldrin Exports"],
     ["Address", s.companyAddress || "India"],
-    ...(s.companyGstin ? [["GSTIN", s.companyGstin] as [string, string]] : []),
-  ]);
+  ];
+  if (s.companyGstin) buyerSelfRows.push(["GSTIN", s.companyGstin]);
+  if (s.companyEmail) buyerSelfRows.push(["Email", s.companyEmail]);
+  if (s.companyPhone) buyerSelfRows.push(["Phone", s.companyPhone]);
+  drawFieldBlock(doc, W / 2 + 10, 158, buyerSelfRows);
+
+  const yPO = 260;
+  drawSectionHeader(doc, "Order Details", margin, yPO);
+  drawFieldBlock(doc, margin, yPO + 18, [
+    ["PO Number", `PO-${s.quotationNumber}`],
+    ["PO Date", s.quotationDate],
+    ["Delivery Date", s.supplierDeliveryDate || "(to be confirmed)"],
+    ["Place of Supply", s.supplierPlaceOfSupply || s.companyAddress || "—"],
+    ["Deliver To", s.companyAddress || "—"],
+  ], 110);
 
   const lineTotal = s.supplierPricePerUnit * s.quantity;
+  const gstPct = Math.max(0, s.supplierGstRate || 0);
+  const gstAmt = lineTotal * gstPct / 100;
+  const grand = lineTotal + gstAmt;
+
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: 235,
-    head: [["Description", "Qty", "UoM", "Unit Price (INR)", "Amount (INR)"]],
+    startY: yPO + 110,
+    head: [["Description", "HSN/SAC", "Qty", "UoM", "Unit Price (INR)", "Amount (INR)"]],
     body: [[
       `${s.productName || "—"}${s.productGrade ? ` — ${s.productGrade}` : ""}`,
+      s.hsCode || "—",
       String(s.quantity),
       s.uom,
       fmtCurrency(s.supplierPricePerUnit, "INR"),
@@ -696,27 +717,40 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
     ]],
   });
 
+  const gstRows: Array<Array<{ content: string; styles?: Record<string, unknown> } | string>> = [
+    [{ content: "Taxable Value", styles: { halign: "right" } }, { content: fmtCurrency(lineTotal, "INR"), styles: { halign: "right" } }],
+  ];
+  if (s.supplierGstType === "CGST_SGST") {
+    const half = gstAmt / 2;
+    gstRows.push(
+      [{ content: `CGST @ ${(gstPct / 2).toFixed(2)}%`, styles: { halign: "right" } }, { content: fmtCurrency(half, "INR"), styles: { halign: "right" } }],
+      [{ content: `SGST @ ${(gstPct / 2).toFixed(2)}%`, styles: { halign: "right" } }, { content: fmtCurrency(half, "INR"), styles: { halign: "right" } }],
+    );
+  } else if (s.supplierGstType === "IGST") {
+    gstRows.push([{ content: `IGST @ ${gstPct.toFixed(2)}%`, styles: { halign: "right" } }, { content: fmtCurrency(gstAmt, "INR"), styles: { halign: "right" } }]);
+  }
+  gstRows.push([
+    { content: "GRAND TOTAL (INR)", styles: { fontStyle: "bold", textColor: BRAND.red, halign: "right" } },
+    { content: fmtCurrency(grand, "INR"), styles: { fontStyle: "bold", textColor: BRAND.red, halign: "right" } },
+  ]);
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: lastY(doc) + 10,
-    body: [[
-      { content: "TOTAL (INR)", styles: { fontStyle: "bold", textColor: BRAND.red, halign: "right" } },
-      { content: fmtCurrency(lineTotal, "INR"), styles: { fontStyle: "bold", halign: "right" } },
-    ]],
+    startY: lastY(doc) + 8,
+    body: gstRows,
+    columnStyles: { 0: { cellWidth: W - 80 - 160 }, 1: { cellWidth: 160 } },
   });
 
   const y = lastY(doc) + 20;
-  drawSectionHeader(doc, "Delivery & Payment", margin, y);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
-  doc.setTextColor(...BRAND.text);
+  drawSectionHeader(doc, "Delivery, Payment & Quality", margin, y);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(...BRAND.text);
   doc.text([
-    `Delivery Requirements: As per agreed schedule, delivered to warehouse.`,
-    `Payment Terms: Net 30 days from invoice receipt.`,
-    `Quality: Material to meet contracted specifications and grade.`,
+    `Delivery: by ${s.supplierDeliveryDate || "(date TBC)"} to ${s.companyAddress || "buyer warehouse"}.`,
+    `Payment: ${s.supplierPaymentTerms || "Net 30 days from invoice receipt"}.`,
+    `Quality: ${s.productGrade || "—"}${s.qualityStandard ? `, conforming to ${s.qualityStandard}` : ""}${s.qualityMoisturePct > 0 ? `, moisture ≤ ${s.qualityMoisturePct}%` : ""}${s.qualityActiveCompoundLabel && s.qualityActiveCompoundPct > 0 ? `, ${s.qualityActiveCompoundLabel} ≥ ${s.qualityActiveCompoundPct}%` : ""}.`,
+    `Place of Supply: ${s.supplierPlaceOfSupply || "—"} (under GST).`,
   ], margin, y + 18, { lineHeightFactor: 1.5 });
 
-  drawSignatureBlock(doc, W, y + 80, `Authorized By — ${s.companyName || "Vaaldrin Exports"}`);
+  drawSignatureBlock(doc, W, y + 100, `Authorized By — ${s.companyName || "Vaaldrin Exports"}`);
   drawFooter(doc, W, H, margin);
   doc.save(`purchase-order-${s.quotationNumber}.pdf`);
 }
@@ -735,32 +769,38 @@ export async function generateSalesContractPDF(s: CalculatorState) {
   });
 
   drawSectionHeader(doc, "Seller", margin, 140);
-  drawFieldBlock(doc, margin, 158, [
-    ["Company", s.companyName || "Vaaldrin Exports"],
-    ["Address", s.companyAddress || "India"],
-    ...(s.companyIec ? [["IEC", s.companyIec] as [string, string]] : []),
-    ...(s.companyGstin ? [["GSTIN", s.companyGstin] as [string, string]] : []),
-  ]);
+  drawFieldBlock(doc, margin, 158, exporterRows(s));
 
   drawSectionHeader(doc, "Buyer", W / 2 + 10, 140);
-  drawFieldBlock(doc, W / 2 + 10, 158, [
-    ["Company", s.buyerCompany],
-    ["Contact", s.buyerName],
-    ["Country", s.buyerCountry],
-    ["Email", s.buyerEmail],
-  ]);
+  drawFieldBlock(doc, W / 2 + 10, 158, buyerRows(s, { includeContact: true }));
 
-  const y0 = 230;
+  const y0 = 270;
   drawSectionHeader(doc, "Contract Terms", margin, y0);
+  const qualityBits: string[] = [];
+  if (s.qualityStandard) qualityBits.push(`Standard: ${s.qualityStandard}`);
+  if (s.qualityMoisturePct > 0) qualityBits.push(`Moisture ≤ ${s.qualityMoisturePct}%`);
+  if (s.qualityActiveCompoundLabel && s.qualityActiveCompoundPct > 0)
+    qualityBits.push(`${s.qualityActiveCompoundLabel} ≥ ${s.qualityActiveCompoundPct}%`);
+  if (s.qualityAdmixturePct > 0) qualityBits.push(`Admixture ≤ ${s.qualityAdmixturePct}%`);
+  if (s.qualityBulkDensity) qualityBits.push(`Bulk density ${s.qualityBulkDensity}`);
+  if (s.qualityNotes) qualityBits.push(s.qualityNotes);
+  const qualityLine = qualityBits.length
+    ? `Grade ${s.productGrade || "—"}. ${qualityBits.join("; ")}.`
+    : `Grade ${s.productGrade || "—"} (detailed specification to be agreed in writing prior to shipment).`;
+
   const clauses: Array<[string, string]> = [
-    ["1. Goods", `${s.productName || "—"}${s.productGrade ? ` (${s.productGrade})` : ""}, HS ${s.hsCode || "—"}.`],
+    ["1. Goods", `${s.productName || "—"}${s.productGrade ? ` (${s.productGrade})` : ""}, HS ${s.hsCode || "—"}; Country of Origin: ${s.countryOfOrigin || "India"}.`],
     ["2. Quantity", `${s.quantity} ${s.uom}.`],
     ["3. Price", `${s.contractCurrency} ${fmtCurrency(quote.unitPrice, s.contractCurrency)} per ${s.uom}; total ${s.contractCurrency} ${fmtCurrency(quote.totalContractValue, s.contractCurrency)}.`],
-    ["4. Payment", `${s.paymentTerms || "To be agreed with buyer"}.`],
-    ["5. Delivery", `${s.incoterm} as per Incoterms 2020.`],
-    ["6. Inspection", "Pre-shipment inspection at seller's premises by buyer-nominated agency at buyer's cost."],
-    ["7. Force Majeure", "Neither party liable for delays caused by events beyond reasonable control."],
-    ["8. Disputes", "Subject to arbitration under ICC Rules; jurisdiction of issuing office of seller."],
+    ["4. Payment", `${s.paymentTerms || "(To be finalised in writing — leaving this open invalidates the contract)"}.`],
+    ["5. Delivery", `${s.incoterm} ${s.portOfLoading || "(POL TBC)"} → ${s.portOfDischarge || "(POD TBC)"}, Incoterms 2020. Shipment within ${s.shipmentLeadTimeDays || 30} days of PO confirmation.`],
+    ["6. Quality", qualityLine],
+    ["7. Inspection", "Pre-shipment inspection at seller's premises by buyer-nominated agency at buyer's cost, to be completed within 7 working days of shipment readiness notice."],
+    ["8. Documents", `Seller shall provide: Commercial Invoice, Packing List, Bill of Lading / AWB, Certificate of Origin (FIEO / Chamber of Commerce), Phytosanitary Certificate where required, and ${s.qualityStandard || "agreed"} quality test report.`],
+    ["9. Force Majeure", "Neither party liable for delays caused by events beyond reasonable control (acts of God, war, strikes, port closures, government restrictions)."],
+    ["10. Penalty", "Delay beyond agreed shipment window attracts liquidated damages of 0.5% of contract value per week, capped at 5%, unless waived in writing by buyer."],
+    ["11. Governing Law", `This contract is governed by ${s.governingLaw || "Indian Law"}.`],
+    ["12. Disputes", `Subject to arbitration under ICC Rules; seat of arbitration: ${s.arbitrationVenue || s.companyAddress || "seller's office"}.`],
   ];
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9.5);
@@ -770,8 +810,8 @@ export async function generateSalesContractPDF(s: CalculatorState) {
     doc.setFont("helvetica", "bold");
     doc.text(h, margin, yy);
     doc.setFont("helvetica", "normal");
-    const lines = doc.splitTextToSize(body, W - margin * 2 - 70);
-    doc.text(lines, margin + 70, yy);
+    const lines = doc.splitTextToSize(body, W - margin * 2 - 90);
+    doc.text(lines, margin + 90, yy);
     yy += Math.max(14, lines.length * 12);
   });
 
