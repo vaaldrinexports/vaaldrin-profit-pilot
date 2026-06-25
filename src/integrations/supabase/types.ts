@@ -14,7 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      app_settings: {
+        Row: {
+          created_at: string
+          settings: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          settings?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          settings?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      quotes: {
+        Row: {
+          buyer_company: string | null
+          contract_currency: string | null
+          created_at: string
+          id: string
+          net_profit_inr: number | null
+          product_name: string | null
+          profit_pct: number | null
+          quantity: number | null
+          quotation_number: string | null
+          saved_at: string
+          state: Json
+          total_contract_value: number | null
+          unit_price: number | null
+          uom: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          buyer_company?: string | null
+          contract_currency?: string | null
+          created_at?: string
+          id?: string
+          net_profit_inr?: number | null
+          product_name?: string | null
+          profit_pct?: number | null
+          quantity?: number | null
+          quotation_number?: string | null
+          saved_at?: string
+          state?: Json
+          total_contract_value?: number | null
+          unit_price?: number | null
+          uom?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          buyer_company?: string | null
+          contract_currency?: string | null
+          created_at?: string
+          id?: string
+          net_profit_inr?: number | null
+          product_name?: string | null
+          profit_pct?: number | null
+          quantity?: number | null
+          quotation_number?: string | null
+          saved_at?: string
+          state?: Json
+          total_contract_value?: number | null
+          unit_price?: number | null
+          uom?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
