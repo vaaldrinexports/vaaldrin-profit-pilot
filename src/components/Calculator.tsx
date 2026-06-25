@@ -6,6 +6,9 @@ import {
   calculateForexExposure, getActualBankRate, getBuyerQuote, getMarketRate, type CalculatorState, type Incoterm, type ContractCurrency,
 } from "@/lib/calculations";
 import { listQuotes, saveQuoteSnapshot, loadQuote, deleteQuote, type SavedQuote } from "@/lib/quote-store";
+import { loadSettings, saveSettings } from "@/lib/settings-store";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "@tanstack/react-router";
 import {
   searchHsCodes, lookupDuty, findCountryByName, COUNTRIES, INDIAN_PORTS,
   type HsCodeEntry,
