@@ -463,18 +463,27 @@ export default function Calculator() {
   };
 
   useEffect(() => {
-    const draft = readJson<CalculatorState>(STORAGE_KEY);
-    const admin = readJson<AdminSettings>(ADMIN_STORAGE_KEY);
-    const draftTariff = draft.bankingTariff;
-    const adminTariff = admin.bankingTariff;
-    if (Object.keys(draft).length > 0 || Object.keys(admin).length > 0) {
-      setS({ ...defaultState, ...draft, ...admin, bankingTariff: { ...defaultState.bankingTariff, ...draftTariff, ...adminTariff } });
-    } else {
-      const now = new Date();
-      setS((current) => ({ ...current, quotationNumber: `VX-${now.getFullYear()}-0001`, quotationDate: now.toISOString().slice(0, 10) }));
-    }
-    setSavedQuotes(listQuotes());
     (async () => {
+      // Load settings + draft from DB (falls back to localStorage)
+      const dbSettings = await loadSettings().catch(() => null);
+      const draft = readJson<CalculatorState>(STORAGE_KEY);
+      const admin = readJson<AdminSettings>(ADMIN_STORAGE_KEY);
+      const draftTariff = draft.bankingTariff;
+      const adminTariff = admin.bankingTariff;
+      const dbTariff = (dbSettings as any)?.bankingTariff;
+      if (dbSettings || Object.keys(draft).length > 0 || Object.keys(admin).length > 0) {
+        setS({
+          ...defaultState,
+          ...draft,
+          ...admin,
+          ...(dbSettings || {}),
+          bankingTariff: { ...defaultState.bankingTariff, ...draftTariff, ...adminTariff, ...(dbTariff || {}) },
+        });
+      } else {
+        const now = new Date();
+        setS((current) => ({ ...current, quotationNumber: `VX-${now.getFullYear()}-0001`, quotationDate: now.toISOString().slice(0, 10) }));
+      }
+      try { setSavedQuotes(await listQuotes()); } catch (e) { console.error(e); }
       const ok = await fetchLiveFx(false);
       if (!ok) setFxStatus("cached");
     })();
