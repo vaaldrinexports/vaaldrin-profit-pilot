@@ -6,6 +6,9 @@ import {
   calculateForexExposure, getActualBankRate, getBuyerQuote, getMarketRate, type CalculatorState, type Incoterm, type ContractCurrency,
 } from "@/lib/calculations";
 import { listQuotes, saveQuoteSnapshot, loadQuote, deleteQuote, type SavedQuote } from "@/lib/quote-store";
+import { loadSettings, saveSettings } from "@/lib/settings-store";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "@tanstack/react-router";
 import {
   searchHsCodes, lookupDuty, findCountryByName, COUNTRIES, INDIAN_PORTS,
   type HsCodeEntry,
@@ -463,18 +466,27 @@ export default function Calculator() {
   };
 
   useEffect(() => {
-    const draft = readJson<CalculatorState>(STORAGE_KEY);
-    const admin = readJson<AdminSettings>(ADMIN_STORAGE_KEY);
-    const draftTariff = draft.bankingTariff;
-    const adminTariff = admin.bankingTariff;
-    if (Object.keys(draft).length > 0 || Object.keys(admin).length > 0) {
-      setS({ ...defaultState, ...draft, ...admin, bankingTariff: { ...defaultState.bankingTariff, ...draftTariff, ...adminTariff } });
-    } else {
-      const now = new Date();
-      setS((current) => ({ ...current, quotationNumber: `VX-${now.getFullYear()}-0001`, quotationDate: now.toISOString().slice(0, 10) }));
-    }
-    setSavedQuotes(listQuotes());
     (async () => {
+      // Load settings + draft from DB (falls back to localStorage)
+      const dbSettings = await loadSettings().catch(() => null);
+      const draft = readJson<CalculatorState>(STORAGE_KEY);
+      const admin = readJson<AdminSettings>(ADMIN_STORAGE_KEY);
+      const draftTariff = draft.bankingTariff;
+      const adminTariff = admin.bankingTariff;
+      const dbTariff = (dbSettings as any)?.bankingTariff;
+      if (dbSettings || Object.keys(draft).length > 0 || Object.keys(admin).length > 0) {
+        setS({
+          ...defaultState,
+          ...draft,
+          ...admin,
+          ...(dbSettings || {}),
+          bankingTariff: { ...defaultState.bankingTariff, ...draftTariff, ...adminTariff, ...(dbTariff || {}) },
+        });
+      } else {
+        const now = new Date();
+        setS((current) => ({ ...current, quotationNumber: `VX-${now.getFullYear()}-0001`, quotationDate: now.toISOString().slice(0, 10) }));
+      }
+      try { setSavedQuotes(await listQuotes()); } catch (e) { console.error(e); }
       const ok = await fetchLiveFx(false);
       if (!ok) setFxStatus("cached");
     })();
@@ -524,31 +536,36 @@ export default function Calculator() {
     { name: "= Profit", value: c.profitPerUnit, color: "var(--success)" },
   ];
 
-  const save = () => {
+  const save = async () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(pickAdminSettings(s)));
-    if (inputsReady) {
-      saveQuoteSnapshot(s);
-      setSavedQuotes(listQuotes());
-      toast.success("Saved · snapshot added to history");
-    } else {
-      toast.success("Draft saved");
+    try {
+      await saveSettings(s);
+      if (inputsReady) {
+        await saveQuoteSnapshot(s);
+        setSavedQuotes(await listQuotes());
+        toast.success("Saved to database · snapshot added");
+      } else {
+        toast.success("Draft saved to database");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Database save failed");
     }
   };
-  const loadSavedQuote = (id: string) => {
-    const q = loadQuote(id);
+  const loadSavedQuote = async (id: string) => {
+    const q = await loadQuote(id);
     if (!q) { toast.error("Quote not found"); return; }
     setS(q.state);
     toast.success(`Loaded ${q.quotationNumber || q.id}`);
   };
-  const deleteSavedQuote = (id: string) => {
+  const deleteSavedQuote = async (id: string) => {
     if (!confirm("Delete this saved quote?")) return;
-    deleteQuote(id);
-    setSavedQuotes(listQuotes());
+    await deleteQuote(id);
+    setSavedQuotes(await listQuotes());
     toast.success("Deleted");
   };
-  const duplicateSavedQuote = (id: string) => {
-    const q = loadQuote(id);
+  const duplicateSavedQuote = async (id: string) => {
+    const q = await loadQuote(id);
     if (!q) return;
     const n = parseInt(q.state.quotationNumber.split("-").pop() || "0", 10) + 1;
     const base = q.state.quotationNumber.replace(/-\d+$/, "");
@@ -609,10 +626,21 @@ export default function Calculator() {
   const dqLabel = dq >= 90 ? "Excellent" : dq >= 75 ? "Good" : dq >= 60 ? "Acceptable" : "High Risk";
   const dqTone = dq >= 75 ? "text-success" : dq >= 60 ? "text-warning" : "text-deep-red";
 
-  const saveAdminSettings = () => {
+  const saveAdminSettings = async () => {
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(pickAdminSettings(s)));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-    toast.success("Admin settings saved");
+    try {
+      await saveSettings(s);
+      toast.success("Admin settings saved to database");
+    } catch (e: any) {
+      toast.error(e?.message || "Database save failed");
+    }
+  };
+
+  const navigate = useNavigate();
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/auth" });
   };
 
   return (
@@ -661,6 +689,8 @@ export default function Calculator() {
                 <DropdownMenuItem onClick={reset} className="text-deep-red focus:text-deep-red">
                   <RotateCcw className="w-4 h-4 mr-2" />Reset all
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
