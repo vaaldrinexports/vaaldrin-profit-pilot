@@ -626,10 +626,21 @@ export default function Calculator() {
   const dqLabel = dq >= 90 ? "Excellent" : dq >= 75 ? "Good" : dq >= 60 ? "Acceptable" : "High Risk";
   const dqTone = dq >= 75 ? "text-success" : dq >= 60 ? "text-warning" : "text-deep-red";
 
-  const saveAdminSettings = () => {
+  const saveAdminSettings = async () => {
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(pickAdminSettings(s)));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-    toast.success("Admin settings saved");
+    try {
+      await saveSettings(s);
+      toast.success("Admin settings saved to database");
+    } catch (e: any) {
+      toast.error(e?.message || "Database save failed");
+    }
+  };
+
+  const navigate = useNavigate();
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/auth" });
   };
 
   return (
