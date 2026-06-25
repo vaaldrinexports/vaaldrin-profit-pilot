@@ -536,31 +536,36 @@ export default function Calculator() {
     { name: "= Profit", value: c.profitPerUnit, color: "var(--success)" },
   ];
 
-  const save = () => {
+  const save = async () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(pickAdminSettings(s)));
-    if (inputsReady) {
-      saveQuoteSnapshot(s);
-      setSavedQuotes(listQuotes());
-      toast.success("Saved · snapshot added to history");
-    } else {
-      toast.success("Draft saved");
+    try {
+      await saveSettings(s);
+      if (inputsReady) {
+        await saveQuoteSnapshot(s);
+        setSavedQuotes(await listQuotes());
+        toast.success("Saved to database · snapshot added");
+      } else {
+        toast.success("Draft saved to database");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Database save failed");
     }
   };
-  const loadSavedQuote = (id: string) => {
-    const q = loadQuote(id);
+  const loadSavedQuote = async (id: string) => {
+    const q = await loadQuote(id);
     if (!q) { toast.error("Quote not found"); return; }
     setS(q.state);
     toast.success(`Loaded ${q.quotationNumber || q.id}`);
   };
-  const deleteSavedQuote = (id: string) => {
+  const deleteSavedQuote = async (id: string) => {
     if (!confirm("Delete this saved quote?")) return;
-    deleteQuote(id);
-    setSavedQuotes(listQuotes());
+    await deleteQuote(id);
+    setSavedQuotes(await listQuotes());
     toast.success("Deleted");
   };
-  const duplicateSavedQuote = (id: string) => {
-    const q = loadQuote(id);
+  const duplicateSavedQuote = async (id: string) => {
+    const q = await loadQuote(id);
     if (!q) return;
     const n = parseInt(q.state.quotationNumber.split("-").pop() || "0", 10) + 1;
     const base = q.state.quotationNumber.replace(/-\d+$/, "");
