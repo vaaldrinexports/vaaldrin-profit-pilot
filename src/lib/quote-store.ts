@@ -1,8 +1,6 @@
 import type { CalculatorState } from "@/lib/calculations";
 import { compute, getBuyerQuote } from "@/lib/calculations";
-
-const KEY = "vx_quotes";
-const CAP = 50;
+import { supabase } from "@/integrations/supabase/client";
 
 export interface SavedQuote {
   id: string;
@@ -20,63 +18,87 @@ export interface SavedQuote {
   state: CalculatorState;
 }
 
-function read(): SavedQuote[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
-  } catch {
+type Row = {
+  id: string;
+  saved_at: string;
+  quotation_number: string | null;
+  buyer_company: string | null;
+  product_name: string | null;
+  quantity: number | null;
+  uom: string | null;
+  contract_currency: string | null;
+  unit_price: number | null;
+  total_contract_value: number | null;
+  net_profit_inr: number | null;
+  profit_pct: number | null;
+  state: any;
+};
+
+const fromRow = (r: Row): SavedQuote => ({
+  id: r.id,
+  savedAt: r.saved_at,
+  quotationNumber: r.quotation_number ?? "",
+  buyerCompany: r.buyer_company ?? "",
+  productName: r.product_name ?? "",
+  quantity: Number(r.quantity ?? 0),
+  uom: r.uom ?? "",
+  contractCurrency: r.contract_currency ?? "INR",
+  unitPrice: Number(r.unit_price ?? 0),
+  totalContractValue: Number(r.total_contract_value ?? 0),
+  netProfitINR: Number(r.net_profit_inr ?? 0),
+  profitPct: Number(r.profit_pct ?? 0),
+  state: r.state as CalculatorState,
+});
+
+export async function listQuotes(): Promise<SavedQuote[]> {
+  const { data, error } = await supabase
+    .from("quotes")
+    .select("*")
+    .order("saved_at", { ascending: false })
+    .limit(100);
+  if (error) {
+    console.error("listQuotes", error);
     return [];
   }
+  return (data ?? []).map((r) => fromRow(r as Row));
 }
 
-function write(list: SavedQuote[]) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(KEY, JSON.stringify(list.slice(0, CAP)));
-  } catch {
-    /* quota — best effort */
-  }
-}
-
-export function listQuotes(): SavedQuote[] {
-  return read().sort((a, b) => (a.savedAt < b.savedAt ? 1 : -1));
-}
-
-export function saveQuoteSnapshot(state: CalculatorState): SavedQuote {
+export async function saveQuoteSnapshot(state: CalculatorState): Promise<SavedQuote | null> {
+  const { data: userRes } = await supabase.auth.getUser();
+  const user = userRes.user;
+  if (!user) throw new Error("Not signed in");
   const c = compute(state);
   const q = getBuyerQuote(c.recommendedPrice, state.quantity, state);
-  const snap: SavedQuote = {
-    id: `q_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
-    savedAt: new Date().toISOString(),
-    quotationNumber: state.quotationNumber,
-    buyerCompany: state.buyerCompany,
-    productName: state.productName,
+  const row = {
+    user_id: user.id,
+    quotation_number: state.quotationNumber,
+    buyer_company: state.buyerCompany,
+    product_name: state.productName,
     quantity: state.quantity,
     uom: state.uom,
-    contractCurrency: state.contractCurrency,
-    unitPrice: q.unitPrice,
-    totalContractValue: q.totalContractValue,
-    netProfitINR: c.netProfit,
-    profitPct: c.profitPct,
-    state,
+    contract_currency: state.contractCurrency,
+    unit_price: q.unitPrice,
+    total_contract_value: q.totalContractValue,
+    net_profit_inr: c.netProfit,
+    profit_pct: c.profitPct,
+    state: state as any,
+    saved_at: new Date().toISOString(),
   };
-  const list = read();
-  list.unshift(snap);
-  write(list);
-  return snap;
+  const { data, error } = await supabase.from("quotes").insert(row).select("*").single();
+  if (error) {
+    console.error("saveQuoteSnapshot", error);
+    throw error;
+  }
+  return fromRow(data as Row);
 }
 
-export function loadQuote(id: string): SavedQuote | null {
-  return read().find((q) => q.id === id) ?? null;
+export async function loadQuote(id: string): Promise<SavedQuote | null> {
+  const { data, error } = await supabase.from("quotes").select("*").eq("id", id).maybeSingle();
+  if (error || !data) return null;
+  return fromRow(data as Row);
 }
 
-export function deleteQuote(id: string) {
-  write(read().filter((q) => q.id !== id));
-}
-
-export function clearAllQuotes() {
-  write([]);
+export async function deleteQuote(id: string): Promise<void> {
+  const { error } = await supabase.from("quotes").delete().eq("id", id);
+  if (error) console.error("deleteQuote", error);
 }
