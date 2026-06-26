@@ -172,9 +172,37 @@ function drawFooter(doc: jsPDF, W: number, H: number, margin: number, extra?: st
   if (extra) {
     doc.text(extra, W - margin, H - 24, { align: "right" });
   }
-  // Page number
   const pages = doc.getNumberOfPages();
   doc.text(`Page ${doc.getCurrentPageInfo().pageNumber} of ${pages}`, W / 2, H - 24, { align: "center" });
+}
+
+// Remove trailing pages auto-created by jsPDF/autoTable overflow that were
+// never actually drawn on (heuristic: a blank page has very few stream ops).
+function pruneEmptyTrailingPages(doc: jsPDF) {
+  try {
+    const internal = doc.internal as unknown as { pages: string[][] };
+    const pages = internal.pages;
+    if (!Array.isArray(pages)) return;
+    while (doc.getNumberOfPages() > 1) {
+      const last = doc.getNumberOfPages();
+      const ops = pages[last];
+      const opCount = Array.isArray(ops) ? ops.length : 0;
+      if (opCount > 20) break;
+      doc.deletePage(last);
+    }
+  } catch {
+    /* best-effort */
+  }
+}
+
+// Finalize: prune blank trailing pages, then draw footer on every remaining page.
+function finalizeDoc(doc: jsPDF, W: number, H: number, margin: number, extra?: string) {
+  pruneEmptyTrailingPages(doc);
+  const total = doc.getNumberOfPages();
+  for (let i = 1; i <= total; i++) {
+    doc.setPage(i);
+    drawFooter(doc, W, H, margin, extra);
+  }
 }
 
 function drawSignatureBlock(doc: jsPDF, W: number, y: number, label = "For Vaaldrin Exports") {
@@ -316,7 +344,7 @@ export async function generateQuotationPDF(s: CalculatorState) {
   ], margin, yTC + 18, { lineHeightFactor: 1.5 });
 
   drawSignatureBlock(doc, W, yTC + 140, "For " + (s.companyName || "Vaaldrin Exports"));
-  drawFooter(doc, W, H, margin, "E&OE — Errors & Omissions Excepted");
+  finalizeDoc(doc, W, H, margin, "E&OE — Errors & Omissions Excepted");
   doc.save(`${s.quotationNumber || "quotation"}.pdf`);
 }
 
@@ -397,7 +425,7 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
   doc.text("This is a Proforma Invoice and not a tax invoice. Verify bank details with exporter before remittance.", margin, yDecl);
 
   drawSignatureBlock(doc, W, yDecl + 16, "For " + (s.companyName || "Vaaldrin Exports"));
-  drawFooter(doc, W, H, margin);
+  finalizeDoc(doc, W, H, margin);
   doc.save(`proforma-${s.quotationNumber}.pdf`);
 }
 
@@ -478,7 +506,7 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
   ], margin, yDecl, { lineHeightFactor: 1.5 });
 
   drawSignatureBlock(doc, W, yDecl + 26, "For " + (s.companyName || "Vaaldrin Exports"));
-  drawFooter(doc, W, H, margin);
+  finalizeDoc(doc, W, H, margin);
   doc.save(`commercial-invoice-${s.quotationNumber}.pdf`);
 }
 
@@ -544,7 +572,7 @@ export async function generatePackingListPDF(s: CalculatorState) {
   });
 
   drawSignatureBlock(doc, W, lastY(doc) + 30, "For " + (s.companyName || "Vaaldrin Exports"));
-  drawFooter(doc, W, H, margin);
+  finalizeDoc(doc, W, H, margin);
   doc.save(`packing-list-${s.quotationNumber}.pdf`);
 }
 
@@ -652,7 +680,7 @@ export async function generateInternalCostSheetPDF(s: CalculatorState) {
     columnStyles: { 1: { halign: "right" } },
   });
 
-  drawFooter(doc, W, H, margin, "FOR INTERNAL USE ONLY");
+  finalizeDoc(doc, W, H, margin, "FOR INTERNAL USE ONLY");
   doc.save(`cost-sheet-${s.quotationNumber}.pdf`);
 }
 
@@ -751,7 +779,7 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
   ], margin, y + 18, { lineHeightFactor: 1.5 });
 
   drawSignatureBlock(doc, W, y + 100, `Authorized By — ${s.companyName || "Vaaldrin Exports"}`);
-  drawFooter(doc, W, H, margin);
+  finalizeDoc(doc, W, H, margin);
   doc.save(`purchase-order-${s.quotationNumber}.pdf`);
 }
 
@@ -832,6 +860,6 @@ export async function generateSalesContractPDF(s: CalculatorState) {
   doc.text("Authorized Signatory", margin, yy + 50);
   doc.text("Authorized Signatory", W / 2 + 10, yy + 50);
 
-  drawFooter(doc, W, H, margin);
+  finalizeDoc(doc, W, H, margin);
   doc.save(`sales-contract-${s.quotationNumber}.pdf`);
 }
