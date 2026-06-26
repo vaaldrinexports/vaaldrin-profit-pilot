@@ -344,7 +344,7 @@ export async function generateQuotationPDF(s: CalculatorState) {
   ], margin, yTC + 18, { lineHeightFactor: 1.5 });
 
   drawSignatureBlock(doc, W, yTC + 140, "For " + (s.companyName || "Vaaldrin Exports"));
-  drawFooter(doc, W, H, margin, "E&OE — Errors & Omissions Excepted");
+  finalizeDoc(doc, W, H, margin, "E&OE — Errors & Omissions Excepted");
   doc.save(`${s.quotationNumber || "quotation"}.pdf`);
 }
 
@@ -425,7 +425,7 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
   doc.text("This is a Proforma Invoice and not a tax invoice. Verify bank details with exporter before remittance.", margin, yDecl);
 
   drawSignatureBlock(doc, W, yDecl + 16, "For " + (s.companyName || "Vaaldrin Exports"));
-  drawFooter(doc, W, H, margin);
+  finalizeDoc(doc, W, H, margin);
   doc.save(`proforma-${s.quotationNumber}.pdf`);
 }
 
@@ -506,7 +506,7 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
   ], margin, yDecl, { lineHeightFactor: 1.5 });
 
   drawSignatureBlock(doc, W, yDecl + 26, "For " + (s.companyName || "Vaaldrin Exports"));
-  drawFooter(doc, W, H, margin);
+  finalizeDoc(doc, W, H, margin);
   doc.save(`commercial-invoice-${s.quotationNumber}.pdf`);
 }
 
@@ -572,7 +572,7 @@ export async function generatePackingListPDF(s: CalculatorState) {
   });
 
   drawSignatureBlock(doc, W, lastY(doc) + 30, "For " + (s.companyName || "Vaaldrin Exports"));
-  drawFooter(doc, W, H, margin);
+  finalizeDoc(doc, W, H, margin);
   doc.save(`packing-list-${s.quotationNumber}.pdf`);
 }
 
@@ -680,7 +680,7 @@ export async function generateInternalCostSheetPDF(s: CalculatorState) {
     columnStyles: { 1: { halign: "right" } },
   });
 
-  drawFooter(doc, W, H, margin, "FOR INTERNAL USE ONLY");
+  finalizeDoc(doc, W, H, margin, "FOR INTERNAL USE ONLY");
   doc.save(`cost-sheet-${s.quotationNumber}.pdf`);
 }
 
@@ -779,7 +779,7 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
   ], margin, y + 18, { lineHeightFactor: 1.5 });
 
   drawSignatureBlock(doc, W, y + 100, `Authorized By — ${s.companyName || "Vaaldrin Exports"}`);
-  drawFooter(doc, W, H, margin);
+  finalizeDoc(doc, W, H, margin);
   doc.save(`purchase-order-${s.quotationNumber}.pdf`);
 }
 
@@ -860,6 +860,6 @@ export async function generateSalesContractPDF(s: CalculatorState) {
   doc.text("Authorized Signatory", margin, yy + 50);
   doc.text("Authorized Signatory", W / 2 + 10, yy + 50);
 
-  drawFooter(doc, W, H, margin);
+  finalizeDoc(doc, W, H, margin);
   doc.save(`sales-contract-${s.quotationNumber}.pdf`);
 }
