@@ -172,9 +172,37 @@ function drawFooter(doc: jsPDF, W: number, H: number, margin: number, extra?: st
   if (extra) {
     doc.text(extra, W - margin, H - 24, { align: "right" });
   }
-  // Page number
   const pages = doc.getNumberOfPages();
   doc.text(`Page ${doc.getCurrentPageInfo().pageNumber} of ${pages}`, W / 2, H - 24, { align: "center" });
+}
+
+// Remove trailing pages auto-created by jsPDF/autoTable overflow that were
+// never actually drawn on (heuristic: a blank page has very few stream ops).
+function pruneEmptyTrailingPages(doc: jsPDF) {
+  try {
+    const internal = doc.internal as unknown as { pages: string[][] };
+    const pages = internal.pages;
+    if (!Array.isArray(pages)) return;
+    while (doc.getNumberOfPages() > 1) {
+      const last = doc.getNumberOfPages();
+      const ops = pages[last];
+      const opCount = Array.isArray(ops) ? ops.length : 0;
+      if (opCount > 20) break;
+      doc.deletePage(last);
+    }
+  } catch {
+    /* best-effort */
+  }
+}
+
+// Finalize: prune blank trailing pages, then draw footer on every remaining page.
+function finalizeDoc(doc: jsPDF, W: number, H: number, margin: number, extra?: string) {
+  pruneEmptyTrailingPages(doc);
+  const total = doc.getNumberOfPages();
+  for (let i = 1; i <= total; i++) {
+    doc.setPage(i);
+    drawFooter(doc, W, H, margin, extra);
+  }
 }
 
 function drawSignatureBlock(doc: jsPDF, W: number, y: number, label = "For Vaaldrin Exports") {
