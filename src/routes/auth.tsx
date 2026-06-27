@@ -10,7 +10,18 @@ import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "Sign in — Vaaldrin Exports" }] }),
+  head: () => ({
+    meta: [
+      { title: "Sign in — Vaaldrin Exports" },
+      { name: "description", content: "Sign in to the Vaaldrin Exports Profit Pilot workspace." },
+      { property: "og:title", content: "Sign in — Vaaldrin Exports" },
+      { property: "og:description", content: "Sign in to the Vaaldrin Exports Profit Pilot workspace." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://vaaldrin-profit-pilot.lovable.app/auth" },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
+    links: [{ rel: "canonical", href: "https://vaaldrin-profit-pilot.lovable.app/auth" }],
+  }),
   component: AuthPage,
 });
 

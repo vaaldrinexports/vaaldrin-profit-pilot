@@ -1,0 +1,7 @@
+# Vaaldrin Exports — Profit Pilot
+
+> Export costing, quotation, and profit-control system for Vaaldrin Exports. The application itself is gated behind sign-in.
+
+## Pages
+
+- [Home](/): Marketing entry point for Vaaldrin Exports' Profit Pilot platform.
