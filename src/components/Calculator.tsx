@@ -820,7 +820,7 @@ export default function Calculator() {
 
 
         <Tabs defaultValue="inputs" className="space-y-5">
-          <TabsList className="flex md:grid md:grid-cols-8 w-full h-auto p-1 bg-secondary overflow-x-auto whitespace-nowrap gap-1">
+          <TabsList className="flex md:grid md:grid-cols-8 w-full h-auto p-1 glass rounded-2xl overflow-x-auto whitespace-nowrap gap-1">
             <TabsTrigger value="inputs" className="py-2.5 shrink-0">1.<span className="hidden sm:inline ml-1">Inputs</span></TabsTrigger>
             <TabsTrigger value="banking" className="py-2.5 shrink-0">2.<span className="hidden sm:inline ml-1">Banking &amp; Forex</span></TabsTrigger>
             <TabsTrigger value="profit" className="py-2.5 shrink-0">3.<span className="hidden sm:inline ml-1">Profit</span></TabsTrigger>
