@@ -650,10 +650,10 @@ export default function Calculator() {
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <div className="min-w-0">
             <div className="flex items-baseline gap-3">
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate" style={{ color: "var(--gold)" }}>VAALDRIN EXPORTS</h1>
-              <span className="text-[11px] text-gold/70 tracking-widest hidden md:inline">PRICING & PROFIT CONTROL</span>
+              <span className="text-xl sm:text-2xl font-bold tracking-tight truncate" style={{ color: "var(--gold)" }} aria-hidden="true">VAALDRIN EXPORTS</span>
+              <span className="text-[11px] text-gold/70 tracking-widest hidden md:inline" aria-hidden="true">PRICING & PROFIT CONTROL</span>
             </div>
-            <p className="text-xs text-primary-foreground/60 mt-0.5 hidden sm:block">Export costing & quotation system</p>
+            <h1 className="text-xs text-primary-foreground/70 mt-0.5">Export Pricing &amp; Profit Control — Costing &amp; Quotation System</h1>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Select value={docType} onValueChange={(v) => setDocType(v as DocType)}>
@@ -677,7 +677,7 @@ export default function Calculator() {
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="secondary"><MoreHorizontal className="w-4 h-4" /></Button>
+                <Button size="sm" variant="secondary" aria-label="More options"><MoreHorizontal className="w-4 h-4" /></Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => window.print()}><Printer className="w-4 h-4 mr-2" />Print</DropdownMenuItem>
