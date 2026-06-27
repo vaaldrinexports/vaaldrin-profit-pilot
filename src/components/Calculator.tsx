@@ -644,9 +644,10 @@ export default function Calculator() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      {/* Header — cleaner, fewer buttons */}
-      <header className="no-print sticky top-0 z-30 bg-primary text-primary-foreground border-b border-gold/30 shadow-sm">
+    <div className="min-h-screen">
+      {/* Header — frosted glass */}
+      <header className="no-print sticky top-0 z-30 bg-background/60 backdrop-blur-xl backdrop-saturate-150 text-foreground border-b border-border/60 shadow-[0_1px_0_0_var(--gold)]/10">
+
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <div className="min-w-0">
             <div className="flex items-baseline gap-3">
