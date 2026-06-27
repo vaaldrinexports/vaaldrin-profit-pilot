@@ -676,6 +676,7 @@ export default function Calculator() {
               <Save className="w-4 h-4 sm:mr-1.5" />
               <span className="hidden sm:inline">Save</span>
             </Button>
+            <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" variant="secondary" aria-label="More options"><MoreHorizontal className="w-4 h-4" /></Button>
