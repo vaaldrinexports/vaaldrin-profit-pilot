@@ -677,7 +677,7 @@ export default function Calculator() {
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="secondary"><MoreHorizontal className="w-4 h-4" /></Button>
+                <Button size="sm" variant="secondary" aria-label="More options"><MoreHorizontal className="w-4 h-4" /></Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => window.print()}><Printer className="w-4 h-4 mr-2" />Print</DropdownMenuItem>
