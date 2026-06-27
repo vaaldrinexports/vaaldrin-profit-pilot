@@ -652,7 +652,7 @@ export default function Calculator() {
           <div className="min-w-0">
             <div className="flex items-baseline gap-3">
               <span className="text-xl sm:text-2xl font-bold tracking-tight truncate" style={{ color: "var(--gold)" }} aria-hidden="true">VAALDRIN EXPORTS</span>
-              <span className="text-[11px] text-gold/70 tracking-widest hidden md:inline" aria-hidden="true">PRICING & PROFIT CONTROL</span>
+              <span className="text-[11px] text-gold/80 tracking-widest hidden md:inline" aria-hidden="true">PRICING & PROFIT CONTROL</span>
             </div>
             <h1 className="text-xs text-muted-foreground mt-0.5">Export Pricing &amp; Profit Control — Costing &amp; Quotation System</h1>
           </div>
