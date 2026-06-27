@@ -658,7 +658,7 @@ export default function Calculator() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Select value={docType} onValueChange={(v) => setDocType(v as DocType)}>
-              <SelectTrigger className="h-9 w-[180px] sm:w-[210px] bg-primary-foreground/10 border-gold/30 text-primary-foreground text-xs sm:text-sm">
+              <SelectTrigger className="h-9 w-[180px] sm:w-[210px] glass-subtle border-border/60 text-foreground text-xs sm:text-sm rounded-xl">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
