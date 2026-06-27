@@ -49,6 +49,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
@@ -644,20 +645,21 @@ export default function Calculator() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      {/* Header — cleaner, fewer buttons */}
-      <header className="no-print sticky top-0 z-30 bg-primary text-primary-foreground border-b border-gold/30 shadow-sm">
+    <div className="min-h-screen">
+      {/* Header — frosted glass */}
+      <header className="no-print sticky top-0 z-30 bg-background/60 backdrop-blur-xl backdrop-saturate-150 text-foreground border-b border-border/60 shadow-[0_1px_0_0_var(--gold)]/10">
+
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <div className="min-w-0">
             <div className="flex items-baseline gap-3">
               <span className="text-xl sm:text-2xl font-bold tracking-tight truncate" style={{ color: "var(--gold)" }} aria-hidden="true">VAALDRIN EXPORTS</span>
-              <span className="text-[11px] text-gold/70 tracking-widest hidden md:inline" aria-hidden="true">PRICING & PROFIT CONTROL</span>
+              <span className="text-[11px] text-gold/80 tracking-widest hidden md:inline" aria-hidden="true">PRICING & PROFIT CONTROL</span>
             </div>
-            <h1 className="text-xs text-primary-foreground/70 mt-0.5">Export Pricing &amp; Profit Control — Costing &amp; Quotation System</h1>
+            <h1 className="text-xs text-muted-foreground mt-0.5">Export Pricing &amp; Profit Control — Costing &amp; Quotation System</h1>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Select value={docType} onValueChange={(v) => setDocType(v as DocType)}>
-              <SelectTrigger className="h-9 w-[180px] sm:w-[210px] bg-primary-foreground/10 border-gold/30 text-primary-foreground text-xs sm:text-sm">
+              <SelectTrigger className="h-9 w-[180px] sm:w-[210px] glass-subtle border-border/60 text-foreground text-xs sm:text-sm rounded-xl">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -675,6 +677,7 @@ export default function Calculator() {
               <Save className="w-4 h-4 sm:mr-1.5" />
               <span className="hidden sm:inline">Save</span>
             </Button>
+            <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" variant="secondary" aria-label="More options"><MoreHorizontal className="w-4 h-4" /></Button>
@@ -817,7 +820,7 @@ export default function Calculator() {
 
 
         <Tabs defaultValue="inputs" className="space-y-5">
-          <TabsList className="flex md:grid md:grid-cols-8 w-full h-auto p-1 bg-secondary overflow-x-auto whitespace-nowrap gap-1">
+          <TabsList className="flex md:grid md:grid-cols-8 w-full h-auto p-1 glass rounded-2xl overflow-x-auto whitespace-nowrap gap-1">
             <TabsTrigger value="inputs" className="py-2.5 shrink-0">1.<span className="hidden sm:inline ml-1">Inputs</span></TabsTrigger>
             <TabsTrigger value="banking" className="py-2.5 shrink-0">2.<span className="hidden sm:inline ml-1">Banking &amp; Forex</span></TabsTrigger>
             <TabsTrigger value="profit" className="py-2.5 shrink-0">3.<span className="hidden sm:inline ml-1">Profit</span></TabsTrigger>
