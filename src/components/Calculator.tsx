@@ -654,7 +654,7 @@ export default function Calculator() {
               <span className="text-xl sm:text-2xl font-bold tracking-tight truncate" style={{ color: "var(--gold)" }} aria-hidden="true">VAALDRIN EXPORTS</span>
               <span className="text-[11px] text-gold/70 tracking-widest hidden md:inline" aria-hidden="true">PRICING & PROFIT CONTROL</span>
             </div>
-            <h1 className="text-xs text-primary-foreground/70 mt-0.5">Export Pricing &amp; Profit Control — Costing &amp; Quotation System</h1>
+            <h1 className="text-xs text-muted-foreground mt-0.5">Export Pricing &amp; Profit Control — Costing &amp; Quotation System</h1>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Select value={docType} onValueChange={(v) => setDocType(v as DocType)}>
