@@ -1855,7 +1855,7 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
   ) : 0;
 
   return (
-    <div className={"bg-white text-[#111827] p-8 " + (forPrint ? "" : "border rounded-lg")} style={{ fontFamily: "Helvetica, Arial, sans-serif" }}>
+    <div className={"bg-white text-[#111827] p-4 sm:p-8 " + (forPrint ? "" : "border rounded-lg")} style={{ fontFamily: "Helvetica, Arial, sans-serif" }}>
       {/* HEADER */}
       <div className="flex justify-between items-start pb-4" style={{ borderBottom: "1px solid #C99A2E" }}>
         <div className="flex items-start gap-3">
