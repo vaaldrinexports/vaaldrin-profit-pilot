@@ -1301,7 +1301,11 @@ export default function Calculator() {
             </GroupCard>
 
             <GroupCard icon={FileText} title="Document preview" subtitle={`Live preview of the ${DOC_TYPES.find(d => d.value === docType)?.label}`}>
-              <DocumentPreview s={s} priceINR={incotermPrice} docType={docType} />
+              <div className="-mx-3 sm:mx-0 overflow-x-auto">
+                <div className="min-w-[720px] sm:min-w-0">
+                  <DocumentPreview s={s} priceINR={incotermPrice} docType={docType} />
+                </div>
+              </div>
             </GroupCard>
           </TabsContent>
 
