@@ -1301,7 +1301,11 @@ export default function Calculator() {
             </GroupCard>
 
             <GroupCard icon={FileText} title="Document preview" subtitle={`Live preview of the ${DOC_TYPES.find(d => d.value === docType)?.label}`}>
-              <DocumentPreview s={s} priceINR={incotermPrice} docType={docType} />
+              <div className="-mx-3 sm:mx-0 overflow-x-auto">
+                <div className="min-w-[720px] sm:min-w-0">
+                  <DocumentPreview s={s} priceINR={incotermPrice} docType={docType} />
+                </div>
+              </div>
             </GroupCard>
           </TabsContent>
 
@@ -1851,7 +1855,7 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
   ) : 0;
 
   return (
-    <div className={"bg-white text-[#111827] p-8 " + (forPrint ? "" : "border rounded-lg")} style={{ fontFamily: "Helvetica, Arial, sans-serif" }}>
+    <div className={"bg-white text-[#111827] p-4 sm:p-8 " + (forPrint ? "" : "border rounded-lg")} style={{ fontFamily: "Helvetica, Arial, sans-serif" }}>
       {/* HEADER */}
       <div className="flex justify-between items-start pb-4" style={{ borderBottom: "1px solid #C99A2E" }}>
         <div className="flex items-start gap-3">
