@@ -649,17 +649,43 @@ export default function Calculator() {
       {/* Header — frosted glass */}
       <header className="no-print sticky top-0 z-30 bg-background/60 backdrop-blur-xl backdrop-saturate-150 text-foreground border-b border-border/60 shadow-[0_1px_0_0_var(--gold)]/10">
 
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-          <div className="min-w-0">
-            <div className="flex items-baseline gap-3">
-              <span className="text-xl sm:text-2xl font-bold tracking-tight truncate" style={{ color: "var(--gold)" }} aria-hidden="true">VAALDRIN EXPORTS</span>
-              <span className="text-[11px] text-gold/80 tracking-widest hidden md:inline" aria-hidden="true">PRICING & PROFIT CONTROL</span>
+        <div className="max-w-[1400px] mx-auto px-3 sm:px-6 py-3 flex flex-col gap-2 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-3">
+          <div className="min-w-0 flex items-center justify-between gap-2 lg:block">
+            <div className="min-w-0">
+              <div className="flex items-baseline gap-3">
+                <span className="text-lg sm:text-2xl font-bold tracking-tight truncate" style={{ color: "var(--gold)" }} aria-hidden="true">VAALDRIN EXPORTS</span>
+                <span className="text-[11px] text-gold/80 tracking-widest hidden md:inline" aria-hidden="true">PRICING & PROFIT CONTROL</span>
+              </div>
+              <h1 className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 truncate">Export Pricing &amp; Profit Control</h1>
             </div>
-            <h1 className="text-xs text-muted-foreground mt-0.5">Export Pricing &amp; Profit Control — Costing &amp; Quotation System</h1>
+            {/* Mobile-only condensed actions (avoid horizontal overflow) */}
+            <div className="flex items-center gap-1.5 shrink-0 lg:hidden">
+              <ThemeToggle />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="secondary" aria-label="More options"><MoreHorizontal className="w-4 h-4" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuItem onClick={save}><Save className="w-4 h-4 mr-2" />Save</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.print()}><Printer className="w-4 h-4 mr-2" />Print</DropdownMenuItem>
+                  <DropdownMenuItem onClick={duplicate}><Copy className="w-4 h-4 mr-2" />Duplicate quotation</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={exportJSON}><FileDown className="w-4 h-4 mr-2" />Export JSON</DropdownMenuItem>
+                  <DropdownMenuItem onClick={importJSON}><Upload className="w-4 h-4 mr-2" />Import JSON</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={reset} className="text-deep-red focus:text-deep-red">
+                    <RotateCcw className="w-4 h-4 mr-2" />Reset all
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Actions row — wraps on mobile, inline on desktop */}
+          <div className="flex items-center gap-2 min-w-0 lg:shrink-0">
             <Select value={docType} onValueChange={(v) => setDocType(v as DocType)}>
-              <SelectTrigger className="h-9 w-[180px] sm:w-[210px] glass-subtle border-border/60 text-foreground text-xs sm:text-sm rounded-xl">
+              <SelectTrigger className="h-9 flex-1 lg:flex-none lg:w-[210px] min-w-0 glass-subtle border-border/60 text-foreground text-xs sm:text-sm rounded-xl">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -668,34 +694,36 @@ export default function Calculator() {
                 ))}
               </SelectContent>
             </Select>
-            <Button size="sm" onClick={generatePDF} className="bg-gold hover:bg-gold/90 text-gold-foreground font-semibold">
+            <Button size="sm" onClick={generatePDF} className="bg-gold hover:bg-gold/90 text-gold-foreground font-semibold shrink-0">
               <FileDown className="w-4 h-4 mr-1.5" />
               <span className="hidden sm:inline">Generate PDF</span>
               <span className="sm:hidden">PDF</span>
             </Button>
-            <Button size="sm" variant="secondary" onClick={save}>
-              <Save className="w-4 h-4 sm:mr-1.5" />
-              <span className="hidden sm:inline">Save</span>
+            <Button size="sm" variant="secondary" onClick={save} className="hidden lg:inline-flex">
+              <Save className="w-4 h-4 mr-1.5" />
+              Save
             </Button>
-            <ThemeToggle />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="secondary" aria-label="More options"><MoreHorizontal className="w-4 h-4" /></Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => window.print()}><Printer className="w-4 h-4 mr-2" />Print</DropdownMenuItem>
-                <DropdownMenuItem onClick={duplicate}><Copy className="w-4 h-4 mr-2" />Duplicate quotation</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={exportJSON}><FileDown className="w-4 h-4 mr-2" />Export JSON</DropdownMenuItem>
-                <DropdownMenuItem onClick={importJSON}><Upload className="w-4 h-4 mr-2" />Import JSON</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={reset} className="text-deep-red focus:text-deep-red">
-                  <RotateCcw className="w-4 h-4 mr-2" />Reset all
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="hidden lg:flex items-center gap-2">
+              <ThemeToggle />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="secondary" aria-label="More options"><MoreHorizontal className="w-4 h-4" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => window.print()}><Printer className="w-4 h-4 mr-2" />Print</DropdownMenuItem>
+                  <DropdownMenuItem onClick={duplicate}><Copy className="w-4 h-4 mr-2" />Duplicate quotation</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={exportJSON}><FileDown className="w-4 h-4 mr-2" />Export JSON</DropdownMenuItem>
+                  <DropdownMenuItem onClick={importJSON}><Upload className="w-4 h-4 mr-2" />Import JSON</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={reset} className="text-deep-red focus:text-deep-red">
+                    <RotateCcw className="w-4 h-4 mr-2" />Reset all
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </header>
