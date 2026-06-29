@@ -242,6 +242,40 @@ function HsProductSearch({
   );
 }
 
+/* ---------- Product grade combobox (dynamic options by product) ---------- */
+
+function GradeField({
+  hsCode, productName, value, onChange,
+}: {
+  hsCode: string;
+  productName: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const options = useMemo(() => gradesFor(hsCode, productName), [hsCode, productName]);
+  const listId = useMemo(() => `grades-${Math.random().toString(36).slice(2, 8)}`, []);
+  const hint = options.length
+    ? `Pick a standard grade for ${productName || "this product"} or type your own.`
+    : "Free-text grade — pick a product above to see suggested grades.";
+  return (
+    <div className="space-y-1.5">
+      <FieldLabel hint={hint}>Product grade</FieldLabel>
+      <Input
+        list={options.length ? listId : undefined}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={options[0] ? `e.g. ${options[0]}` : "e.g. Premium, Grade A"}
+        className="h-10 text-base"
+      />
+      {options.length > 0 && (
+        <datalist id={listId}>
+          {options.map((g) => <option key={g} value={g} />)}
+        </datalist>
+      )}
+    </div>
+  );
+}
+
 /* ---------- Destination duty preview ---------- */
 
 function DestinationDutyCard({ country, hsCode }: { country: string; hsCode: string }) {
