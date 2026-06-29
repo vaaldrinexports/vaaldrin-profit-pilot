@@ -10,7 +10,7 @@ import { loadSettings, saveSettings } from "@/lib/settings-store";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  searchHsCodes, lookupDuty, findCountryByName, COUNTRIES, INDIAN_PORTS,
+  searchHsCodes, lookupDuty, findCountryByName, COUNTRIES, INDIAN_PORTS, gradesFor,
   type HsCodeEntry,
 } from "@/lib/trade-data";
 import {
