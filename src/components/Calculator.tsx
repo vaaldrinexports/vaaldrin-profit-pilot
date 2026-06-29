@@ -848,15 +848,23 @@ export default function Calculator() {
 
 
         <Tabs defaultValue="inputs" className="space-y-5">
-          <TabsList className="flex md:grid md:grid-cols-8 w-full h-auto p-1 glass rounded-2xl overflow-x-auto whitespace-nowrap gap-1">
-            <TabsTrigger value="inputs" className="py-2.5 shrink-0">1.<span className="hidden sm:inline ml-1">Inputs</span></TabsTrigger>
-            <TabsTrigger value="banking" className="py-2.5 shrink-0">2.<span className="hidden sm:inline ml-1">Banking &amp; Forex</span></TabsTrigger>
-            <TabsTrigger value="profit" className="py-2.5 shrink-0">3.<span className="hidden sm:inline ml-1">Profit</span></TabsTrigger>
-            <TabsTrigger value="incoterms" className="py-2.5 shrink-0">4.<span className="hidden sm:inline ml-1">Incoterms</span></TabsTrigger>
-            <TabsTrigger value="negotiation" className="py-2.5 shrink-0">5.<span className="hidden sm:inline ml-1">Negotiation</span></TabsTrigger>
-            <TabsTrigger value="scenario" className="py-2.5 shrink-0">6.<span className="hidden sm:inline ml-1">Scenarios</span></TabsTrigger>
-            <TabsTrigger value="audit" className="py-2.5 shrink-0">7.<span className="hidden sm:inline ml-1">Audit</span></TabsTrigger>
-            <TabsTrigger value="admin" className="py-2.5 shrink-0">8.<span className="hidden sm:inline ml-1">Admin</span></TabsTrigger>
+          <TabsList className="grid grid-cols-4 md:grid-cols-8 w-full h-auto p-1.5 glass rounded-2xl gap-1.5">
+            <TabsTrigger value="inputs" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">
+              <span className="md:hidden">1. Inputs</span><span className="hidden md:inline">1. Inputs</span>
+            </TabsTrigger>
+            <TabsTrigger value="banking" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">
+              <span className="md:hidden">2. Banking</span><span className="hidden md:inline">2. Banking &amp; Forex</span>
+            </TabsTrigger>
+            <TabsTrigger value="profit" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">3. Profit</TabsTrigger>
+            <TabsTrigger value="incoterms" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">4. Incoterms</TabsTrigger>
+            <TabsTrigger value="negotiation" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">
+              <span className="md:hidden">5. Negotiate</span><span className="hidden md:inline">5. Negotiation</span>
+            </TabsTrigger>
+            <TabsTrigger value="scenario" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">
+              <span className="md:hidden">6. Scenario</span><span className="hidden md:inline">6. Scenarios</span>
+            </TabsTrigger>
+            <TabsTrigger value="audit" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">7. Audit</TabsTrigger>
+            <TabsTrigger value="admin" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">8. Admin</TabsTrigger>
           </TabsList>
 
 
