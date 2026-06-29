@@ -944,7 +944,7 @@ export default function Calculator() {
                   onChangeProductName={(v) => set("productName", v)}
                   onChangeHs={(v) => set("hsCode", v)}
                 />
-                <TextField label="Product grade" value={s.productGrade} onChange={(v) => set("productGrade", v)} />
+                <GradeField hsCode={s.hsCode} productName={s.productName} value={s.productGrade} onChange={(v) => set("productGrade", v)} />
                 <NumField label="Quantity" value={s.quantity} onChange={(v) => set("quantity", v)} hint="Total quantity in selected UoM" />
                 <TextField label="Unit of measure" value={s.uom} onChange={(v) => set("uom", v)} placeholder="KG" />
               </div>
