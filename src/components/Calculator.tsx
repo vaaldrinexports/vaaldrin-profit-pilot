@@ -10,7 +10,7 @@ import { loadSettings, saveSettings } from "@/lib/settings-store";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  searchHsCodes, lookupDuty, findCountryByName, COUNTRIES, INDIAN_PORTS,
+  searchHsCodes, lookupDuty, findCountryByName, COUNTRIES, INDIAN_PORTS, gradesFor,
   type HsCodeEntry,
 } from "@/lib/trade-data";
 import {
@@ -182,10 +182,10 @@ function KPI({ label, value, sub, tone }: { label: string; value: string; sub?: 
     tone === "green" ? "border-success/40 bg-success/5" :
     tone === "warn" ? "border-warning/50 bg-warning/5" : "";
   return (
-    <div className={"rounded-lg border bg-card p-4 " + toneCls}>
-      <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">{label}</div>
-      <div className="mt-1.5 text-xl font-bold tabular-nums">{value}</div>
-      {sub && <div className="text-xs text-muted-foreground mt-0.5">{sub}</div>}
+    <div className={"min-w-0 rounded-lg border bg-card p-4 overflow-hidden " + toneCls}>
+      <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium truncate">{label}</div>
+      <div className="mt-1.5 font-bold tabular-nums break-all leading-tight [font-size:clamp(0.95rem,3.5cqi+0.55rem,1.25rem)]" title={value}>{value}</div>
+      {sub && <div className="text-xs text-muted-foreground mt-0.5 break-words">{sub}</div>}
     </div>
   );
 }
@@ -239,6 +239,40 @@ function HsProductSearch({
       </div>
       <TextField label="HS code" value={hsCode} onChange={onChangeHs} placeholder="1006.30.20" />
     </>
+  );
+}
+
+/* ---------- Product grade combobox (dynamic options by product) ---------- */
+
+function GradeField({
+  hsCode, productName, value, onChange,
+}: {
+  hsCode: string;
+  productName: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const options = useMemo(() => gradesFor(hsCode, productName), [hsCode, productName]);
+  const listId = useMemo(() => `grades-${Math.random().toString(36).slice(2, 8)}`, []);
+  const hint = options.length
+    ? `Pick a standard grade for ${productName || "this product"} or type your own.`
+    : "Free-text grade — pick a product above to see suggested grades.";
+  return (
+    <div className="space-y-1.5">
+      <FieldLabel hint={hint}>Product grade</FieldLabel>
+      <Input
+        list={options.length ? listId : undefined}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={options[0] ? `e.g. ${options[0]}` : "e.g. Premium, Grade A"}
+        className="h-10 text-base"
+      />
+      {options.length > 0 && (
+        <datalist id={listId}>
+          {options.map((g) => <option key={g} value={g} />)}
+        </datalist>
+      )}
+    </div>
   );
 }
 
@@ -770,10 +804,10 @@ export default function Calculator() {
                     <QuoteFact label="Contract currency" value={s.contractCurrency} />
                   </div>
                   <div className="mt-5 text-[10px] font-bold uppercase tracking-widest text-primary-foreground/60">Quote this price</div>
-                  <div className="mt-1 text-3xl font-bold tabular-nums text-gold sm:text-5xl">{buyerPriceText}</div>
-                  <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-sm">
-                    <span><span className="text-primary-foreground/60">Quantity:</span> <strong>{fmtNum(s.quantity, 0)} {s.uom}</strong></span>
-                    <span><span className="text-primary-foreground/60">Total contract value:</span> <strong>{fmtCurrency(buyerContractValue, s.contractCurrency)}</strong></span>
+                  <div className="mt-1 font-bold tabular-nums text-gold break-all leading-tight [font-size:clamp(1.5rem,6vw+0.25rem,3rem)]" title={buyerPriceText}>{buyerPriceText}</div>
+                  <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-sm min-w-0">
+                    <span className="min-w-0 break-words"><span className="text-primary-foreground/60">Quantity:</span> <strong className="tabular-nums">{fmtNum(s.quantity, 0)} {s.uom}</strong></span>
+                    <span className="min-w-0 break-words"><span className="text-primary-foreground/60">Total contract value:</span> <strong className="tabular-nums break-all">{fmtCurrency(buyerContractValue, s.contractCurrency)}</strong></span>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 lg:flex-col">
@@ -944,7 +978,7 @@ export default function Calculator() {
                   onChangeProductName={(v) => set("productName", v)}
                   onChangeHs={(v) => set("hsCode", v)}
                 />
-                <TextField label="Product grade" value={s.productGrade} onChange={(v) => set("productGrade", v)} />
+                <GradeField hsCode={s.hsCode} productName={s.productName} value={s.productGrade} onChange={(v) => set("productGrade", v)} />
                 <NumField label="Quantity" value={s.quantity} onChange={(v) => set("quantity", v)} hint="Total quantity in selected UoM" />
                 <TextField label="Unit of measure" value={s.uom} onChange={(v) => set("uom", v)} placeholder="KG" />
               </div>
@@ -1764,7 +1798,7 @@ function AccItem({ value, icon: Icon, title, summary, children }: {
 }
 
 function QuoteFact({ label, value }: { label: string; value: string }) {
-  return <div><div className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground/55">{label}</div><div className="mt-0.5 font-semibold">{value}</div></div>;
+  return <div className="min-w-0"><div className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground/55 truncate">{label}</div><div className="mt-0.5 font-semibold break-words" title={value}>{value}</div></div>;
 }
 
 function DirectorCell({ label, value, tone, big, pct, hint }: {
@@ -1776,12 +1810,12 @@ function DirectorCell({ label, value, tone, big, pct, hint }: {
     tone === "danger" ? "border-deep-red/50 bg-deep-red/10" :
     "border-primary-foreground/15 bg-primary-foreground/5";
   return (
-    <div className={"rounded-lg border p-4 " + cls} title={hint}>
+    <div className={"min-w-0 overflow-hidden rounded-lg border p-4 " + cls} title={hint}>
       <div className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-primary-foreground/70 font-semibold">
-        {label}
-        {hint && <HelpCircle className="w-3 h-3 opacity-60" />}
+        <span className="truncate">{label}</span>
+        {hint && <HelpCircle className="w-3 h-3 opacity-60 shrink-0" />}
       </div>
-      <div className={"font-bold mt-1.5 tabular-nums " + (big ? "text-xl sm:text-2xl" : "text-base")}>{value}</div>
+      <div className={"font-bold mt-1.5 tabular-nums break-all leading-tight " + (big ? "[font-size:clamp(1rem,4cqi+0.55rem,1.5rem)]" : "[font-size:clamp(0.85rem,2.8cqi+0.5rem,1rem)]")} title={value}>{value}</div>
       <div className="text-xs text-primary-foreground/60 tabular-nums mt-0.5">
         {pct !== undefined && (
           <span className={"ml-2 font-semibold " + (pct > 15 ? "text-success" : pct >= 8 ? "text-warning" : "text-deep-red")}>
