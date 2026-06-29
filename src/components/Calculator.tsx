@@ -770,10 +770,10 @@ export default function Calculator() {
                     <QuoteFact label="Contract currency" value={s.contractCurrency} />
                   </div>
                   <div className="mt-5 text-[10px] font-bold uppercase tracking-widest text-primary-foreground/60">Quote this price</div>
-                  <div className="mt-1 text-3xl font-bold tabular-nums text-gold sm:text-5xl">{buyerPriceText}</div>
-                  <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-sm">
-                    <span><span className="text-primary-foreground/60">Quantity:</span> <strong>{fmtNum(s.quantity, 0)} {s.uom}</strong></span>
-                    <span><span className="text-primary-foreground/60">Total contract value:</span> <strong>{fmtCurrency(buyerContractValue, s.contractCurrency)}</strong></span>
+                  <div className="mt-1 font-bold tabular-nums text-gold break-all leading-tight [font-size:clamp(1.5rem,6vw+0.25rem,3rem)]" title={buyerPriceText}>{buyerPriceText}</div>
+                  <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-sm min-w-0">
+                    <span className="min-w-0 break-words"><span className="text-primary-foreground/60">Quantity:</span> <strong className="tabular-nums">{fmtNum(s.quantity, 0)} {s.uom}</strong></span>
+                    <span className="min-w-0 break-words"><span className="text-primary-foreground/60">Total contract value:</span> <strong className="tabular-nums break-all">{fmtCurrency(buyerContractValue, s.contractCurrency)}</strong></span>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 lg:flex-col">
