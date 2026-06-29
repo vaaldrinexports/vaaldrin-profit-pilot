@@ -1776,12 +1776,12 @@ function DirectorCell({ label, value, tone, big, pct, hint }: {
     tone === "danger" ? "border-deep-red/50 bg-deep-red/10" :
     "border-primary-foreground/15 bg-primary-foreground/5";
   return (
-    <div className={"rounded-lg border p-4 " + cls} title={hint}>
+    <div className={"min-w-0 overflow-hidden rounded-lg border p-4 " + cls} title={hint}>
       <div className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-primary-foreground/70 font-semibold">
-        {label}
-        {hint && <HelpCircle className="w-3 h-3 opacity-60" />}
+        <span className="truncate">{label}</span>
+        {hint && <HelpCircle className="w-3 h-3 opacity-60 shrink-0" />}
       </div>
-      <div className={"font-bold mt-1.5 tabular-nums " + (big ? "text-xl sm:text-2xl" : "text-base")}>{value}</div>
+      <div className={"font-bold mt-1.5 tabular-nums break-all leading-tight " + (big ? "[font-size:clamp(1rem,4cqi+0.55rem,1.5rem)]" : "[font-size:clamp(0.85rem,2.8cqi+0.5rem,1rem)]")} title={value}>{value}</div>
       <div className="text-xs text-primary-foreground/60 tabular-nums mt-0.5">
         {pct !== undefined && (
           <span className={"ml-2 font-semibold " + (pct > 15 ? "text-success" : pct >= 8 ? "text-warning" : "text-deep-red")}>
