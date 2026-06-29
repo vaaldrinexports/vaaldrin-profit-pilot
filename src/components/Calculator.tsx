@@ -182,10 +182,10 @@ function KPI({ label, value, sub, tone }: { label: string; value: string; sub?: 
     tone === "green" ? "border-success/40 bg-success/5" :
     tone === "warn" ? "border-warning/50 bg-warning/5" : "";
   return (
-    <div className={"rounded-lg border bg-card p-4 " + toneCls}>
-      <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">{label}</div>
-      <div className="mt-1.5 text-xl font-bold tabular-nums">{value}</div>
-      {sub && <div className="text-xs text-muted-foreground mt-0.5">{sub}</div>}
+    <div className={"min-w-0 rounded-lg border bg-card p-4 overflow-hidden " + toneCls}>
+      <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium truncate">{label}</div>
+      <div className="mt-1.5 font-bold tabular-nums break-all leading-tight [font-size:clamp(0.95rem,3.5cqi+0.55rem,1.25rem)]" title={value}>{value}</div>
+      {sub && <div className="text-xs text-muted-foreground mt-0.5 break-words">{sub}</div>}
     </div>
   );
 }
