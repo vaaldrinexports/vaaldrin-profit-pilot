@@ -42,17 +42,17 @@ export default function BuyerIntelligence(p: Props) {
   const hasAny = p.company || p.email || p.website || p.country;
   if (!hasAny) {
     return (
-      <Card className="border-l-4 border-l-[#A61D24] p-5 bg-white">
+      <Card className="border-l-4 border-l-primary p-5">
         <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-[#A61D24]" />
-          <h3 className="text-base font-semibold text-[#1A1A1A]">Buyer Intelligence</h3>
+          <Shield className="h-5 w-5 text-primary" />
+          <h3 className="text-base font-semibold text-foreground">Buyer Intelligence</h3>
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
           Run public-signal checks on a prospective buyer (domain, email, phone, country risk).
           <span className="ml-1 italic">Not a credit rating or legal verification.</span>
         </p>
         <details className="mt-3 text-xs text-muted-foreground">
-          <summary className="cursor-pointer font-semibold text-[#A61D24]">What this checks</summary>
+          <summary className="cursor-pointer font-semibold text-primary">What this checks</summary>
           <ul className="mt-2 list-inside list-disc space-y-0.5">
             <li>Website validity &amp; HTTPS</li>
             <li>Business vs. personal email domain</li>
@@ -69,7 +69,7 @@ export default function BuyerIntelligence(p: Props) {
               href="https://opencorporates.com/companies"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline text-[#A61D24]"
+              className="underline text-primary"
             >
               OpenCorporates
             </a>{" "}or your local registry.
@@ -87,23 +87,23 @@ export default function BuyerIntelligence(p: Props) {
     report.score >= 60 ? "text-warning" : "text-deep-red";
 
   return (
-    <Card className="overflow-hidden border-l-4 border-l-[#A61D24] bg-white">
+    <Card className="overflow-hidden border-l-4 border-l-primary">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#C99A2E]/30 bg-gradient-to-r from-white to-[#FAF5EC] px-5 py-4">
-        <div className="flex items-center gap-3">
-          <Shield className="h-6 w-6 text-[#A61D24]" />
-          <div>
-            <h3 className="text-lg font-bold text-[#1A1A1A]">Buyer Intelligence Report</h3>
+      <div className="flex flex-col gap-3 border-b border-gold/30 bg-gradient-to-r from-card to-accent/40 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <Shield className="h-6 w-6 text-primary shrink-0" />
+          <div className="min-w-0">
+            <h3 className="text-lg font-bold text-foreground truncate">Buyer Intelligence Report</h3>
             <p className="text-xs text-muted-foreground">Public-signal due diligence · Not a credit rating</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {p.company && (
             <a
               href={`https://opencorporates.com/companies?q=${encodeURIComponent(p.company)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center rounded-md border border-[#A61D24]/40 px-2.5 h-8 text-xs text-[#A61D24] hover:bg-[#A61D24]/5"
+              className="inline-flex items-center rounded-md border border-primary/40 px-2.5 h-8 text-xs text-primary hover:bg-primary/5"
               title="Open formal company registry search"
             >
               <Globe className="mr-1.5 h-3.5 w-3.5" />OpenCorporates
@@ -115,7 +115,7 @@ export default function BuyerIntelligence(p: Props) {
               description: p.company ? `Re-checked public signals for ${p.company}` : "Re-ran verification checks",
             });
           }}
-            className="border-[#A61D24]/40 text-[#A61D24] hover:bg-[#A61D24]/5">
+            className="border-primary/40 text-primary hover:bg-primary/5">
             <RefreshCw className="mr-2 h-3.5 w-3.5" />Verify Buyer
           </Button>
         </div>
@@ -127,12 +127,12 @@ export default function BuyerIntelligence(p: Props) {
           <div className="text-xs uppercase tracking-wider text-muted-foreground">Buyer Confidence</div>
           <div className={`mt-1 text-5xl font-bold tabular-nums ${scoreText}`}>{report.score}</div>
           <div className="text-xs text-muted-foreground">/ 100</div>
-          <Badge className={`mt-2 ${scoreText} bg-white border`}>{report.band}</Badge>
+          <Badge className={`mt-2 ${scoreText} bg-card border`}>{report.band}</Badge>
         </div>
 
         <div className="md:col-span-2 space-y-2 text-sm">
           <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-[#A61D24]" />
+            <Building2 className="h-4 w-4 text-primary shrink-0" />
             <span className="font-semibold">{p.company || "Unnamed Buyer"}</span>
             <Badge variant="outline" className="ml-auto">{report.relationshipStatus}</Badge>
           </div>
@@ -154,10 +154,10 @@ export default function BuyerIntelligence(p: Props) {
 
       {/* Verification checks */}
       <div className="border-t border-border px-5 py-4">
-        <h4 className="mb-3 text-sm font-semibold text-[#A61D24]">Verification Checks</h4>
+        <h4 className="mb-3 text-sm font-semibold text-primary">Verification Checks</h4>
         <div className="grid gap-2 md:grid-cols-2">
           {report.checks.map((c) => (
-            <div key={c.id} className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-2.5 text-xs">
+            <div key={c.id} className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-2.5 text-xs">
               <StatusIcon status={c.status} />
               <div className="flex-1">
                 <div className="font-semibold text-foreground">{c.label}</div>
@@ -185,16 +185,16 @@ export default function BuyerIntelligence(p: Props) {
 
       {/* Recommendation + payment terms */}
       <div className="grid gap-4 border-t border-border p-5 md:grid-cols-2">
-        <div className="rounded-md border-l-4 border-l-[#C99A2E] bg-[#FAF5EC] p-3">
-          <div className="text-xs font-semibold uppercase tracking-wider text-[#A61D24]">Recommendation</div>
-          <p className="mt-1 text-sm text-[#1A1A1A]">{report.recommendation}</p>
+        <div className="rounded-md border-l-4 border-l-gold bg-accent/40 p-3">
+          <div className="text-xs font-semibold uppercase tracking-wider text-primary">Recommendation</div>
+          <p className="mt-1 text-sm text-foreground">{report.recommendation}</p>
         </div>
         <div className="rounded-md border border-border p-3">
-          <div className="text-xs font-semibold uppercase tracking-wider text-[#A61D24]">Suggested Payment Terms</div>
+          <div className="text-xs font-semibold uppercase tracking-wider text-primary">Suggested Payment Terms</div>
           <ul className="mt-1.5 space-y-1 text-sm">
             {report.paymentTerms.map((t) => (
               <li key={t} className="flex items-center gap-2">
-                <CheckCircle2 className="h-3.5 w-3.5 text-[#C99A2E]" />{t}
+                <CheckCircle2 className="h-3.5 w-3.5 text-gold" />{t}
               </li>
             ))}
           </ul>
@@ -204,7 +204,7 @@ export default function BuyerIntelligence(p: Props) {
       {/* History */}
       {p.history && (
         <div className="border-t border-border px-5 py-4">
-          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#A61D24]">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary">
             <History className="h-4 w-4" /> Relationship History
           </div>
           <div className="grid grid-cols-2 gap-3 text-xs md:grid-cols-5">
@@ -220,7 +220,7 @@ export default function BuyerIntelligence(p: Props) {
 
       {/* Notes */}
       <div className="border-t border-border px-5 py-4">
-        <div className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-[#A61D24]">
+        <div className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
           Internal Buyer Notes
           <span className="ml-2 font-normal normal-case text-muted-foreground">
             (Never shown on buyer-facing documents)
@@ -244,9 +244,9 @@ export default function BuyerIntelligence(p: Props) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-border bg-white p-2 text-center">
+    <div className="rounded-md border border-border bg-card p-2 text-center">
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="mt-0.5 text-sm font-bold text-[#1A1A1A]">{value}</div>
+      <div className="mt-0.5 text-sm font-bold text-foreground">{value}</div>
     </div>
   );
 }
