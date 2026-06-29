@@ -1764,7 +1764,7 @@ function AccItem({ value, icon: Icon, title, summary, children }: {
 }
 
 function QuoteFact({ label, value }: { label: string; value: string }) {
-  return <div><div className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground/55">{label}</div><div className="mt-0.5 font-semibold">{value}</div></div>;
+  return <div className="min-w-0"><div className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground/55 truncate">{label}</div><div className="mt-0.5 font-semibold break-words" title={value}>{value}</div></div>;
 }
 
 function DirectorCell({ label, value, tone, big, pct, hint }: {
