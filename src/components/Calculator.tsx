@@ -1840,9 +1840,15 @@ function MiniStat({ label, value, tone }: { label: string; value: string; tone?:
 function Row({ label, value, tone }: { label: string; value: string; tone?: "green" | "red" | "warn" }) {
   const cls = tone === "green" ? "text-success" : tone === "red" ? "text-deep-red" : tone === "warn" ? "text-warning" : "";
   return (
-    <div className="flex justify-between items-center py-1 border-b border-border/40 last:border-0 gap-3">
-      <span className="text-muted-foreground text-sm">{label}</span>
-      <span className={"font-semibold tabular-nums text-sm " + cls}>{value}</span>
+    <div className="min-w-0 rounded-md border border-border/40 bg-background/40 px-3 py-2">
+      <div className="text-[11px] uppercase tracking-wide text-muted-foreground truncate">{label}</div>
+      <div
+        className={"mt-0.5 font-semibold tabular-nums break-all leading-tight " + cls}
+        style={{ fontSize: "clamp(0.75rem, 2.6vw, 0.95rem)" }}
+        title={value}
+      >
+        {value}
+      </div>
     </div>
   );
 }
