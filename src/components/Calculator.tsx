@@ -1429,7 +1429,7 @@ export default function Calculator() {
 
               <div className="mt-5 rounded-lg border bg-secondary/30 p-5">
                 <div className="font-semibold mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-deep-red" />Decision summary</div>
-                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm">
                   <Row label="Recommended" value={fmtContract(incotermPrice)} />
                   <Row label="Target" value={fmtContract(c.targetSellingPrice)} />
                   <Row label="Minimum acceptable" value={fmtContract(minIncotermPrice)} tone="warn" />
