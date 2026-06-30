@@ -64,7 +64,7 @@ import {
 import {
   FileDown, Printer, Save, Upload, Copy, RotateCcw, ShieldCheck, AlertTriangle,
   TrendingUp, Lock, Sparkles, MoreHorizontal, HelpCircle, Package, Truck, FileText,
-  Ship, Anchor, Landmark, Wallet, Coins, Globe2, Info, Trash2, FolderOpen, History,
+  Ship, Anchor, Landmark, Wallet, Coins, Globe2, Info, Trash2, FolderOpen, History, ChevronDown,
 } from "lucide-react";
 
 const STORAGE_KEY = "vaaldrin.calc.v1";
@@ -253,25 +253,52 @@ function GradeField({
   onChange: (v: string) => void;
 }) {
   const options = useMemo(() => gradesFor(hsCode, productName), [hsCode, productName]);
-  const listId = useMemo(() => `grades-${Math.random().toString(36).slice(2, 8)}`, []);
+  const [open, setOpen] = useState(false);
   const hint = options.length
     ? `Pick a standard grade for ${productName || "this product"} or type your own.`
     : "Free-text grade — pick a product above to see suggested grades.";
   return (
     <div className="space-y-1.5">
       <FieldLabel hint={hint}>Product grade</FieldLabel>
-      <Input
-        list={options.length ? listId : undefined}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={options[0] ? `e.g. ${options[0]}` : "e.g. Premium, Grade A"}
-        className="h-10 text-base"
-      />
-      {options.length > 0 && (
-        <datalist id={listId}>
-          {options.map((g) => <option key={g} value={g} />)}
-        </datalist>
-      )}
+      <div className="relative">
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => options.length && setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder={options[0] ? `e.g. ${options[0]}` : "e.g. Premium, Grade A"}
+          className="h-10 text-base pr-9"
+        />
+        {options.length > 0 && (
+          <button
+            type="button"
+            aria-label="Show grade options"
+            onMouseDown={(e) => { e.preventDefault(); setOpen((o) => !o); }}
+            className="absolute right-1 top-1 h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-muted"
+          >
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        )}
+        {open && options.length > 0 && (
+          <div className="absolute z-50 mt-1 w-full max-h-64 overflow-auto rounded-md border bg-popover text-popover-foreground shadow-lg">
+            {options
+              .filter((g) => !value || g.toLowerCase().includes(value.toLowerCase()))
+              .map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); onChange(g); setOpen(false); }}
+                  className="block w-full text-left px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+                >
+                  {g}
+                </button>
+              ))}
+            {options.filter((g) => !value || g.toLowerCase().includes(value.toLowerCase())).length === 0 && (
+              <div className="px-3 py-2 text-xs text-muted-foreground">No match — your custom text will be saved.</div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1402,7 +1429,7 @@ export default function Calculator() {
 
               <div className="mt-5 rounded-lg border bg-secondary/30 p-5">
                 <div className="font-semibold mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-deep-red" />Decision summary</div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm">
                   <Row label="Recommended" value={fmtContract(incotermPrice)} />
                   <Row label="Target" value={fmtContract(c.targetSellingPrice)} />
                   <Row label="Minimum acceptable" value={fmtContract(minIncotermPrice)} tone="warn" />
@@ -1840,9 +1867,15 @@ function MiniStat({ label, value, tone }: { label: string; value: string; tone?:
 function Row({ label, value, tone }: { label: string; value: string; tone?: "green" | "red" | "warn" }) {
   const cls = tone === "green" ? "text-success" : tone === "red" ? "text-deep-red" : tone === "warn" ? "text-warning" : "";
   return (
-    <div className="flex justify-between items-center py-1 border-b border-border/40 last:border-0 gap-3">
-      <span className="text-muted-foreground text-sm">{label}</span>
-      <span className={"font-semibold tabular-nums text-sm " + cls}>{value}</span>
+    <div className="min-w-0 rounded-md border border-border/40 bg-background/40 px-3 py-2">
+      <div className="text-[11px] uppercase tracking-wide text-muted-foreground truncate">{label}</div>
+      <div
+        className={"mt-0.5 font-semibold tabular-nums break-all leading-tight " + cls}
+        style={{ fontSize: "clamp(0.75rem, 2.6vw, 0.95rem)" }}
+        title={value}
+      >
+        {value}
+      </div>
     </div>
   );
 }
