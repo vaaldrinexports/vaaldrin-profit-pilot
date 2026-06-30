@@ -253,25 +253,52 @@ function GradeField({
   onChange: (v: string) => void;
 }) {
   const options = useMemo(() => gradesFor(hsCode, productName), [hsCode, productName]);
-  const listId = useMemo(() => `grades-${Math.random().toString(36).slice(2, 8)}`, []);
+  const [open, setOpen] = useState(false);
   const hint = options.length
     ? `Pick a standard grade for ${productName || "this product"} or type your own.`
     : "Free-text grade — pick a product above to see suggested grades.";
   return (
     <div className="space-y-1.5">
       <FieldLabel hint={hint}>Product grade</FieldLabel>
-      <Input
-        list={options.length ? listId : undefined}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={options[0] ? `e.g. ${options[0]}` : "e.g. Premium, Grade A"}
-        className="h-10 text-base"
-      />
-      {options.length > 0 && (
-        <datalist id={listId}>
-          {options.map((g) => <option key={g} value={g} />)}
-        </datalist>
-      )}
+      <div className="relative">
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => options.length && setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder={options[0] ? `e.g. ${options[0]}` : "e.g. Premium, Grade A"}
+          className="h-10 text-base pr-9"
+        />
+        {options.length > 0 && (
+          <button
+            type="button"
+            aria-label="Show grade options"
+            onMouseDown={(e) => { e.preventDefault(); setOpen((o) => !o); }}
+            className="absolute right-1 top-1 h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-muted"
+          >
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        )}
+        {open && options.length > 0 && (
+          <div className="absolute z-50 mt-1 w-full max-h-64 overflow-auto rounded-md border bg-popover text-popover-foreground shadow-lg">
+            {options
+              .filter((g) => !value || g.toLowerCase().includes(value.toLowerCase()))
+              .map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); onChange(g); setOpen(false); }}
+                  className="block w-full text-left px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+                >
+                  {g}
+                </button>
+              ))}
+            {options.filter((g) => !value || g.toLowerCase().includes(value.toLowerCase())).length === 0 && (
+              <div className="px-3 py-2 text-xs text-muted-foreground">No match — your custom text will be saved.</div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
