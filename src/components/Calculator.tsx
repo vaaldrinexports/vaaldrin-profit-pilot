@@ -792,6 +792,13 @@ export default function Calculator() {
             </div>
             {/* Mobile-only condensed actions (avoid horizontal overflow) */}
             <div className="flex items-center gap-1.5 shrink-0 lg:hidden">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="rounded-md border border-border bg-card p-2 hover:bg-muted"
+                aria-label="Open navigation"
+              >
+                <Menu className="h-4 w-4" />
+              </button>
               <ThemeToggle />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -979,8 +986,9 @@ export default function Calculator() {
         )}
 
 
-        <Tabs defaultValue="inputs" className="space-y-5">
-          <TabsList className="grid grid-cols-4 md:grid-cols-8 w-full h-auto p-1.5 glass rounded-2xl gap-1.5">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
+          <TabsList className="lg:hidden grid grid-cols-4 md:grid-cols-8 w-full h-auto p-1.5 rounded-2xl gap-1.5 bg-card border border-border">
+
             <TabsTrigger value="inputs" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">
               <span className="md:hidden">1. Inputs</span><span className="hidden md:inline">1. Inputs</span>
             </TabsTrigger>
