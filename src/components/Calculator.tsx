@@ -872,7 +872,7 @@ export default function Calculator() {
         </div>
       </header>
 
-      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 py-8 space-y-8">
         {/* Validation banner — pulled to the very top so critical errors aren't buried mid-page */}
         {c.validationErrors.length > 0 && (
           <div className="rounded-lg border-2 border-deep-red bg-deep-red/10 p-4 flex items-start gap-3" role="alert">
