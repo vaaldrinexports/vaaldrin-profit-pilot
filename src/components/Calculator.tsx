@@ -1922,16 +1922,16 @@ function DirectorCell({ label, value, tone, big, pct, hint }: {
     tone === "danger" ? "border-deep-red/50 bg-deep-red/10" :
     "border-primary-foreground/15 bg-primary-foreground/5";
   return (
-    <div className={"min-w-0 overflow-hidden rounded-lg border p-4 " + cls} title={hint}>
-      <div className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-primary-foreground/70 font-semibold">
+    <div className={"min-w-0 overflow-hidden rounded-[14px] border p-5 transition-all duration-200 hover:-translate-y-[1px] " + cls} title={hint}>
+      <div className="flex items-center gap-1 text-[10px] uppercase tracking-[0.16em] text-primary-foreground/75 font-semibold">
         <span className="truncate">{label}</span>
         {hint && <HelpCircle className="w-3 h-3 opacity-60 shrink-0" />}
       </div>
-      <div className={"font-bold mt-1.5 tabular-nums break-all leading-tight " + (big ? "[font-size:clamp(1rem,4cqi+0.55rem,1.5rem)]" : "[font-size:clamp(0.85rem,2.8cqi+0.5rem,1rem)]")} title={value}>{value}</div>
-      <div className="text-xs text-primary-foreground/60 tabular-nums mt-0.5">
+      <div className={"font-bold mt-2 tabular-nums break-all leading-[1.05] vx-count " + (big ? "[font-size:clamp(1.15rem,4.6cqi+0.7rem,1.85rem)]" : "[font-size:clamp(0.9rem,2.8cqi+0.55rem,1.05rem)]")} title={value}>{value}</div>
+      <div className="text-xs text-primary-foreground/70 tabular-nums mt-1">
         {pct !== undefined && (
-          <span className={"ml-2 font-semibold " + (pct > 15 ? "text-success" : pct >= 8 ? "text-warning" : "text-deep-red")}>
-            {fmtNum(pct)}%
+          <span className={"font-semibold " + (pct > 15 ? "text-success" : pct >= 8 ? "text-warning" : "text-deep-red")}>
+            {fmtNum(pct)}% margin
           </span>
         )}
       </div>
