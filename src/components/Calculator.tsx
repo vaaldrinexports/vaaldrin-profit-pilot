@@ -65,6 +65,7 @@ import {
   FileDown, Printer, Save, Upload, Copy, RotateCcw, ShieldCheck, AlertTriangle,
   TrendingUp, Lock, Sparkles, MoreHorizontal, HelpCircle, Package, Truck, FileText,
   Ship, Anchor, Landmark, Wallet, Coins, Globe2, Info, Trash2, FolderOpen, History, ChevronDown,
+  LayoutDashboard, Users, Boxes, LineChart as LineChartIcon, Settings, Menu, X, Bell, Search,
 } from "lucide-react";
 
 const STORAGE_KEY = "vaaldrin.calc.v1";
@@ -497,6 +498,8 @@ export default function Calculator() {
   const [docType, setDocType] = useState<DocType>("quotation");
   const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([]);
   const [fxStatus, setFxStatus] = useState<"loading" | "live" | "cached" | "stale">("loading");
+  const [activeTab, setActiveTab] = useState<string>("inputs");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const fetchLiveFx = async (showToast = false): Promise<boolean> => {
     try {
