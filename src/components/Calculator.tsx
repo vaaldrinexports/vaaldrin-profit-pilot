@@ -65,6 +65,7 @@ import {
   FileDown, Printer, Save, Upload, Copy, RotateCcw, ShieldCheck, AlertTriangle,
   TrendingUp, Lock, Sparkles, MoreHorizontal, HelpCircle, Package, Truck, FileText,
   Ship, Anchor, Landmark, Wallet, Coins, Globe2, Info, Trash2, FolderOpen, History, ChevronDown,
+  LayoutDashboard, Users, Boxes, LineChart as LineChartIcon, Settings, Menu, X, Bell, Search,
 } from "lucide-react";
 
 const STORAGE_KEY = "vaaldrin.calc.v1";
@@ -497,6 +498,8 @@ export default function Calculator() {
   const [docType, setDocType] = useState<DocType>("quotation");
   const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([]);
   const [fxStatus, setFxStatus] = useState<"loading" | "live" | "cached" | "stale">("loading");
+  const [activeTab, setActiveTab] = useState<string>("inputs");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const fetchLiveFx = async (showToast = false): Promise<boolean> => {
     try {
@@ -706,7 +709,75 @@ export default function Calculator() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
+      {/* Sidebar — desktop rail + mobile drawer */}
+      <aside
+        className={
+          "vx-sidebar no-print fixed inset-y-0 left-0 z-40 w-[260px] flex-col border-r border-black/40 " +
+          (sidebarOpen ? "flex" : "hidden") +
+          " lg:sticky lg:top-0 lg:z-20 lg:flex lg:h-screen"
+        }
+        aria-label="Primary navigation"
+      >
+        <div className="flex items-center justify-between px-5 pt-5 pb-4">
+          <div className="min-w-0">
+            <div className="text-[11px] font-bold tracking-[0.2em]" style={{ color: "var(--gold)" }}>VAALDRIN</div>
+            <div className="text-[10px] tracking-widest text-white/50">EXPORTS · CFO SUITE</div>
+          </div>
+          <button
+            className="lg:hidden rounded-md p-1.5 hover:bg-white/10"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close navigation"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="mx-3 mb-3 h-px bg-white/10" />
+        <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
+          {[
+            { id: "inputs", label: "Dashboard", icon: LayoutDashboard },
+            { id: "inputs", label: "Quotations", icon: FileText },
+            { id: "inputs", label: "Buyers", icon: Users },
+            { id: "inputs", label: "Products", icon: Boxes },
+            { id: "inputs", label: "Market Intel", icon: LineChartIcon },
+            { id: "banking", label: "Banking & Forex", icon: Landmark },
+            { id: "profit", label: "Profit", icon: TrendingUp },
+            { id: "incoterms", label: "Documents", icon: FileDown },
+            { id: "negotiation", label: "Negotiation", icon: Sparkles },
+            { id: "scenario", label: "Scenarios", icon: Copy },
+            { id: "audit", label: "Analytics", icon: History },
+            { id: "admin", label: "Settings", icon: Settings },
+          ].map((item, i) => {
+            const Icon = item.icon;
+            const active = activeTab === item.id;
+            return (
+              <button
+                key={`${item.id}-${i}`}
+                className="vx-nav-item"
+                data-active={active ? "true" : "false"}
+                onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+        <div className="mt-auto px-4 py-4 border-t border-white/10 text-[10px] text-white/40">
+          © Vaaldrin Exports · Premium Trade Suite
+        </div>
+      </aside>
+
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <div className="min-w-0 flex flex-col">
+
       {/* Header — frosted glass */}
       <header className="no-print sticky top-0 z-30 bg-background/60 backdrop-blur-xl backdrop-saturate-150 text-foreground border-b border-border/60 shadow-[0_1px_0_0_var(--gold)]/10">
 
@@ -721,6 +792,13 @@ export default function Calculator() {
             </div>
             {/* Mobile-only condensed actions (avoid horizontal overflow) */}
             <div className="flex items-center gap-1.5 shrink-0 lg:hidden">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="rounded-md border border-border bg-card p-2 hover:bg-muted"
+                aria-label="Open navigation"
+              >
+                <Menu className="h-4 w-4" />
+              </button>
               <ThemeToggle />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -908,8 +986,9 @@ export default function Calculator() {
         )}
 
 
-        <Tabs defaultValue="inputs" className="space-y-5">
-          <TabsList className="grid grid-cols-4 md:grid-cols-8 w-full h-auto p-1.5 glass rounded-2xl gap-1.5">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
+          <TabsList className="lg:hidden grid grid-cols-4 md:grid-cols-8 w-full h-auto p-1.5 rounded-2xl gap-1.5 bg-card border border-border">
+
             <TabsTrigger value="inputs" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">
               <span className="md:hidden">1. Inputs</span><span className="hidden md:inline">1. Inputs</span>
             </TabsTrigger>
@@ -1796,6 +1875,7 @@ export default function Calculator() {
           <DocumentPreview s={s} priceINR={incotermPrice} docType={docType} forPrint />
         </div>
       </main>
+      </div>
     </div>
   );
 }
