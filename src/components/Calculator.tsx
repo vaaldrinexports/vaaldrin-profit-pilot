@@ -947,7 +947,7 @@ export default function Calculator() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <DirectorCell label="Recommended price" value={fmtContract(incotermPrice)} tone="gold" big
                 hint="Final selling price you should quote — built on your target margin." />
               <DirectorCell label="Expected profit (internal)" value={fmtINR(c.netProfit)} pct={c.profitPct} big
