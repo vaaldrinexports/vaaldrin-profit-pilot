@@ -159,16 +159,16 @@ function GroupCard({ icon: Icon, title, subtitle, children }: {
   title: string; subtitle?: string; children: React.ReactNode;
 }) {
   return (
-    <Card className="p-6 shadow-sm">
-      <div className="flex items-start gap-3 mb-5">
+    <Card className="p-6 sm:p-7">
+      <div className="flex items-start gap-3 mb-6">
         {Icon && (
-          <div className="shrink-0 mt-0.5 grid place-items-center w-9 h-9 rounded-lg bg-gold/15 text-gold">
-            <Icon className="w-4.5 h-4.5" />
+          <div className="shrink-0 mt-0.5 grid place-items-center w-10 h-10 rounded-xl bg-gold/12 text-gold ring-1 ring-gold/25 transition-colors group-hover:bg-gold/20">
+            <Icon className="w-5 h-5" />
           </div>
         )}
         <div className="min-w-0">
-          <h3 className="text-base font-semibold text-foreground leading-tight">{title}</h3>
-          {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+          <h3 className="text-[15px] font-semibold text-foreground leading-tight tracking-tight">{title}</h3>
+          {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
         </div>
       </div>
       {children}
@@ -181,12 +181,17 @@ function KPI({ label, value, sub, tone }: { label: string; value: string; sub?: 
     tone === "gold" ? "border-gold/50 bg-gold/5" :
     tone === "red" ? "border-deep-red/40 bg-deep-red/5" :
     tone === "green" ? "border-success/40 bg-success/5" :
-    tone === "warn" ? "border-warning/50 bg-warning/5" : "";
+    tone === "warn" ? "border-warning/50 bg-warning/5" : "border-border";
+  const accent =
+    tone === "gold" ? "text-gold" :
+    tone === "red" ? "text-deep-red" :
+    tone === "green" ? "text-success" :
+    tone === "warn" ? "text-warning" : "text-foreground";
   return (
-    <div className={"min-w-0 rounded-lg border bg-card p-4 overflow-hidden " + toneCls}>
-      <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium truncate">{label}</div>
-      <div className="mt-1.5 font-bold tabular-nums break-all leading-tight [font-size:clamp(0.95rem,3.5cqi+0.55rem,1.25rem)]" title={value}>{value}</div>
-      {sub && <div className="text-xs text-muted-foreground mt-0.5 break-words">{sub}</div>}
+    <div className={"group min-w-0 rounded-[14px] border bg-card p-5 overflow-hidden vx-hover-lift " + toneCls}>
+      <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-semibold truncate">{label}</div>
+      <div className={"mt-2 font-bold tabular-nums break-all leading-[1.1] vx-count [font-size:clamp(1.05rem,3.6cqi+0.6rem,1.4rem)] " + accent} title={value}>{value}</div>
+      {sub && <div className="text-[11px] text-muted-foreground mt-1 break-words">{sub}</div>}
     </div>
   );
 }
@@ -867,7 +872,7 @@ export default function Calculator() {
         </div>
       </header>
 
-      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 py-8 space-y-8">
         {/* Validation banner — pulled to the very top so critical errors aren't buried mid-page */}
         {c.validationErrors.length > 0 && (
           <div className="rounded-lg border-2 border-deep-red bg-deep-red/10 p-4 flex items-start gap-3" role="alert">
@@ -897,8 +902,8 @@ export default function Calculator() {
         </div>
 
         {/* Executive Summary — simpler, more spacious */}
-        <Card className="overflow-hidden border-gold/30 shadow-md">
-          <div className="bg-gradient-to-br from-primary to-primary/95 text-primary-foreground p-6">
+        <Card className="overflow-hidden border-gold/30 vx-elev-2">
+          <div className="bg-gradient-to-br from-primary to-primary/95 text-primary-foreground p-6 sm:p-8">
             <div className="mb-6 rounded-lg border border-gold/50 bg-primary-foreground/5 p-5">
               <div className="text-[11px] font-bold tracking-[0.2em] text-gold">RECOMMENDED BUYER QUOTATION</div>
               <div className="mt-4 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
@@ -942,7 +947,7 @@ export default function Calculator() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <DirectorCell label="Recommended price" value={fmtContract(incotermPrice)} tone="gold" big
                 hint="Final selling price you should quote — built on your target margin." />
               <DirectorCell label="Expected profit (internal)" value={fmtINR(c.netProfit)} pct={c.profitPct} big
@@ -1917,16 +1922,16 @@ function DirectorCell({ label, value, tone, big, pct, hint }: {
     tone === "danger" ? "border-deep-red/50 bg-deep-red/10" :
     "border-primary-foreground/15 bg-primary-foreground/5";
   return (
-    <div className={"min-w-0 overflow-hidden rounded-lg border p-4 " + cls} title={hint}>
-      <div className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-primary-foreground/70 font-semibold">
+    <div className={"min-w-0 overflow-hidden rounded-[14px] border p-5 transition-all duration-200 hover:-translate-y-[1px] " + cls} title={hint}>
+      <div className="flex items-center gap-1 text-[10px] uppercase tracking-[0.16em] text-primary-foreground/75 font-semibold">
         <span className="truncate">{label}</span>
         {hint && <HelpCircle className="w-3 h-3 opacity-60 shrink-0" />}
       </div>
-      <div className={"font-bold mt-1.5 tabular-nums break-all leading-tight " + (big ? "[font-size:clamp(1rem,4cqi+0.55rem,1.5rem)]" : "[font-size:clamp(0.85rem,2.8cqi+0.5rem,1rem)]")} title={value}>{value}</div>
-      <div className="text-xs text-primary-foreground/60 tabular-nums mt-0.5">
+      <div className={"font-bold mt-2 tabular-nums break-all leading-[1.05] vx-count " + (big ? "[font-size:clamp(1.15rem,4.6cqi+0.7rem,1.85rem)]" : "[font-size:clamp(0.9rem,2.8cqi+0.55rem,1.05rem)]")} title={value}>{value}</div>
+      <div className="text-xs text-primary-foreground/70 tabular-nums mt-1">
         {pct !== undefined && (
-          <span className={"ml-2 font-semibold " + (pct > 15 ? "text-success" : pct >= 8 ? "text-warning" : "text-deep-red")}>
-            {fmtNum(pct)}%
+          <span className={"font-semibold " + (pct > 15 ? "text-success" : pct >= 8 ? "text-warning" : "text-deep-red")}>
+            {fmtNum(pct)}% margin
           </span>
         )}
       </div>
