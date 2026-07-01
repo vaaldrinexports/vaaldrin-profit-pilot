@@ -42,7 +42,7 @@
 
 /* ---------- LIGHT THEME (Vaaldrin premium enterprise) ---------- */
 :root {
-  --radius: 1.25rem;                  /* 20px cards */
+  --radius: 1rem;                     /* 16px cards */
   --background: #F8F9FB;
   --foreground: #151515;              /* charcoal */
   --card: #FFFFFF;
