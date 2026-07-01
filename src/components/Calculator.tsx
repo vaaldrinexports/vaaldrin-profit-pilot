@@ -902,8 +902,8 @@ export default function Calculator() {
         </div>
 
         {/* Executive Summary — simpler, more spacious */}
-        <Card className="overflow-hidden border-gold/30 shadow-md">
-          <div className="bg-gradient-to-br from-primary to-primary/95 text-primary-foreground p-6">
+        <Card className="overflow-hidden border-gold/30 vx-elev-2">
+          <div className="bg-gradient-to-br from-primary to-primary/95 text-primary-foreground p-6 sm:p-8">
             <div className="mb-6 rounded-lg border border-gold/50 bg-primary-foreground/5 p-5">
               <div className="text-[11px] font-bold tracking-[0.2em] text-gold">RECOMMENDED BUYER QUOTATION</div>
               <div className="mt-4 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
