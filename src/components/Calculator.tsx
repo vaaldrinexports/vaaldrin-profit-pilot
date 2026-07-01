@@ -181,12 +181,17 @@ function KPI({ label, value, sub, tone }: { label: string; value: string; sub?: 
     tone === "gold" ? "border-gold/50 bg-gold/5" :
     tone === "red" ? "border-deep-red/40 bg-deep-red/5" :
     tone === "green" ? "border-success/40 bg-success/5" :
-    tone === "warn" ? "border-warning/50 bg-warning/5" : "";
+    tone === "warn" ? "border-warning/50 bg-warning/5" : "border-border";
+  const accent =
+    tone === "gold" ? "text-gold" :
+    tone === "red" ? "text-deep-red" :
+    tone === "green" ? "text-success" :
+    tone === "warn" ? "text-warning" : "text-foreground";
   return (
-    <div className={"min-w-0 rounded-lg border bg-card p-4 overflow-hidden " + toneCls}>
-      <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium truncate">{label}</div>
-      <div className="mt-1.5 font-bold tabular-nums break-all leading-tight [font-size:clamp(0.95rem,3.5cqi+0.55rem,1.25rem)]" title={value}>{value}</div>
-      {sub && <div className="text-xs text-muted-foreground mt-0.5 break-words">{sub}</div>}
+    <div className={"group min-w-0 rounded-[14px] border bg-card p-5 overflow-hidden vx-hover-lift " + toneCls}>
+      <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-semibold truncate">{label}</div>
+      <div className={"mt-2 font-bold tabular-nums break-all leading-[1.1] vx-count [font-size:clamp(1.05rem,3.6cqi+0.6rem,1.4rem)] " + accent} title={value}>{value}</div>
+      {sub && <div className="text-[11px] text-muted-foreground mt-1 break-words">{sub}</div>}
     </div>
   );
 }
