@@ -159,16 +159,16 @@ function GroupCard({ icon: Icon, title, subtitle, children }: {
   title: string; subtitle?: string; children: React.ReactNode;
 }) {
   return (
-    <Card className="p-6 shadow-sm">
-      <div className="flex items-start gap-3 mb-5">
+    <Card className="p-6 sm:p-7">
+      <div className="flex items-start gap-3 mb-6">
         {Icon && (
-          <div className="shrink-0 mt-0.5 grid place-items-center w-9 h-9 rounded-lg bg-gold/15 text-gold">
-            <Icon className="w-4.5 h-4.5" />
+          <div className="shrink-0 mt-0.5 grid place-items-center w-10 h-10 rounded-xl bg-gold/12 text-gold ring-1 ring-gold/25 transition-colors group-hover:bg-gold/20">
+            <Icon className="w-5 h-5" />
           </div>
         )}
         <div className="min-w-0">
-          <h3 className="text-base font-semibold text-foreground leading-tight">{title}</h3>
-          {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+          <h3 className="text-[15px] font-semibold text-foreground leading-tight tracking-tight">{title}</h3>
+          {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
         </div>
       </div>
       {children}
