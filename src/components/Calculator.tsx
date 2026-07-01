@@ -1867,6 +1867,7 @@ export default function Calculator() {
           <DocumentPreview s={s} priceINR={incotermPrice} docType={docType} forPrint />
         </div>
       </main>
+      </div>
     </div>
   );
 }
