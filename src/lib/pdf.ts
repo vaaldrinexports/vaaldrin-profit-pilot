@@ -477,10 +477,20 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
   drawFieldBlock(doc, margin, 158, exporterRows(s));
 
   drawSectionHeader(doc, "Consignee", W / 2 + 10, 140);
-  drawFieldBlock(doc, W / 2 + 10, 158, buyerRows(s));
+  drawFieldBlock(doc, W / 2 + 10, 158, buyerRows(s, { includeContact: true, includeTax: true }));
+
+  // PO / LC references
+  const yRefs = 260;
+  drawSectionHeader(doc, "Order References", margin, yRefs);
+  drawFieldBlock(doc, margin, yRefs + 18, [
+    ["Purchase Order No.", s.purchaseOrderNo || "—"],
+    ["Purchase Order Date", s.purchaseOrderDate || "—"],
+    ["Letter of Credit No.", s.lcNumber || "—"],
+    ["Payment Terms", s.paymentTerms || "(as per contract)"],
+  ], 120);
 
   // Notify Party + Shipment row
-  const yMid = 270;
+  const yMid = 360;
   drawSectionHeader(doc, "Notify Party", margin, yMid);
   const notify = s.notifyParty?.trim()
     ? doc.splitTextToSize(s.notifyParty, W / 2 - margin - 10)
@@ -491,13 +501,21 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
   drawSectionHeader(doc, "Shipment", W / 2 + 10, yMid);
   drawFieldBlock(doc, W / 2 + 10, yMid + 18, shipmentRows(s), 100);
 
+  const pkg = packageSummary(s);
+
   autoTable(doc, {
     ...applyTableTheme(),
     startY: yMid + 150,
-    head: [["HS Code", "Description", "Country of Origin", "Marks & Nos.", "Qty", "UoM", `Unit (${s.contractCurrency})`, `Amount (${s.contractCurrency})`]],
+    head: [["HS Code", "Description", "Origin", "Marks & Nos.", "Qty", "UoM", `Unit (${s.contractCurrency})`, `Amount (${s.contractCurrency})`]],
     body: [[
       s.hsCode || "—",
-      `${s.productName || "—"}${s.productGrade ? ` — ${s.productGrade}` : ""}`,
+      [
+        s.productName || "—",
+        s.productGrade ? `Grade: ${s.productGrade}` : null,
+        s.botanicalName ? `Botanical: ${s.botanicalName}` : null,
+        s.batchLotNumber ? `Batch: ${s.batchLotNumber}` : null,
+        s.cropYear ? `Crop: ${s.cropYear}` : null,
+      ].filter(Boolean).join("\n"),
       s.countryOfOrigin || "India",
       s.marksAndNumbers || "—",
       String(s.quantity),
@@ -508,18 +526,43 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
     styles: { fontSize: 8.5, cellPadding: 4 },
   });
 
+  // Invoice Summary (per international CI standard)
+  const freight = Number(s.invoiceFreightCharges) || 0;
+  const insurance = Number(s.invoiceInsuranceCharges) || 0;
+  const other = Number(s.invoiceOtherCharges) || 0;
+  const grand = quote.totalContractValue + freight + insurance + other;
+
   autoTable(doc, {
     ...applyTableTheme(),
     startY: lastY(doc) + 10,
+    head: [["Invoice Summary", "Value"]],
     body: [
-      [{ content: `Currency: ${s.contractCurrency} · Payment: ${s.paymentTerms || "(as per contract)"}`, styles: { fontStyle: "italic", textColor: BRAND.muted, halign: "left" } }, ""],
-      [{ content: "INVOICE TOTAL", styles: { fontStyle: "bold", textColor: BRAND.red, halign: "right" } },
-       { content: `${s.contractCurrency} ${fmtCurrency(quote.totalContractValue, s.contractCurrency)}`, styles: { fontStyle: "bold", halign: "right" } }],
+      ["Number of Packages", `${pkg.packages} × ${s.packageType || "PP bags"}`],
+      ["Net Weight", `${pkg.netWeight.toLocaleString()} KG`],
+      ["Gross Weight", `${pkg.grossWeight.toLocaleString()} KG`],
+      ["Subtotal (FOB value)", `${s.contractCurrency} ${fmtCurrency(quote.totalContractValue, s.contractCurrency)}`],
+      ["Freight Charges", freight > 0 ? `${s.contractCurrency} ${fmtCurrency(freight, s.contractCurrency)}` : "—"],
+      ["Insurance Charges", insurance > 0 ? `${s.contractCurrency} ${fmtCurrency(insurance, s.contractCurrency)}` : "—"],
+      ["Other Charges", other > 0 ? `${s.contractCurrency} ${fmtCurrency(other, s.contractCurrency)}` : "—"],
+      [{ content: "TOTAL INVOICE VALUE", styles: { fontStyle: "bold", textColor: BRAND.red } },
+       { content: `${s.contractCurrency} ${fmtCurrency(grand, s.contractCurrency)}`, styles: { fontStyle: "bold", textColor: BRAND.red } }],
     ],
-    columnStyles: { 0: { cellWidth: W - 80 - 160 }, 1: { cellWidth: 160 } },
+    columnStyles: { 0: { fontStyle: "bold", cellWidth: 200 }, 1: { halign: "right" } },
   });
 
-  // Shipping refs (placeholders for B/L, container, seal)
+  // Product traceability
+  const trace = productTraceRows(s);
+  if (trace.length) {
+    autoTable(doc, {
+      ...applyTableTheme(),
+      startY: lastY(doc) + 10,
+      head: [["Product Traceability", "Detail"]],
+      body: trace.map(([k, v]) => [k, v]),
+      columnStyles: { 0: { cellWidth: 160, fontStyle: "bold" }, 1: { halign: "left" } },
+    });
+  }
+
+  // Shipping refs
   const yRef = lastY(doc) + 16;
   drawSectionHeader(doc, "Shipping References", margin, yRef);
   drawFieldBlock(doc, margin, yRef + 18, [
