@@ -72,13 +72,13 @@ const STORAGE_KEY = "vaaldrin.calc.v1";
 const ADMIN_STORAGE_KEY = "vaaldrin.admin.v1";
 
 type AdminSettings = Pick<CalculatorState,
-  | "companyName" | "companyAddress" | "companyGstin" | "companyIec" | "companyFssai" | "companyEmail" | "companyPhone"
+  | "companyName" | "companyAddress" | "companyGstin" | "companyIec" | "companyFssai" | "companyPan" | "companyWebsite" | "companyEmail" | "companyPhone"
   | "companyBankName" | "companyBankAccount" | "companyBankSwift" | "companyBankBranch" | "companyBankIfsc" | "companyAdCode"
   | "paymentTerms" | "quotationValidityDays" | "bankingTariff"
 >;
 
 const adminKeys: (keyof AdminSettings)[] = [
-  "companyName", "companyAddress", "companyGstin", "companyIec", "companyFssai", "companyEmail", "companyPhone",
+  "companyName", "companyAddress", "companyGstin", "companyIec", "companyFssai", "companyPan", "companyWebsite", "companyEmail", "companyPhone",
   "companyBankName", "companyBankAccount", "companyBankSwift", "companyBankBranch", "companyBankIfsc", "companyAdCode",
   "paymentTerms", "quotationValidityDays", "bankingTariff",
 ];
