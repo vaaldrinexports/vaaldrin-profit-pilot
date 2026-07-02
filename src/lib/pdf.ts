@@ -385,7 +385,7 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
   drawFieldBlock(doc, margin, 158, exporterRows(s));
 
   drawSectionHeader(doc, "Buyer / Consignee", W / 2 + 10, 140);
-  drawFieldBlock(doc, W / 2 + 10, 158, buyerRows(s, { includeContact: true }));
+  drawFieldBlock(doc, W / 2 + 10, 158, buyerRows(s, { includeContact: true, includeTax: true }));
 
   const yShip = 260;
   drawSectionHeader(doc, "Shipment", margin, yShip);
@@ -397,7 +397,7 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
     head: [["HS Code", "Description", "Origin", "Qty", "UoM", `Unit (${s.contractCurrency})`, `Amount (${s.contractCurrency})`]],
     body: [[
       s.hsCode || "—",
-      `${s.productName || "—"}${s.productGrade ? ` — ${s.productGrade}` : ""}`,
+      `${s.productName || "—"}${s.productGrade ? ` — ${s.productGrade}` : ""}${s.botanicalName ? `\n(${s.botanicalName})` : ""}`,
       s.countryOfOrigin || "India",
       String(s.quantity),
       s.uom,
@@ -405,6 +405,18 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
       fmtCurrency(quote.totalContractValue, s.contractCurrency),
     ]],
   });
+
+  // Product traceability (food-export details)
+  const trace = productTraceRows(s);
+  if (trace.length) {
+    autoTable(doc, {
+      ...applyTableTheme(),
+      startY: lastY(doc) + 10,
+      head: [["Product Traceability", "Detail"]],
+      body: trace.map(([k, v]) => [k, v]),
+      columnStyles: { 0: { cellWidth: 160, fontStyle: "bold" }, 1: { halign: "left" } },
+    });
+  }
 
   const subtotal = quote.totalContractValue;
   autoTable(doc, {
