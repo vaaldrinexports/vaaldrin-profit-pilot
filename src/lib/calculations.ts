@@ -194,6 +194,8 @@ export interface CalculatorState {
   companyGstin: string;
   companyIec: string;
   companyFssai: string;
+  companyPan: string;
+  companyWebsite: string;
   companyEmail: string;
   companyPhone: string;
   companyBankName: string;
@@ -210,6 +212,8 @@ export interface CalculatorState {
   // Shipment / Logistics (printed on every shipping document)
   portOfLoading: string;
   portOfDischarge: string;
+  finalDestination: string;
+  modeOfTransport: string;
   countryOfOrigin: string;
   shipmentLeadTimeDays: number;
   vesselFlight: string;
@@ -217,24 +221,45 @@ export interface CalculatorState {
   sealNo: string;
   blAwbNumber: string;
   notifyParty: string;
+  lcNumber: string;
+  purchaseOrderNo: string;
+  purchaseOrderDate: string;
+
+  // Buyer tax
+  buyerTaxRegistration: string;
+
+  // Food-export product traceability (printed on PI, CI, Packing List)
+  botanicalName: string;
+  cropYear: string;
+  batchLotNumber: string;
+  manufacturingDate: string;
+  bestBeforeDate: string;
+  storageCondition: string;
+  manufacturerName: string;
 
   // Packaging detail (printed on packing list & commercial invoice)
-  packageType: string;          // e.g. "PP woven bags", "Jute bags", "Cartons"
-  packageDimensionsCm: string;  // e.g. "60 x 40 x 25"
-  packagesCountOverride: number; // 0 = auto-calc, else exact package count
-  netWeightPerPackageKg: number; // 0 = auto-derive
+  packageType: string;
+  packageDimensionsCm: string;
+  packagesCountOverride: number;
+  netWeightPerPackageKg: number;
   marksAndNumbers: string;
+  totalVolumeCbm: number;
 
-  // Quality specification (printed on sales contract & commercial invoice)
-  qualityStandard: string;       // e.g. "AGMARK", "ASTA cleanliness", "FSSAI"
+  // Commercial Invoice extras (contract currency)
+  invoiceFreightCharges: number;
+  invoiceInsuranceCharges: number;
+  invoiceOtherCharges: number;
+
+  // Quality specification
+  qualityStandard: string;
   qualityMoisturePct: number;
-  qualityActiveCompoundLabel: string; // e.g. "Piperine", "Curcumin"
+  qualityActiveCompoundLabel: string;
   qualityActiveCompoundPct: number;
   qualityAdmixturePct: number;
-  qualityBulkDensity: string;    // freeform e.g. "550 g/L"
+  qualityBulkDensity: string;
   qualityNotes: string;
 
-  // Contract / Legal (sales contract)
+  // Contract / Legal
   governingLaw: string;
   arbitrationVenue: string;
 
