@@ -618,21 +618,25 @@ export default function Calculator() {
   ];
 
   const save = async () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    // Persist ONLY admin/company settings globally. Quote-specific fields
+    // are stored per-quote via saveQuoteSnapshot so refreshes don't repopulate
+    // old buyer/product data.
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(pickAdminSettings(s)));
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ }
     try {
-      await saveSettings(s);
+      await saveSettings(pickAdminSettings(s));
       if (inputsReady) {
         await saveQuoteSnapshot(s);
         setSavedQuotes(await listQuotes());
         toast.success("Saved to database · snapshot added");
       } else {
-        toast.success("Draft saved to database");
+        toast.success("Company settings saved");
       }
     } catch (e: any) {
       toast.error(e?.message || "Database save failed");
     }
   };
+
   const loadSavedQuote = async (id: string) => {
     const q = await loadQuote(id);
     if (!q) { toast.error("Quote not found"); return; }
