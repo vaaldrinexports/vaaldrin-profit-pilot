@@ -537,30 +537,41 @@ export default function Calculator() {
 
   useEffect(() => {
     (async () => {
-      // Load settings + draft from DB (falls back to localStorage)
-      const dbSettings = await loadSettings().catch(() => null);
-      const draft = readJson<CalculatorState>(STORAGE_KEY);
+      // Production behavior: every session starts with a blank quotation.
+      // We ONLY restore admin/company settings (company profile, banking tariff,
+      // payment terms). Quote-specific fields (buyer, product, quantities, prices)
+      // are never auto-restored — use "Saved Quotes" to reload a specific quote.
+      const dbSettingsRaw = await loadSettings().catch(() => null);
       const admin = readJson<AdminSettings>(ADMIN_STORAGE_KEY);
-      const draftTariff = draft.bankingTariff;
-      const adminTariff = admin.bankingTariff;
-      const dbTariff = (dbSettings as any)?.bankingTariff;
-      if (dbSettings || Object.keys(draft).length > 0 || Object.keys(admin).length > 0) {
-        setS({
-          ...defaultState,
-          ...draft,
-          ...admin,
-          ...(dbSettings || {}),
-          bankingTariff: { ...defaultState.bankingTariff, ...draftTariff, ...adminTariff, ...(dbTariff || {}) },
-        });
-      } else {
-        const now = new Date();
-        setS((current) => ({ ...current, quotationNumber: `VX-${now.getFullYear()}-0001`, quotationDate: now.toISOString().slice(0, 10) }));
+      // Purge any legacy full-state draft that pre-dated this change.
+      try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ }
+
+      const dbAdmin: Partial<AdminSettings> = {};
+      if (dbSettingsRaw) {
+        for (const k of adminKeys) {
+          const v = (dbSettingsRaw as any)[k];
+          if (v !== undefined) (dbAdmin as any)[k] = v;
+        }
       }
+      const adminTariff = admin.bankingTariff;
+      const dbTariff = dbAdmin.bankingTariff;
+
+      const now = new Date();
+      setS({
+        ...defaultState,
+        ...admin,
+        ...dbAdmin,
+        bankingTariff: { ...defaultState.bankingTariff, ...adminTariff, ...(dbTariff || {}) },
+        quotationNumber: `VX-${now.getFullYear()}-0001`,
+        quotationDate: now.toISOString().slice(0, 10),
+      });
+
       try { setSavedQuotes(await listQuotes()); } catch (e) { console.error(e); }
       const ok = await fetchLiveFx(false);
       if (!ok) setFxStatus("cached");
     })();
   }, []);
+
 
   // Mark FX as stale if >12h old
   useEffect(() => {
@@ -607,21 +618,25 @@ export default function Calculator() {
   ];
 
   const save = async () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    // Persist ONLY admin/company settings globally. Quote-specific fields
+    // are stored per-quote via saveQuoteSnapshot so refreshes don't repopulate
+    // old buyer/product data.
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(pickAdminSettings(s)));
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ }
     try {
-      await saveSettings(s);
+      await saveSettings(pickAdminSettings(s));
       if (inputsReady) {
         await saveQuoteSnapshot(s);
         setSavedQuotes(await listQuotes());
         toast.success("Saved to database · snapshot added");
       } else {
-        toast.success("Draft saved to database");
+        toast.success("Company settings saved");
       }
     } catch (e: any) {
       toast.error(e?.message || "Database save failed");
     }
   };
+
   const loadSavedQuote = async (id: string) => {
     const q = await loadQuote(id);
     if (!q) { toast.error("Quote not found"); return; }
@@ -698,14 +713,15 @@ export default function Calculator() {
 
   const saveAdminSettings = async () => {
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(pickAdminSettings(s)));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ }
     try {
-      await saveSettings(s);
+      await saveSettings(pickAdminSettings(s));
       toast.success("Admin settings saved to database");
     } catch (e: any) {
       toast.error(e?.message || "Database save failed");
     }
   };
+
 
   const navigate = useNavigate();
   const signOut = async () => {
