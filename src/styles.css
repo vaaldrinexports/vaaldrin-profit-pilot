@@ -224,6 +224,7 @@
 .vx-sidebar {
   background: var(--sidebar-bg);
   color: var(--sidebar-fg);
+  border-right: 1px solid var(--border);
 }
 .vx-sidebar a, .vx-sidebar button { color: var(--sidebar-fg); }
 .vx-sidebar .vx-nav-item {
@@ -241,12 +242,12 @@
   text-align: left;
 }
 .vx-sidebar .vx-nav-item:hover {
-  background: rgb(255 255 255 / 0.05);
+  background: color-mix(in oklab, var(--sidebar-fg) 8%, transparent);
   color: var(--sidebar-fg);
 }
 .vx-sidebar .vx-nav-item[data-active="true"] {
-  background: rgb(255 255 255 / 0.06);
-  color: #FFFFFF;
+  background: color-mix(in oklab, var(--gold) 12%, transparent);
+  color: var(--sidebar-fg);
   box-shadow: inset 3px 0 0 0 var(--gold);
 }
 .vx-sidebar .vx-nav-item[data-active="true"] svg { color: var(--gold); }
