@@ -635,15 +635,29 @@ export async function generatePackingListPDF(s: CalculatorState) {
     startY: lastY(doc) + 10,
     head: [["Totals", "Value"]],
     body: [
+      ["Commercial Invoice No.", s.quotationNumber ? `CI-${s.quotationNumber}` : "—"],
       ["Total Packages", String(packages)],
       ["Packaging Type", s.packageType || "(specify)"],
       ["Dimensions per package (cm)", s.packageDimensionsCm || "(specify)"],
       ["Total Net Weight (kg)", netWeight.toFixed(2)],
       ["Total Gross Weight (kg)", grossWeight.toFixed(2)],
+      ["Total Volume (CBM)", s.totalVolumeCbm > 0 ? s.totalVolumeCbm.toFixed(3) : "(to be advised)"],
       ["Marks & Numbers", s.marksAndNumbers || "(as per buyer instructions)"],
     ],
     columnStyles: { 1: { halign: "right" } },
   });
+
+  // Product traceability block for food exports
+  const trace = productTraceRows(s);
+  if (trace.length) {
+    autoTable(doc, {
+      ...applyTableTheme(),
+      startY: lastY(doc) + 10,
+      head: [["Product Traceability", "Detail"]],
+      body: trace.map(([k, v]) => [k, v]),
+      columnStyles: { 0: { cellWidth: 160, fontStyle: "bold" }, 1: { halign: "left" } },
+    });
+  }
 
   drawSignatureBlock(doc, W, lastY(doc) + 30, "For " + (s.companyName || "Vaaldrin Exports"));
   finalizeDoc(doc, W, H, margin);
