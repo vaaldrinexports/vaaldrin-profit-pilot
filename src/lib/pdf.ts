@@ -234,32 +234,51 @@ function exporterRows(s: CalculatorState): Array<[string, string]> {
   ];
   if (s.companyEmail) rows.push(["Email", s.companyEmail]);
   if (s.companyPhone) rows.push(["Phone", s.companyPhone]);
+  if (s.companyWebsite) rows.push(["Website", s.companyWebsite]);
   if (s.companyIec) rows.push(["IEC", s.companyIec]);
   if (s.companyGstin) rows.push(["GSTIN", s.companyGstin]);
+  if (s.companyPan) rows.push(["PAN", s.companyPan]);
   if (s.companyFssai) rows.push(["FSSAI", s.companyFssai]);
   if (s.companyAdCode) rows.push(["AD Code", s.companyAdCode]);
   return rows;
 }
 
-function buyerRows(s: CalculatorState, opts: { includeContact?: boolean } = {}): Array<[string, string]> {
+function buyerRows(s: CalculatorState, opts: { includeContact?: boolean; includeTax?: boolean } = {}): Array<[string, string]> {
   const rows: Array<[string, string]> = [["Company", s.buyerCompany || "—"]];
   if (opts.includeContact && s.buyerName) rows.push(["Contact", s.buyerName]);
   rows.push(["Address", s.buyerAddress || "(buyer address required)"]);
   rows.push(["Country", s.buyerCountry || "—"]);
+  if (opts.includeTax && s.buyerTaxRegistration) rows.push(["Tax Reg. No.", s.buyerTaxRegistration]);
   if (s.buyerEmail) rows.push(["Email", s.buyerEmail]);
   if (s.buyerPhone) rows.push(["Phone", s.buyerPhone]);
   return rows;
 }
 
 function shipmentRows(s: CalculatorState): Array<[string, string]> {
-  return [
+  const rows: Array<[string, string]> = [
     ["Origin", s.countryOfOrigin || "India"],
-    ["Destination", s.buyerCountry || "—"],
+    ["Destination", s.finalDestination || s.buyerCountry || "—"],
     ["Port of Loading", s.portOfLoading || "(to be confirmed)"],
     ["Port of Discharge", s.portOfDischarge || "(to be confirmed)"],
+    ["Mode of Transport", s.modeOfTransport || "Sea Freight"],
     ["Incoterm", `${s.incoterm} (Incoterms 2020)`],
     ["Lead time", `${s.shipmentLeadTimeDays || 30} days from PO confirmation`],
   ];
+  if (s.lcNumber) rows.push(["LC No.", s.lcNumber]);
+  return rows;
+}
+
+function productTraceRows(s: CalculatorState): Array<[string, string]> {
+  const rows: Array<[string, string]> = [];
+  if (s.botanicalName) rows.push(["Botanical Name", s.botanicalName]);
+  if (s.productGrade) rows.push(["Grade", s.productGrade]);
+  if (s.cropYear) rows.push(["Crop Year", s.cropYear]);
+  if (s.batchLotNumber) rows.push(["Batch / Lot No.", s.batchLotNumber]);
+  if (s.manufacturingDate) rows.push(["Mfg Date", s.manufacturingDate]);
+  if (s.bestBeforeDate) rows.push(["Best Before", s.bestBeforeDate]);
+  if (s.storageCondition) rows.push(["Storage", s.storageCondition]);
+  if (s.manufacturerName) rows.push(["Manufacturer", s.manufacturerName]);
+  return rows;
 }
 
 function packageSummary(s: CalculatorState) {
