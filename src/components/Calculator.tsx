@@ -750,7 +750,7 @@ export default function Calculator() {
             { id: "incoterms", label: "Documents", icon: FileDown },
             { id: "negotiation", label: "Negotiation", icon: Sparkles },
             { id: "scenario", label: "Scenarios", icon: Copy },
-            { id: "audit", label: "Analytics", icon: History },
+            { id: "audit", label: "Saved Quotes", icon: History },
             { id: "admin", label: "Settings", icon: Settings },
           ].map((item, i) => {
             const Icon = item.icon;
