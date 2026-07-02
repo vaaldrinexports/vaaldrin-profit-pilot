@@ -537,30 +537,41 @@ export default function Calculator() {
 
   useEffect(() => {
     (async () => {
-      // Load settings + draft from DB (falls back to localStorage)
-      const dbSettings = await loadSettings().catch(() => null);
-      const draft = readJson<CalculatorState>(STORAGE_KEY);
+      // Production behavior: every session starts with a blank quotation.
+      // We ONLY restore admin/company settings (company profile, banking tariff,
+      // payment terms). Quote-specific fields (buyer, product, quantities, prices)
+      // are never auto-restored — use "Saved Quotes" to reload a specific quote.
+      const dbSettingsRaw = await loadSettings().catch(() => null);
       const admin = readJson<AdminSettings>(ADMIN_STORAGE_KEY);
-      const draftTariff = draft.bankingTariff;
-      const adminTariff = admin.bankingTariff;
-      const dbTariff = (dbSettings as any)?.bankingTariff;
-      if (dbSettings || Object.keys(draft).length > 0 || Object.keys(admin).length > 0) {
-        setS({
-          ...defaultState,
-          ...draft,
-          ...admin,
-          ...(dbSettings || {}),
-          bankingTariff: { ...defaultState.bankingTariff, ...draftTariff, ...adminTariff, ...(dbTariff || {}) },
-        });
-      } else {
-        const now = new Date();
-        setS((current) => ({ ...current, quotationNumber: `VX-${now.getFullYear()}-0001`, quotationDate: now.toISOString().slice(0, 10) }));
+      // Purge any legacy full-state draft that pre-dated this change.
+      try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ }
+
+      const dbAdmin: Partial<AdminSettings> = {};
+      if (dbSettingsRaw) {
+        for (const k of adminKeys) {
+          const v = (dbSettingsRaw as any)[k];
+          if (v !== undefined) (dbAdmin as any)[k] = v;
+        }
       }
+      const adminTariff = admin.bankingTariff;
+      const dbTariff = dbAdmin.bankingTariff;
+
+      const now = new Date();
+      setS({
+        ...defaultState,
+        ...admin,
+        ...dbAdmin,
+        bankingTariff: { ...defaultState.bankingTariff, ...adminTariff, ...(dbTariff || {}) },
+        quotationNumber: `VX-${now.getFullYear()}-0001`,
+        quotationDate: now.toISOString().slice(0, 10),
+      });
+
       try { setSavedQuotes(await listQuotes()); } catch (e) { console.error(e); }
       const ok = await fetchLiveFx(false);
       if (!ok) setFxStatus("cached");
     })();
   }, []);
+
 
   // Mark FX as stale if >12h old
   useEffect(() => {
