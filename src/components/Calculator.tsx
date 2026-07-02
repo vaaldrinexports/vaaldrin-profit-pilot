@@ -713,14 +713,15 @@ export default function Calculator() {
 
   const saveAdminSettings = async () => {
     localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(pickAdminSettings(s)));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ }
     try {
-      await saveSettings(s);
+      await saveSettings(pickAdminSettings(s));
       toast.success("Admin settings saved to database");
     } catch (e: any) {
       toast.error(e?.message || "Database save failed");
     }
   };
+
 
   const navigate = useNavigate();
   const signOut = async () => {
