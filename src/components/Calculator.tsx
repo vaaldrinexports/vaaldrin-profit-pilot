@@ -718,7 +718,7 @@ export default function Calculator() {
       {/* Sidebar — desktop rail + mobile drawer */}
       <aside
         className={
-          "vx-sidebar no-print fixed inset-y-0 left-0 z-40 w-[260px] flex-col border-r border-black/40 " +
+          "vx-sidebar no-print fixed inset-y-0 left-0 z-40 w-[260px] flex-col " +
           (sidebarOpen ? "flex" : "hidden") +
           " lg:sticky lg:top-0 lg:z-20 lg:flex lg:h-screen"
         }
@@ -727,17 +727,17 @@ export default function Calculator() {
         <div className="flex items-center justify-between px-5 pt-5 pb-4">
           <div className="min-w-0">
             <div className="text-[11px] font-bold tracking-[0.2em]" style={{ color: "var(--gold)" }}>VAALDRIN</div>
-            <div className="text-[10px] tracking-widest text-white/50">EXPORTS · CFO SUITE</div>
+            <div className="text-[10px] tracking-widest text-muted-foreground">EXPORTS · CFO SUITE</div>
           </div>
           <button
-            className="lg:hidden rounded-md p-1.5 hover:bg-white/10"
+            className="lg:hidden rounded-md p-1.5 hover:bg-muted"
             onClick={() => setSidebarOpen(false)}
             aria-label="Close navigation"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="mx-3 mb-3 h-px bg-white/10" />
+        <div className="mx-3 mb-3 h-px bg-border" />
         <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
           {[
             { id: "inputs", label: "Dashboard", icon: LayoutDashboard },
@@ -750,7 +750,7 @@ export default function Calculator() {
             { id: "incoterms", label: "Documents", icon: FileDown },
             { id: "negotiation", label: "Negotiation", icon: Sparkles },
             { id: "scenario", label: "Scenarios", icon: Copy },
-            { id: "audit", label: "Analytics", icon: History },
+            { id: "audit", label: "Saved Quotes", icon: History },
             { id: "admin", label: "Settings", icon: Settings },
           ].map((item, i) => {
             const Icon = item.icon;
