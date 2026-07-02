@@ -323,6 +323,8 @@ export const defaultState: CalculatorState = {
   companyGstin: "",
   companyIec: "",
   companyFssai: "",
+  companyPan: "",
+  companyWebsite: "",
   companyEmail: "",
   companyPhone: "",
   companyBankName: "",
@@ -337,6 +339,8 @@ export const defaultState: CalculatorState = {
 
   portOfLoading: "",
   portOfDischarge: "",
+  finalDestination: "",
+  modeOfTransport: "Sea Freight",
   countryOfOrigin: "India",
   shipmentLeadTimeDays: 30,
   vesselFlight: "",
@@ -344,12 +348,30 @@ export const defaultState: CalculatorState = {
   sealNo: "",
   blAwbNumber: "",
   notifyParty: "",
+  lcNumber: "",
+  purchaseOrderNo: "",
+  purchaseOrderDate: "",
+
+  buyerTaxRegistration: "",
+
+  botanicalName: "",
+  cropYear: "",
+  batchLotNumber: "",
+  manufacturingDate: "",
+  bestBeforeDate: "",
+  storageCondition: "Store in a cool, dry place away from direct sunlight",
+  manufacturerName: "",
 
   packageType: "",
   packageDimensionsCm: "",
   packagesCountOverride: 0,
   netWeightPerPackageKg: 0,
   marksAndNumbers: "",
+  totalVolumeCbm: 0,
+
+  invoiceFreightCharges: 0,
+  invoiceInsuranceCharges: 0,
+  invoiceOtherCharges: 0,
 
   qualityStandard: "",
   qualityMoisturePct: 0,
