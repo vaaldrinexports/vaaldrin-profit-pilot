@@ -72,13 +72,13 @@ const STORAGE_KEY = "vaaldrin.calc.v1";
 const ADMIN_STORAGE_KEY = "vaaldrin.admin.v1";
 
 type AdminSettings = Pick<CalculatorState,
-  | "companyName" | "companyAddress" | "companyGstin" | "companyIec" | "companyFssai" | "companyEmail" | "companyPhone"
+  | "companyName" | "companyAddress" | "companyGstin" | "companyIec" | "companyFssai" | "companyPan" | "companyWebsite" | "companyEmail" | "companyPhone"
   | "companyBankName" | "companyBankAccount" | "companyBankSwift" | "companyBankBranch" | "companyBankIfsc" | "companyAdCode"
   | "paymentTerms" | "quotationValidityDays" | "bankingTariff"
 >;
 
 const adminKeys: (keyof AdminSettings)[] = [
-  "companyName", "companyAddress", "companyGstin", "companyIec", "companyFssai", "companyEmail", "companyPhone",
+  "companyName", "companyAddress", "companyGstin", "companyIec", "companyFssai", "companyPan", "companyWebsite", "companyEmail", "companyPhone",
   "companyBankName", "companyBankAccount", "companyBankSwift", "companyBankBranch", "companyBankIfsc", "companyAdCode",
   "paymentTerms", "quotationValidityDays", "bankingTariff",
 ];
@@ -1772,6 +1772,8 @@ export default function Calculator() {
                 <TextField label="IEC code" value={s.companyIec} onChange={(v) => set("companyIec", v)} placeholder="10-digit IEC issued by DGFT" />
                 <TextField label="GSTIN" value={s.companyGstin} onChange={(v) => set("companyGstin", v)} placeholder="15-digit GSTIN" />
                 <TextField label="FSSAI licence" value={s.companyFssai} onChange={(v) => set("companyFssai", v)} placeholder="14-digit FSSAI (when available)" />
+                <TextField label="PAN" value={s.companyPan} onChange={(v) => set("companyPan", v)} placeholder="10-char PAN" />
+                <TextField label="Website" value={s.companyWebsite} onChange={(v) => set("companyWebsite", v)} placeholder="www.vaaldrin.com" />
                 <TextField label="Company email" value={s.companyEmail} onChange={(v) => set("companyEmail", v)} placeholder="exports@vaaldrin.com" />
                 <TextField label="Company phone" value={s.companyPhone} onChange={(v) => set("companyPhone", v)} placeholder="+91 ..." />
               </div>
