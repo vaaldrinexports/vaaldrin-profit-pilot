@@ -215,8 +215,11 @@ function drawFooter(doc: jsPDF, W: number, H: number, margin: number, extra?: st
 
 // Draws a very faint centered brand mark used as a page watermark.
 function drawWatermark(doc: jsPDF, W: number, H: number) {
-  const gs = doc.GState ? new doc.GState({ opacity: 0.05 }) : null;
-  if (gs) doc.setGState(gs);
+  const d = doc as unknown as { GState?: new (o: { opacity: number }) => unknown; setGState?: (g: unknown) => void };
+  const setOpacity = (v: number) => {
+    if (d.GState && d.setGState) d.setGState(new d.GState({ opacity: v }));
+  };
+  setOpacity(0.05);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(72);
   doc.setTextColor(...BRAND.red);
@@ -224,9 +227,7 @@ function drawWatermark(doc: jsPDF, W: number, H: number) {
   doc.setFontSize(20);
   doc.setTextColor(...BRAND.gold);
   doc.text("EXPORTS  •  PREMIUM INDIAN AGRI EXPORTS", W / 2, H / 2 + 40, { align: "center", angle: -30 });
-  // reset opacity
-  const reset = doc.GState ? new doc.GState({ opacity: 1 }) : null;
-  if (reset) doc.setGState(reset);
+  setOpacity(1);
   doc.setTextColor(...BRAND.text);
 }
 
