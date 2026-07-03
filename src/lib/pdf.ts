@@ -10,12 +10,12 @@ import logoAsset from "@/assets/vaaldrin-logo.png.asset.json";
 // ============================================================
 
 const BRAND = {
-  red: [166, 29, 36] as [number, number, number],       // #A61D24
-  gold: [201, 154, 46] as [number, number, number],     // #C99A2E
-  text: [17, 24, 39] as [number, number, number],       // #111827
+  red: [122, 0, 25] as [number, number, number],        // #7A0019 Deep Burgundy
+  gold: [201, 162, 39] as [number, number, number],     // #C9A227 Metallic Gold
+  text: [30, 30, 30] as [number, number, number],       // #1E1E1E Dark Charcoal
   muted: [107, 114, 128] as [number, number, number],   // #6B7280
   border: [229, 231, 235] as [number, number, number],  // #E5E7EB
-  tableHeader: [248, 249, 250] as [number, number, number], // #F8F9FA
+  tableHeader: [250, 246, 235] as [number, number, number], // warm cream — gold tint
   white: [255, 255, 255] as [number, number, number],
 };
 
