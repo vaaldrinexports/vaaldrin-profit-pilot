@@ -2081,13 +2081,24 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
       {/* Shipment / Origin */}
       {(showOriginDestination || showContainerInfo) && (
         <div className="mt-5 grid grid-cols-3 gap-4 text-xs border-t pt-4" style={{ borderColor: "#E5E7EB" }}>
-          {showOriginDestination && <><div><div className="text-[#6B7280]">Country of Origin</div><div className="font-semibold">India</div></div>
-          <div><div className="text-[#6B7280]">Country of Destination</div><div className="font-semibold">{s.buyerCountry || "—"}</div></div>
-          <div><div className="text-[#6B7280]">Incoterm</div><div className="font-semibold">{s.incoterm} (Incoterms 2020)</div></div></>}
+          {showOriginDestination && <>
+            <div><div className="text-[#6B7280]">Country of Origin</div><div className="font-semibold">India</div></div>
+            <div><div className="text-[#6B7280]">Country of Destination</div><div className="font-semibold">{s.buyerCountry || "—"}</div></div>
+            <div><div className="text-[#6B7280]">Incoterm</div><div className="font-semibold">{s.incoterm} (Incoterms 2020)</div></div>
+            <div><div className="text-[#6B7280]">Port of Loading</div><div className="font-semibold">{s.portOfLoading || "—"}</div></div>
+            <div><div className="text-[#6B7280]">Port of Discharge</div><div className="font-semibold">{s.portOfDischarge || "—"}</div></div>
+            <div><div className="text-[#6B7280]">Final Destination</div><div className="font-semibold">{s.finalDestination || s.buyerCountry || "—"}</div></div>
+            {s.modeOfTransport && <div><div className="text-[#6B7280]">Mode of Transport</div><div className="font-semibold">{s.modeOfTransport}</div></div>}
+            {s.vesselFlight && <div><div className="text-[#6B7280]">Vessel / Flight</div><div className="font-semibold">{s.vesselFlight}</div></div>}
+            {s.shipmentLeadTimeDays ? <div><div className="text-[#6B7280]">Lead Time</div><div className="font-semibold">{s.shipmentLeadTimeDays} days</div></div> : null}
+          </>}
           {showContainerInfo && !showOriginDestination && <>
-            <div><div className="text-[#6B7280]">Container No.</div><div className="font-semibold">—</div></div>
-            <div><div className="text-[#6B7280]">Seal No.</div><div className="font-semibold">—</div></div>
+            <div><div className="text-[#6B7280]">Port of Loading</div><div className="font-semibold">{s.portOfLoading || "—"}</div></div>
+            <div><div className="text-[#6B7280]">Port of Discharge</div><div className="font-semibold">{s.portOfDischarge || "—"}</div></div>
             <div><div className="text-[#6B7280]">Incoterm</div><div className="font-semibold">{s.incoterm}</div></div>
+            <div><div className="text-[#6B7280]">Container No.</div><div className="font-semibold">{s.containerNo || "—"}</div></div>
+            <div><div className="text-[#6B7280]">Seal No.</div><div className="font-semibold">{s.sealNo || "—"}</div></div>
+            <div><div className="text-[#6B7280]">Vessel / Flight</div><div className="font-semibold">{s.vesselFlight || "—"}</div></div>
           </>}
         </div>
       )}
