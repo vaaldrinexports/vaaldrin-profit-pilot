@@ -2089,7 +2089,7 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
             <div><div className="text-[#6B7280]">Port of Discharge</div><div className="font-semibold">{s.portOfDischarge || "—"}</div></div>
             <div><div className="text-[#6B7280]">Final Destination</div><div className="font-semibold">{s.finalDestination || s.buyerCountry || "—"}</div></div>
             {s.modeOfTransport && <div><div className="text-[#6B7280]">Mode of Transport</div><div className="font-semibold">{s.modeOfTransport}</div></div>}
-            {s.vesselFlightNo && <div><div className="text-[#6B7280]">Vessel / Flight</div><div className="font-semibold">{s.vesselFlightNo}</div></div>}
+            {s.vesselFlight && <div><div className="text-[#6B7280]">Vessel / Flight</div><div className="font-semibold">{s.vesselFlight}</div></div>}
             {s.shipmentLeadTimeDays ? <div><div className="text-[#6B7280]">Lead Time</div><div className="font-semibold">{s.shipmentLeadTimeDays} days</div></div> : null}
           </>}
           {showContainerInfo && !showOriginDestination && <>
@@ -2098,7 +2098,7 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
             <div><div className="text-[#6B7280]">Incoterm</div><div className="font-semibold">{s.incoterm}</div></div>
             <div><div className="text-[#6B7280]">Container No.</div><div className="font-semibold">{s.containerNo || "—"}</div></div>
             <div><div className="text-[#6B7280]">Seal No.</div><div className="font-semibold">{s.sealNo || "—"}</div></div>
-            <div><div className="text-[#6B7280]">Vessel / Flight</div><div className="font-semibold">{s.vesselFlightNo || "—"}</div></div>
+            <div><div className="text-[#6B7280]">Vessel / Flight</div><div className="font-semibold">{s.vesselFlight || "—"}</div></div>
           </>}
         </div>
       )}
