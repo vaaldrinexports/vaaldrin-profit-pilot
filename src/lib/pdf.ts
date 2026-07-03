@@ -173,22 +173,61 @@ function applyTableTheme(): Parameters<typeof autoTable>[1] {
 }
 
 function drawFooter(doc: jsPDF, W: number, H: number, margin: number, extra?: string) {
+  const s = (doc as unknown as { __vxState?: CalculatorState }).__vxState;
+  // Double gold divider
   doc.setDrawColor(...BRAND.gold);
-  doc.setLineWidth(0.6);
-  doc.line(margin, H - 50, W - margin, H - 50);
+  doc.setLineWidth(0.9);
+  doc.line(margin, H - 58, W - margin, H - 58);
+  doc.setLineWidth(0.25);
+  doc.line(margin, H - 55, W - margin, H - 55);
+
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(...BRAND.red);
-  doc.text("VAALDRIN EXPORTS", margin, H - 36);
+  doc.text((s?.companyName || "VAALDRIN EXPORTS").toUpperCase(), margin, H - 42);
+
+  // Line 1: address + contact
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...BRAND.muted);
-  doc.setFontSize(7.5);
-  doc.text("Registered Export House • Made in India", margin, H - 24);
-  if (extra) {
-    doc.text(extra, W - margin, H - 24, { align: "right" });
+  doc.setFontSize(7);
+  const contactBits: string[] = [];
+  if (s?.companyAddress) contactBits.push(s.companyAddress);
+  if (s?.companyPhone) contactBits.push(s.companyPhone);
+  if (s?.companyEmail) contactBits.push(s.companyEmail);
+  if (s?.companyWebsite) contactBits.push(s.companyWebsite);
+  if (contactBits.length) {
+    doc.text(contactBits.join("  •  "), margin, H - 32, { maxWidth: W - margin * 2 });
   }
+
+  // Line 2: statutory IDs
+  const idBits: string[] = [];
+  if (s?.companyIec) idBits.push(`IEC ${s.companyIec}`);
+  if (s?.companyGstin) idBits.push(`GSTIN ${s.companyGstin}`);
+  if (s?.companyFssai) idBits.push(`FSSAI ${s.companyFssai}`);
+  if (s?.companyAdCode) idBits.push(`AD Code ${s.companyAdCode}`);
+  if (idBits.length) doc.text(idBits.join("  •  "), margin, H - 22);
+
   const pages = doc.getNumberOfPages();
-  doc.text(`Page ${doc.getCurrentPageInfo().pageNumber} of ${pages}`, W / 2, H - 24, { align: "center" });
+  doc.setTextColor(...BRAND.muted);
+  doc.text(`Page ${doc.getCurrentPageInfo().pageNumber} of ${pages}`, W - margin, H - 22, { align: "right" });
+  if (extra) doc.text(extra, W / 2, H - 22, { align: "center" });
+}
+
+// Draws a very faint centered brand mark used as a page watermark.
+function drawWatermark(doc: jsPDF, W: number, H: number) {
+  const gs = doc.GState ? new doc.GState({ opacity: 0.05 }) : null;
+  if (gs) doc.setGState(gs);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(72);
+  doc.setTextColor(...BRAND.red);
+  doc.text("VAALDRIN", W / 2, H / 2, { align: "center", angle: -30 });
+  doc.setFontSize(20);
+  doc.setTextColor(...BRAND.gold);
+  doc.text("EXPORTS  •  PREMIUM INDIAN AGRI EXPORTS", W / 2, H / 2 + 40, { align: "center", angle: -30 });
+  // reset opacity
+  const reset = doc.GState ? new doc.GState({ opacity: 1 }) : null;
+  if (reset) doc.setGState(reset);
+  doc.setTextColor(...BRAND.text);
 }
 
 // Remove trailing pages auto-created by jsPDF/autoTable overflow that were
@@ -210,12 +249,13 @@ function pruneEmptyTrailingPages(doc: jsPDF) {
   }
 }
 
-// Finalize: prune blank trailing pages, then draw footer on every remaining page.
+// Finalize: prune blank trailing pages, then draw watermark + footer on every remaining page.
 function finalizeDoc(doc: jsPDF, W: number, H: number, margin: number, extra?: string) {
   pruneEmptyTrailingPages(doc);
   const total = doc.getNumberOfPages();
   for (let i = 1; i <= total; i++) {
     doc.setPage(i);
+    drawWatermark(doc, W, H);
     drawFooter(doc, W, H, margin, extra);
   }
 }
