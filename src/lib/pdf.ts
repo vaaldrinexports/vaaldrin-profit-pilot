@@ -48,6 +48,7 @@ interface DocShellOptions {
   docDate: string;
   confidential?: boolean;
   proforma?: boolean;
+  state?: CalculatorState;
 }
 
 async function buildShell(opts: DocShellOptions) {
@@ -55,24 +56,33 @@ async function buildShell(opts: DocShellOptions) {
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
   const margin = 40;
+  const s = opts.state;
 
   const logo = await loadLogoDataUrl();
   if (logo) {
-    // Logo width 60pt (~ small/medium per spec). Square aspect.
-    try { doc.addImage(logo, "PNG", margin, 32, 60, 60); } catch { /* ignore */ }
+    try { doc.addImage(logo, "PNG", margin, 30, 62, 62); } catch { /* ignore */ }
   }
 
   // Company name + tagline
   doc.setTextColor(...BRAND.text);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("VAALDRIN EXPORTS", margin + 72, 52);
+  doc.setFontSize(15);
+  doc.text((s?.companyName || "VAALDRIN EXPORTS").toUpperCase(), margin + 74, 52);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
-  doc.setTextColor(...BRAND.muted);
-  doc.text("International Trade • Export House", margin + 72, 66);
+  doc.setTextColor(...BRAND.gold);
+  doc.text("Exporters of Premium Indian Agricultural Products", margin + 74, 66);
 
-  // Document title (right) — red, bold, 18pt
+  // Compliance strip under company name (IEC / GSTIN / FSSAI)
+  doc.setTextColor(...BRAND.muted);
+  doc.setFontSize(7.5);
+  const idBits: string[] = [];
+  if (s?.companyIec) idBits.push(`IEC: ${s.companyIec}`);
+  if (s?.companyGstin) idBits.push(`GSTIN: ${s.companyGstin}`);
+  if (s?.companyFssai) idBits.push(`FSSAI: ${s.companyFssai}`);
+  if (idBits.length) doc.text(idBits.join("   •   "), margin + 74, 80);
+
+  // Document title (right) — burgundy, bold, 18pt
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(...BRAND.red);
@@ -98,10 +108,15 @@ async function buildShell(opts: DocShellOptions) {
     doc.text("PROFORMA — NOT A TAX INVOICE", W - margin, 98, { align: "right" });
   }
 
-  // Thin gold divider under header
+  // Double gold divider under header (thick + hair line)
   doc.setDrawColor(...BRAND.gold);
-  doc.setLineWidth(0.8);
+  doc.setLineWidth(1.2);
   doc.line(margin, 108, W - margin, 108);
+  doc.setLineWidth(0.3);
+  doc.line(margin, 112, W - margin, 112);
+
+  // Cache brand context for finalize (footer + watermark)
+  (doc as unknown as { __vxState?: CalculatorState }).__vxState = s;
 
   return { doc, W, H, margin, contentTop: 130 };
 }
