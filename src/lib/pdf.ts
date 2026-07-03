@@ -358,6 +358,7 @@ export async function generateQuotationPDF(s: CalculatorState) {
     title: "EXPORT QUOTATION",
     docNumber: s.quotationNumber,
     docDate: s.quotationDate,
+    state: s,
   });
 
   drawSectionHeader(doc, "Exporter", margin, 140);
@@ -434,6 +435,7 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
     title: "PROFORMA INVOICE",
     docNumber: `PI-${s.quotationNumber}`,
     docDate: s.quotationDate,
+    state: s,
     proforma: true,
   });
 
@@ -527,6 +529,7 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
     title: "COMMERCIAL INVOICE",
     docNumber: `CI-${s.quotationNumber}`,
     docDate: s.quotationDate,
+    state: s,
   });
 
   drawSectionHeader(doc, "Exporter", margin, 140);
@@ -649,6 +652,7 @@ export async function generatePackingListPDF(s: CalculatorState) {
     title: "PACKING LIST",
     docNumber: `PL-${s.quotationNumber}`,
     docDate: s.quotationDate,
+    state: s,
   });
 
   drawSectionHeader(doc, "Exporter", margin, 140);
@@ -731,6 +735,7 @@ export async function generateInternalCostSheetPDF(s: CalculatorState) {
     title: "INTERNAL COST ANALYSIS",
     docNumber: s.quotationNumber,
     docDate: s.quotationDate,
+    state: s,
     confidential: true,
   });
 
@@ -837,6 +842,7 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
     title: "PURCHASE ORDER",
     docNumber: `PO-${s.quotationNumber}`,
     docDate: s.quotationDate,
+    state: s,
   });
 
   drawSectionHeader(doc, "Supplier", margin, 140);
@@ -938,6 +944,7 @@ export async function generateSalesContractPDF(s: CalculatorState) {
     title: "EXPORT SALES CONTRACT",
     docNumber: `SC-${s.quotationNumber}`,
     docDate: s.quotationDate,
+    state: s,
   });
 
   drawSectionHeader(doc, "Seller", margin, 140);
