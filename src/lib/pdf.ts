@@ -10,12 +10,12 @@ import logoAsset from "@/assets/vaaldrin-logo.png.asset.json";
 // ============================================================
 
 const BRAND = {
-  red: [166, 29, 36] as [number, number, number],       // #A61D24
-  gold: [201, 154, 46] as [number, number, number],     // #C99A2E
-  text: [17, 24, 39] as [number, number, number],       // #111827
+  red: [122, 0, 25] as [number, number, number],        // #7A0019 Deep Burgundy
+  gold: [201, 162, 39] as [number, number, number],     // #C9A227 Metallic Gold
+  text: [30, 30, 30] as [number, number, number],       // #1E1E1E Dark Charcoal
   muted: [107, 114, 128] as [number, number, number],   // #6B7280
   border: [229, 231, 235] as [number, number, number],  // #E5E7EB
-  tableHeader: [248, 249, 250] as [number, number, number], // #F8F9FA
+  tableHeader: [250, 246, 235] as [number, number, number], // warm cream — gold tint
   white: [255, 255, 255] as [number, number, number],
 };
 
@@ -48,6 +48,7 @@ interface DocShellOptions {
   docDate: string;
   confidential?: boolean;
   proforma?: boolean;
+  state?: CalculatorState;
 }
 
 async function buildShell(opts: DocShellOptions) {
@@ -55,24 +56,33 @@ async function buildShell(opts: DocShellOptions) {
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
   const margin = 40;
+  const s = opts.state;
 
   const logo = await loadLogoDataUrl();
   if (logo) {
-    // Logo width 60pt (~ small/medium per spec). Square aspect.
-    try { doc.addImage(logo, "PNG", margin, 32, 60, 60); } catch { /* ignore */ }
+    try { doc.addImage(logo, "PNG", margin, 30, 62, 62); } catch { /* ignore */ }
   }
 
   // Company name + tagline
   doc.setTextColor(...BRAND.text);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("VAALDRIN EXPORTS", margin + 72, 52);
+  doc.setFontSize(15);
+  doc.text((s?.companyName || "VAALDRIN EXPORTS").toUpperCase(), margin + 74, 52);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
-  doc.setTextColor(...BRAND.muted);
-  doc.text("International Trade • Export House", margin + 72, 66);
+  doc.setTextColor(...BRAND.gold);
+  doc.text("Exporters of Premium Indian Agricultural Products", margin + 74, 66);
 
-  // Document title (right) — red, bold, 18pt
+  // Compliance strip under company name (IEC / GSTIN / FSSAI)
+  doc.setTextColor(...BRAND.muted);
+  doc.setFontSize(7.5);
+  const idBits: string[] = [];
+  if (s?.companyIec) idBits.push(`IEC: ${s.companyIec}`);
+  if (s?.companyGstin) idBits.push(`GSTIN: ${s.companyGstin}`);
+  if (s?.companyFssai) idBits.push(`FSSAI: ${s.companyFssai}`);
+  if (idBits.length) doc.text(idBits.join("   •   "), margin + 74, 80);
+
+  // Document title (right) — burgundy, bold, 18pt
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(...BRAND.red);
@@ -98,10 +108,15 @@ async function buildShell(opts: DocShellOptions) {
     doc.text("PROFORMA — NOT A TAX INVOICE", W - margin, 98, { align: "right" });
   }
 
-  // Thin gold divider under header
+  // Double gold divider under header (thick + hair line)
   doc.setDrawColor(...BRAND.gold);
-  doc.setLineWidth(0.8);
+  doc.setLineWidth(1.2);
   doc.line(margin, 108, W - margin, 108);
+  doc.setLineWidth(0.3);
+  doc.line(margin, 112, W - margin, 112);
+
+  // Cache brand context for finalize (footer + watermark)
+  (doc as unknown as { __vxState?: CalculatorState }).__vxState = s;
 
   return { doc, W, H, margin, contentTop: 130 };
 }
@@ -158,22 +173,62 @@ function applyTableTheme(): Parameters<typeof autoTable>[1] {
 }
 
 function drawFooter(doc: jsPDF, W: number, H: number, margin: number, extra?: string) {
+  const s = (doc as unknown as { __vxState?: CalculatorState }).__vxState;
+  // Double gold divider
   doc.setDrawColor(...BRAND.gold);
-  doc.setLineWidth(0.6);
-  doc.line(margin, H - 50, W - margin, H - 50);
+  doc.setLineWidth(0.9);
+  doc.line(margin, H - 58, W - margin, H - 58);
+  doc.setLineWidth(0.25);
+  doc.line(margin, H - 55, W - margin, H - 55);
+
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(...BRAND.red);
-  doc.text("VAALDRIN EXPORTS", margin, H - 36);
+  doc.text((s?.companyName || "VAALDRIN EXPORTS").toUpperCase(), margin, H - 42);
+
+  // Line 1: address + contact
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...BRAND.muted);
-  doc.setFontSize(7.5);
-  doc.text("Registered Export House • Made in India", margin, H - 24);
-  if (extra) {
-    doc.text(extra, W - margin, H - 24, { align: "right" });
+  doc.setFontSize(7);
+  const contactBits: string[] = [];
+  if (s?.companyAddress) contactBits.push(s.companyAddress);
+  if (s?.companyPhone) contactBits.push(s.companyPhone);
+  if (s?.companyEmail) contactBits.push(s.companyEmail);
+  if (s?.companyWebsite) contactBits.push(s.companyWebsite);
+  if (contactBits.length) {
+    doc.text(contactBits.join("  •  "), margin, H - 32, { maxWidth: W - margin * 2 });
   }
+
+  // Line 2: statutory IDs
+  const idBits: string[] = [];
+  if (s?.companyIec) idBits.push(`IEC ${s.companyIec}`);
+  if (s?.companyGstin) idBits.push(`GSTIN ${s.companyGstin}`);
+  if (s?.companyFssai) idBits.push(`FSSAI ${s.companyFssai}`);
+  if (s?.companyAdCode) idBits.push(`AD Code ${s.companyAdCode}`);
+  if (idBits.length) doc.text(idBits.join("  •  "), margin, H - 22);
+
   const pages = doc.getNumberOfPages();
-  doc.text(`Page ${doc.getCurrentPageInfo().pageNumber} of ${pages}`, W / 2, H - 24, { align: "center" });
+  doc.setTextColor(...BRAND.muted);
+  doc.text(`Page ${doc.getCurrentPageInfo().pageNumber} of ${pages}`, W - margin, H - 22, { align: "right" });
+  if (extra) doc.text(extra, W / 2, H - 22, { align: "center" });
+}
+
+// Draws a very faint centered brand mark used as a page watermark.
+function drawWatermark(doc: jsPDF, W: number, H: number) {
+  const d = doc as unknown as { GState?: new (o: { opacity: number }) => unknown; setGState?: (g: unknown) => void };
+  const setOpacity = (v: number) => {
+    if (d.GState && d.setGState) d.setGState(new d.GState({ opacity: v }));
+  };
+  setOpacity(0.05);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(72);
+  doc.setTextColor(...BRAND.red);
+  doc.text("VAALDRIN", W / 2, H / 2, { align: "center", angle: -30 });
+  doc.setFontSize(20);
+  doc.setTextColor(...BRAND.gold);
+  doc.text("EXPORTS  •  PREMIUM INDIAN AGRI EXPORTS", W / 2, H / 2 + 40, { align: "center", angle: -30 });
+  setOpacity(1);
+  doc.setTextColor(...BRAND.text);
 }
 
 // Remove trailing pages auto-created by jsPDF/autoTable overflow that were
@@ -195,12 +250,13 @@ function pruneEmptyTrailingPages(doc: jsPDF) {
   }
 }
 
-// Finalize: prune blank trailing pages, then draw footer on every remaining page.
+// Finalize: prune blank trailing pages, then draw watermark + footer on every remaining page.
 function finalizeDoc(doc: jsPDF, W: number, H: number, margin: number, extra?: string) {
   pruneEmptyTrailingPages(doc);
   const total = doc.getNumberOfPages();
   for (let i = 1; i <= total; i++) {
     doc.setPage(i);
+    drawWatermark(doc, W, H);
     drawFooter(doc, W, H, margin, extra);
   }
 }
@@ -302,6 +358,7 @@ export async function generateQuotationPDF(s: CalculatorState) {
     title: "EXPORT QUOTATION",
     docNumber: s.quotationNumber,
     docDate: s.quotationDate,
+    state: s,
   });
 
   drawSectionHeader(doc, "Exporter", margin, 140);
@@ -378,6 +435,7 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
     title: "PROFORMA INVOICE",
     docNumber: `PI-${s.quotationNumber}`,
     docDate: s.quotationDate,
+    state: s,
     proforma: true,
   });
 
@@ -471,6 +529,7 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
     title: "COMMERCIAL INVOICE",
     docNumber: `CI-${s.quotationNumber}`,
     docDate: s.quotationDate,
+    state: s,
   });
 
   drawSectionHeader(doc, "Exporter", margin, 140);
@@ -593,6 +652,7 @@ export async function generatePackingListPDF(s: CalculatorState) {
     title: "PACKING LIST",
     docNumber: `PL-${s.quotationNumber}`,
     docDate: s.quotationDate,
+    state: s,
   });
 
   drawSectionHeader(doc, "Exporter", margin, 140);
@@ -675,6 +735,7 @@ export async function generateInternalCostSheetPDF(s: CalculatorState) {
     title: "INTERNAL COST ANALYSIS",
     docNumber: s.quotationNumber,
     docDate: s.quotationDate,
+    state: s,
     confidential: true,
   });
 
@@ -781,6 +842,7 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
     title: "PURCHASE ORDER",
     docNumber: `PO-${s.quotationNumber}`,
     docDate: s.quotationDate,
+    state: s,
   });
 
   drawSectionHeader(doc, "Supplier", margin, 140);
@@ -882,6 +944,7 @@ export async function generateSalesContractPDF(s: CalculatorState) {
     title: "EXPORT SALES CONTRACT",
     docNumber: `SC-${s.quotationNumber}`,
     docDate: s.quotationDate,
+    state: s,
   });
 
   drawSectionHeader(doc, "Seller", margin, 140);
