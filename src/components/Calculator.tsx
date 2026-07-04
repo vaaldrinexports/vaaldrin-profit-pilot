@@ -2229,7 +2229,7 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
                   src={SIGNATURE_PNG_DATA_URL}
                   alt="Signature"
                   className="absolute left-0 select-none pointer-events-none"
-                  style={{ bottom: "-10px", width: "150px", transform: "rotate(-4deg)" }}
+                  style={{ bottom: "-10px", width: "95px", transform: "rotate(-4deg)" }}
                 />
               </div>
               <div className="border-t border-black/60 pt-1">
@@ -2247,7 +2247,7 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
                   src={SIGNATURE_PNG_DATA_URL}
                   alt="Signature"
                   className="absolute right-0 select-none pointer-events-none"
-                  style={{ bottom: "-10px", width: "150px", transform: "rotate(-4deg)" }}
+                  style={{ bottom: "-10px", width: "95px", transform: "rotate(-4deg)" }}
                 />
               </div>
               <div className="border-t border-black/60 w-48 pt-1 ml-auto text-right">
