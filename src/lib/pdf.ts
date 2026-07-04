@@ -1046,7 +1046,15 @@ export async function generateSalesContractPDF(s: CalculatorState) {
   doc.setFontSize(8.5);
   doc.setTextColor(...BRAND.muted);
   doc.text("Authorized Signatory", margin, yy + 50);
-  doc.text("Authorized Signatory", W / 2 + 10, yy + 50);
+  // Seller name/title under the signed line
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...BRAND.text);
+  doc.text("Vishwas M.H.", W / 2 + 10, yy + 50);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(...BRAND.muted);
+  doc.text(`Proprietor, ${s.companyName || "Vaaldrin Exports"}`, W / 2 + 10, yy + 62);
 
   finalizeDoc(doc, W, H, margin);
   doc.save(`sales-contract-${s.quotationNumber}.pdf`);
