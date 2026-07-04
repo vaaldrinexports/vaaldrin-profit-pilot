@@ -13,12 +13,12 @@ function drawInkSignature(
   yLine: number,
   lineWidth: number,
 ) {
-  const sigW = Math.min(lineWidth * 0.85, 150);
+  const sigW = Math.min(lineWidth * 0.55, 95);
   const sigH = sigW / SIGNATURE_ASPECT;
   // Nudge left of line start so the loop hangs past the rule, and lift so the
   // baseline of the stroke crosses the line rather than sits above it.
-  const x = xLineStart + lineWidth * 0.05;
-  const y = yLine - sigH * 0.78;
+  const x = xLineStart + lineWidth * 0.08;
+  const y = yLine - sigH * 0.72;
   try {
     // jsPDF supports rotation via the 7th arg (degrees). Slight tilt for realism.
     (doc as unknown as {
