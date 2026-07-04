@@ -1032,6 +1032,8 @@ export async function generateSalesContractPDF(s: CalculatorState) {
   doc.setTextColor(...BRAND.text);
   doc.text("Buyer", margin, yy);
   doc.text(`Seller (${s.companyName || "Vaaldrin Exports"})`, W / 2 + 10, yy);
+  // Seller ink signature (buyer side stays blank for counter-party)
+  drawInkSignature(doc, W / 2 + 10, yy + 36, 200);
   doc.setDrawColor(...BRAND.text);
   doc.setLineWidth(0.5);
   doc.line(margin, yy + 36, margin + 200, yy + 36);
