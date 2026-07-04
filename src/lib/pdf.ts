@@ -3,6 +3,35 @@ import autoTable from "jspdf-autotable";
 import type { CalculatorState } from "./calculations";
 import { computeCoreINR, fmtCurrency, getBuyerQuote } from "./calculations";
 import logoAsset from "@/assets/vaaldrin-logo.png.asset.json";
+import { SIGNATURE_PNG_DATA_URL, SIGNATURE_ASPECT } from "./signature";
+
+// Draws the extracted blue-ink signature so it sits naturally on/over the
+// signature line — angled slightly and overlapping the rule like a real pen stroke.
+function drawInkSignature(
+  doc: jsPDF,
+  xLineStart: number,
+  yLine: number,
+  lineWidth: number,
+) {
+  const sigW = Math.min(lineWidth * 0.85, 150);
+  const sigH = sigW / SIGNATURE_ASPECT;
+  // Nudge left of line start so the loop hangs past the rule, and lift so the
+  // baseline of the stroke crosses the line rather than sits above it.
+  const x = xLineStart + lineWidth * 0.05;
+  const y = yLine - sigH * 0.78;
+  try {
+    // jsPDF supports rotation via the 7th arg (degrees). Slight tilt for realism.
+    (doc as unknown as {
+      addImage: (
+        d: string, f: string, x: number, y: number, w: number, h: number,
+        alias?: string, compression?: string, rotation?: number,
+      ) => void;
+    }).addImage(SIGNATURE_PNG_DATA_URL, "PNG", x, y, sigW, sigH, "sig", "FAST", -4);
+  } catch {
+    // Fallback without rotation if the runtime signature differs
+    doc.addImage(SIGNATURE_PNG_DATA_URL, "PNG", x, y, sigW, sigH);
+  }
+}
 
 // ============================================================
 // VAALDRIN EXPORTS — Document Design System
