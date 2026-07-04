@@ -3,6 +3,35 @@ import autoTable from "jspdf-autotable";
 import type { CalculatorState } from "./calculations";
 import { computeCoreINR, fmtCurrency, getBuyerQuote } from "./calculations";
 import logoAsset from "@/assets/vaaldrin-logo.png.asset.json";
+import { SIGNATURE_PNG_DATA_URL, SIGNATURE_ASPECT } from "./signature";
+
+// Draws the extracted blue-ink signature so it sits naturally on/over the
+// signature line — angled slightly and overlapping the rule like a real pen stroke.
+function drawInkSignature(
+  doc: jsPDF,
+  xLineStart: number,
+  yLine: number,
+  lineWidth: number,
+) {
+  const sigW = Math.min(lineWidth * 0.85, 150);
+  const sigH = sigW / SIGNATURE_ASPECT;
+  // Nudge left of line start so the loop hangs past the rule, and lift so the
+  // baseline of the stroke crosses the line rather than sits above it.
+  const x = xLineStart + lineWidth * 0.05;
+  const y = yLine - sigH * 0.78;
+  try {
+    // jsPDF supports rotation via the 7th arg (degrees). Slight tilt for realism.
+    (doc as unknown as {
+      addImage: (
+        d: string, f: string, x: number, y: number, w: number, h: number,
+        alias?: string, compression?: string, rotation?: number,
+      ) => void;
+    }).addImage(SIGNATURE_PNG_DATA_URL, "PNG", x, y, sigW, sigH, "sig", "FAST", -4);
+  } catch {
+    // Fallback without rotation if the runtime signature differs
+    doc.addImage(SIGNATURE_PNG_DATA_URL, "PNG", x, y, sigW, sigH);
+  }
+}
 
 // ============================================================
 // VAALDRIN EXPORTS — Document Design System
@@ -266,6 +295,8 @@ function drawSignatureBlock(doc: jsPDF, W: number, y: number, label = "For Vaald
   doc.setFontSize(9.5);
   doc.setTextColor(...BRAND.text);
   doc.text(label, W - 240, y);
+  // Ink signature drawn BEFORE the line so the line crosses through the stroke
+  drawInkSignature(doc, W - 240, y + 36, 200);
   doc.setDrawColor(...BRAND.text);
   doc.setLineWidth(0.5);
   doc.line(W - 240, y + 36, W - 40, y + 36);
@@ -1001,6 +1032,8 @@ export async function generateSalesContractPDF(s: CalculatorState) {
   doc.setTextColor(...BRAND.text);
   doc.text("Buyer", margin, yy);
   doc.text(`Seller (${s.companyName || "Vaaldrin Exports"})`, W / 2 + 10, yy);
+  // Seller ink signature (buyer side stays blank for counter-party)
+  drawInkSignature(doc, W / 2 + 10, yy + 36, 200);
   doc.setDrawColor(...BRAND.text);
   doc.setLineWidth(0.5);
   doc.line(margin, yy + 36, margin + 200, yy + 36);
