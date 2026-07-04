@@ -2219,18 +2219,41 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
           <div className="grid grid-cols-2 gap-12 text-xs">
             <div>
               <div className="font-bold">Buyer</div>
-              <div className="border-t border-black/60 mt-10 pt-1 text-[10px] text-[#6B7280]">Authorized Signatory</div>
+              <div className="h-16" />
+              <div className="border-t border-black/60 pt-1 text-[10px] text-[#6B7280]">Authorized Signatory</div>
             </div>
             <div>
               <div className="font-bold">Seller ({s.companyName || "Vaaldrin Exports"})</div>
-              <div className="border-t border-black/60 mt-10 pt-1 text-[10px] text-[#6B7280]">Authorized Signatory</div>
+              <div className="relative h-16">
+                <img
+                  src={SIGNATURE_PNG_DATA_URL}
+                  alt="Signature"
+                  className="absolute left-0 select-none pointer-events-none"
+                  style={{ bottom: "-10px", width: "150px", transform: "rotate(-4deg)" }}
+                />
+              </div>
+              <div className="border-t border-black/60 pt-1">
+                <div className="text-[11px] font-semibold text-[#1E1E1E]">Vishwas M.H.</div>
+                <div className="text-[10px] text-[#6B7280]">Proprietor, {s.companyName || "Vaaldrin Exports"}</div>
+              </div>
             </div>
           </div>
         ) : !isInternal && (
           <div className="flex justify-end">
             <div className="text-right text-xs">
               <div className="font-bold">For {s.companyName || "Vaaldrin Exports"}</div>
-              <div className="border-t border-black/60 w-48 mt-10 pt-1 text-[10px] text-[#6B7280]">Authorized Signatory</div>
+              <div className="relative h-16 w-48 ml-auto">
+                <img
+                  src={SIGNATURE_PNG_DATA_URL}
+                  alt="Signature"
+                  className="absolute right-0 select-none pointer-events-none"
+                  style={{ bottom: "-10px", width: "150px", transform: "rotate(-4deg)" }}
+                />
+              </div>
+              <div className="border-t border-black/60 w-48 pt-1 ml-auto text-right">
+                <div className="text-[11px] font-semibold text-[#1E1E1E]">Vishwas M.H.</div>
+                <div className="text-[10px] text-[#6B7280]">Proprietor</div>
+              </div>
             </div>
           </div>
         )}
