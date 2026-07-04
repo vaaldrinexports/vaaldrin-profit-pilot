@@ -300,10 +300,14 @@ function drawSignatureBlock(doc: jsPDF, W: number, y: number, label = "For Vaald
   doc.setDrawColor(...BRAND.text);
   doc.setLineWidth(0.5);
   doc.line(W - 240, y + 36, W - 40, y + 36);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...BRAND.text);
+  doc.text("Vishwas M.H.", W - 240, y + 50);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setTextColor(...BRAND.muted);
-  doc.text("Authorized Signatory", W - 240, y + 50);
+  doc.text("Proprietor", W - 240, y + 62);
 }
 
 function lastY(doc: jsPDF): number {
