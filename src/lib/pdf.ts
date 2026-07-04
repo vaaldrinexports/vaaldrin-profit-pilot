@@ -295,6 +295,8 @@ function drawSignatureBlock(doc: jsPDF, W: number, y: number, label = "For Vaald
   doc.setFontSize(9.5);
   doc.setTextColor(...BRAND.text);
   doc.text(label, W - 240, y);
+  // Ink signature drawn BEFORE the line so the line crosses through the stroke
+  drawInkSignature(doc, W - 240, y + 36, 200);
   doc.setDrawColor(...BRAND.text);
   doc.setLineWidth(0.5);
   doc.line(W - 240, y + 36, W - 40, y + 36);
