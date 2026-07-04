@@ -2258,6 +2258,10 @@ function DocumentPreview({ s, priceINR, docType, forPrint }: {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
 
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
