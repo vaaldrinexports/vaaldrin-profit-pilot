@@ -444,17 +444,24 @@ export async function generateQuotationPDF(s: CalculatorState) {
   const yTC = lastY(doc) + 24;
   drawSectionHeader(doc, "Terms & Conditions", margin, yTC);
   doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...BRAND.text);
-  doc.text([
+  const tcItems = [
     `1. Payment: ${s.paymentTerms || "(to be finalised with buyer prior to order confirmation)"}.`,
-    `2. Delivery: ${s.incoterm} ${s.portOfLoading || "(POL TBC)"} → ${s.portOfDischarge || "(POD TBC)"}, Incoterms 2020.`,
+    `2. Delivery: ${s.incoterm} ${s.portOfLoading || "(POL TBC)"} to ${s.portOfDischarge || "(POD TBC)"}, Incoterms 2020.`,
     `3. Validity: ${s.quotationValidityDays} days from issue date.`,
     `4. Lead time: ${s.shipmentLeadTimeDays || 30} days from PO confirmation, subject to stock availability.`,
     `5. Country of Origin: ${s.countryOfOrigin || "India"}. Certificate of Origin available on request (FIEO / Chamber of Commerce).`,
     `6. Quality: as per agreed specification${s.qualityStandard ? ` (${s.qualityStandard})` : ""}. Pre-shipment inspection at buyer's option and cost.`,
     `7. All disputes subject to ${s.governingLaw || "Indian Law"} and exclusive jurisdiction of seller's office.`,
-  ], margin, yTC + 18, { lineHeightFactor: 1.5 });
+  ];
+  let yTCcur = yTC + 18;
+  const tcMaxW = W - margin * 2;
+  tcItems.forEach((t) => {
+    const wrapped = doc.splitTextToSize(t, tcMaxW);
+    doc.text(wrapped, margin, yTCcur);
+    yTCcur += wrapped.length * 11 + 3;
+  });
 
-  drawSignatureBlock(doc, W, yTC + 140, "For " + (s.companyName || "Vaaldrin Exports"));
+  drawSignatureBlock(doc, W, Math.max(yTC + 140, yTCcur + 30), "For " + (s.companyName || "Vaaldrin Exports"));
   finalizeDoc(doc, W, H, margin, "E&OE — Errors & Omissions Excepted");
   doc.save(`${s.quotationNumber || "quotation"}.pdf`);
 }
@@ -959,7 +966,7 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
   doc.text([
     `Delivery: by ${s.supplierDeliveryDate || "(date TBC)"} to ${s.companyAddress || "buyer warehouse"}.`,
     `Payment: ${s.supplierPaymentTerms || "Net 30 days from invoice receipt"}.`,
-    `Quality: ${s.productGrade || "—"}${s.qualityStandard ? `, conforming to ${s.qualityStandard}` : ""}${s.qualityMoisturePct > 0 ? `, moisture ≤ ${s.qualityMoisturePct}%` : ""}${s.qualityActiveCompoundLabel && s.qualityActiveCompoundPct > 0 ? `, ${s.qualityActiveCompoundLabel} ≥ ${s.qualityActiveCompoundPct}%` : ""}.`,
+    `Quality: ${s.productGrade || "—"}${s.qualityStandard ? `, conforming to ${s.qualityStandard}` : ""}${s.qualityMoisturePct > 0 ? `, moisture <= ${s.qualityMoisturePct}%` : ""}${s.qualityActiveCompoundLabel && s.qualityActiveCompoundPct > 0 ? `, ${s.qualityActiveCompoundLabel} >= ${s.qualityActiveCompoundPct}%` : ""}.`,
     `Place of Supply: ${s.supplierPlaceOfSupply || "—"} (under GST).`,
   ], margin, y + 18, { lineHeightFactor: 1.5 });
 
@@ -992,10 +999,10 @@ export async function generateSalesContractPDF(s: CalculatorState) {
   drawSectionHeader(doc, "Contract Terms", margin, y0);
   const qualityBits: string[] = [];
   if (s.qualityStandard) qualityBits.push(`Standard: ${s.qualityStandard}`);
-  if (s.qualityMoisturePct > 0) qualityBits.push(`Moisture ≤ ${s.qualityMoisturePct}%`);
+  if (s.qualityMoisturePct > 0) qualityBits.push(`Moisture <= ${s.qualityMoisturePct}%`);
   if (s.qualityActiveCompoundLabel && s.qualityActiveCompoundPct > 0)
-    qualityBits.push(`${s.qualityActiveCompoundLabel} ≥ ${s.qualityActiveCompoundPct}%`);
-  if (s.qualityAdmixturePct > 0) qualityBits.push(`Admixture ≤ ${s.qualityAdmixturePct}%`);
+    qualityBits.push(`${s.qualityActiveCompoundLabel} >= ${s.qualityActiveCompoundPct}%`);
+  if (s.qualityAdmixturePct > 0) qualityBits.push(`Admixture <= ${s.qualityAdmixturePct}%`);
   if (s.qualityBulkDensity) qualityBits.push(`Bulk density ${s.qualityBulkDensity}`);
   if (s.qualityNotes) qualityBits.push(s.qualityNotes);
   const qualityLine = qualityBits.length
@@ -1007,7 +1014,7 @@ export async function generateSalesContractPDF(s: CalculatorState) {
     ["2. Quantity", `${s.quantity} ${s.uom}.`],
     ["3. Price", `${s.contractCurrency} ${fmtCurrency(quote.unitPrice, s.contractCurrency)} per ${s.uom}; total ${s.contractCurrency} ${fmtCurrency(quote.totalContractValue, s.contractCurrency)}.`],
     ["4. Payment", `${s.paymentTerms || "(To be finalised in writing — leaving this open invalidates the contract)"}.`],
-    ["5. Delivery", `${s.incoterm} ${s.portOfLoading || "(POL TBC)"} → ${s.portOfDischarge || "(POD TBC)"}, Incoterms 2020. Shipment within ${s.shipmentLeadTimeDays || 30} days of PO confirmation.`],
+    ["5. Delivery", `${s.incoterm} ${s.portOfLoading || "(POL TBC)"} to ${s.portOfDischarge || "(POD TBC)"}, Incoterms 2020. Shipment within ${s.shipmentLeadTimeDays || 30} days of PO confirmation.`],
     ["6. Quality", qualityLine],
     ["7. Inspection", "Pre-shipment inspection at seller's premises by buyer-nominated agency at buyer's cost, to be completed within 7 working days of shipment readiness notice."],
     ["8. Documents", `Seller shall provide: Commercial Invoice, Packing List, Bill of Lading / AWB, Certificate of Origin (FIEO / Chamber of Commerce), Phytosanitary Certificate where required, and ${s.qualityStandard || "agreed"} quality test report.`],
