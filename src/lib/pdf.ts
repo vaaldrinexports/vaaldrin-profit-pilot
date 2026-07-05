@@ -571,39 +571,31 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
     state: s,
   });
 
-  drawSectionHeader(doc, "Exporter", margin, 140);
-  drawFieldBlock(doc, margin, 158, exporterRows(s));
+  drawSectionHeader(doc, "Exporter", margin, 130);
+  const exEndL = drawFieldBlock(doc, margin, 146, exporterRows(s));
 
-  drawSectionHeader(doc, "Consignee", W / 2 + 10, 140);
-  drawFieldBlock(doc, W / 2 + 10, 158, buyerRows(s, { includeContact: true, includeTax: true }));
+  drawSectionHeader(doc, "Consignee", W / 2 + 10, 130);
+  const exEndR = drawFieldBlock(doc, W / 2 + 10, 146, buyerRows(s, { includeContact: true, includeTax: true }));
 
-  // PO / LC references
-  const yRefs = 260;
-  drawSectionHeader(doc, "Order References", margin, yRefs);
-  drawFieldBlock(doc, margin, yRefs + 18, [
+  // Order references (left) + Shipment (right) on the same row
+  let y = Math.max(exEndL, exEndR) + 14;
+  drawSectionHeader(doc, "Order References", margin, y);
+  const refEnd = drawFieldBlock(doc, margin, y + 14, [
     ["Purchase Order No.", s.purchaseOrderNo || "—"],
     ["Purchase Order Date", s.purchaseOrderDate || "—"],
     ["Letter of Credit No.", s.lcNumber || "—"],
     ["Payment Terms", s.paymentTerms || "(as per contract)"],
-  ], 120);
+  ], 110);
 
-  // Notify Party + Shipment row
-  const yMid = 360;
-  drawSectionHeader(doc, "Notify Party", margin, yMid);
-  const notify = s.notifyParty?.trim()
-    ? doc.splitTextToSize(s.notifyParty, W / 2 - margin - 10)
-    : doc.splitTextToSize("Same as Consignee", W / 2 - margin - 10);
-  doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(...BRAND.text);
-  doc.text(notify, margin, yMid + 16);
+  drawSectionHeader(doc, "Shipment", W / 2 + 10, y);
+  const shipEnd = drawFieldBlock(doc, W / 2 + 10, y + 14, shipmentRows(s), 100);
 
-  drawSectionHeader(doc, "Shipment", W / 2 + 10, yMid);
-  drawFieldBlock(doc, W / 2 + 10, yMid + 18, shipmentRows(s), 100);
-
+  y = Math.max(refEnd, shipEnd) + 12;
   const pkg = packageSummary(s);
 
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: yMid + 150,
+    startY: y,
     head: [["HS Code", "Description", "Origin", "Marks & Nos.", "Qty", "UoM", `Unit (${s.contractCurrency})`, `Amount (${s.contractCurrency})`]],
     body: [[
       s.hsCode || "—",
@@ -621,10 +613,10 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
       fmtCurrency(quote.unitPrice, s.contractCurrency),
       fmtCurrency(quote.totalContractValue, s.contractCurrency),
     ]],
-    styles: { fontSize: 8.5, cellPadding: 4 },
+    styles: { fontSize: 8, cellPadding: 3.5 },
   });
 
-  // Invoice Summary (per international CI standard)
+  // Invoice Summary
   const freight = Number(s.invoiceFreightCharges) || 0;
   const insurance = Number(s.invoiceInsuranceCharges) || 0;
   const other = Number(s.invoiceOtherCharges) || 0;
@@ -632,7 +624,7 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
 
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: lastY(doc) + 10,
+    startY: lastY(doc) + 8,
     head: [["Invoice Summary", "Value"]],
     body: [
       ["Number of Packages", `${pkg.packages} × ${s.packageType || "PP bags"}`],
@@ -646,38 +638,27 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
        { content: `${s.contractCurrency} ${fmtCurrency(grand, s.contractCurrency)}`, styles: { fontStyle: "bold", textColor: BRAND.red } }],
     ],
     columnStyles: { 0: { fontStyle: "bold", cellWidth: 200 }, 1: { halign: "right" } },
+    styles: { fontSize: 8.5, cellPadding: 3.5 },
   });
 
-  // Product traceability
-  const trace = productTraceRows(s);
-  if (trace.length) {
-    autoTable(doc, {
-      ...applyTableTheme(),
-      startY: lastY(doc) + 10,
-      head: [["Product Traceability", "Detail"]],
-      body: trace.map(([k, v]) => [k, v]),
-      columnStyles: { 0: { cellWidth: 160, fontStyle: "bold" }, 1: { halign: "left" } },
-    });
-  }
-
-  // Shipping refs
-  const yRef = lastY(doc) + 16;
+  // Shipping refs (compact single row via field block)
+  const yRef = lastY(doc) + 10;
   drawSectionHeader(doc, "Shipping References", margin, yRef);
-  drawFieldBlock(doc, margin, yRef + 18, [
+  const refBlockEnd = drawFieldBlock(doc, margin, yRef + 14, [
     ["Vessel / Flight", s.vesselFlight || "(to be advised)"],
     ["B/L or AWB No.", s.blAwbNumber || "(to be advised)"],
     ["Container No.", s.containerNo || "(to be advised)"],
     ["Seal No.", s.sealNo || "(to be advised)"],
   ], 110);
 
-  const yDecl = yRef + 90;
-  doc.setFont("helvetica", "italic"); doc.setFontSize(8.5); doc.setTextColor(...BRAND.muted);
-  doc.text([
-    `We hereby certify that the goods described above are of ${s.countryOfOrigin || "Indian"} origin and that this invoice is true and correct.`,
-    "Formal Certificate of Origin issued by FIEO / Chamber of Commerce accompanies this shipment where required.",
-  ], margin, yDecl, { lineHeightFactor: 1.5 });
+  const yDecl = refBlockEnd + 10;
+  doc.setFont("helvetica", "italic"); doc.setFontSize(7.5); doc.setTextColor(...BRAND.muted);
+  doc.text(
+    `We hereby certify that the goods described above are of ${s.countryOfOrigin || "Indian"} origin and that this invoice is true and correct. Certificate of Origin (FIEO / Chamber of Commerce) accompanies this shipment where required.`,
+    margin, yDecl, { maxWidth: W - margin * 2 },
+  );
 
-  drawSignatureBlock(doc, W, yDecl + 26, "For " + (s.companyName || "Vaaldrin Exports"));
+  drawSignatureBlock(doc, W, placeSignatureY(doc, yDecl + 24, H), "For " + (s.companyName || "Vaaldrin Exports"));
   finalizeDoc(doc, W, H, margin);
   doc.save(`commercial-invoice-${s.quotationNumber}.pdf`);
 }
