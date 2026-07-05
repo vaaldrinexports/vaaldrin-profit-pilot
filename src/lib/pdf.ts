@@ -966,7 +966,7 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
   doc.text([
     `Delivery: by ${s.supplierDeliveryDate || "(date TBC)"} to ${s.companyAddress || "buyer warehouse"}.`,
     `Payment: ${s.supplierPaymentTerms || "Net 30 days from invoice receipt"}.`,
-    `Quality: ${s.productGrade || "—"}${s.qualityStandard ? `, conforming to ${s.qualityStandard}` : ""}${s.qualityMoisturePct > 0 ? `, moisture ≤ ${s.qualityMoisturePct}%` : ""}${s.qualityActiveCompoundLabel && s.qualityActiveCompoundPct > 0 ? `, ${s.qualityActiveCompoundLabel} ≥ ${s.qualityActiveCompoundPct}%` : ""}.`,
+    `Quality: ${s.productGrade || "—"}${s.qualityStandard ? `, conforming to ${s.qualityStandard}` : ""}${s.qualityMoisturePct > 0 ? `, moisture <= ${s.qualityMoisturePct}%` : ""}${s.qualityActiveCompoundLabel && s.qualityActiveCompoundPct > 0 ? `, ${s.qualityActiveCompoundLabel} >= ${s.qualityActiveCompoundPct}%` : ""}.`,
     `Place of Supply: ${s.supplierPlaceOfSupply || "—"} (under GST).`,
   ], margin, y + 18, { lineHeightFactor: 1.5 });
 
@@ -999,10 +999,10 @@ export async function generateSalesContractPDF(s: CalculatorState) {
   drawSectionHeader(doc, "Contract Terms", margin, y0);
   const qualityBits: string[] = [];
   if (s.qualityStandard) qualityBits.push(`Standard: ${s.qualityStandard}`);
-  if (s.qualityMoisturePct > 0) qualityBits.push(`Moisture ≤ ${s.qualityMoisturePct}%`);
+  if (s.qualityMoisturePct > 0) qualityBits.push(`Moisture <= ${s.qualityMoisturePct}%`);
   if (s.qualityActiveCompoundLabel && s.qualityActiveCompoundPct > 0)
-    qualityBits.push(`${s.qualityActiveCompoundLabel} ≥ ${s.qualityActiveCompoundPct}%`);
-  if (s.qualityAdmixturePct > 0) qualityBits.push(`Admixture ≤ ${s.qualityAdmixturePct}%`);
+    qualityBits.push(`${s.qualityActiveCompoundLabel} >= ${s.qualityActiveCompoundPct}%`);
+  if (s.qualityAdmixturePct > 0) qualityBits.push(`Admixture <= ${s.qualityAdmixturePct}%`);
   if (s.qualityBulkDensity) qualityBits.push(`Bulk density ${s.qualityBulkDensity}`);
   if (s.qualityNotes) qualityBits.push(s.qualityNotes);
   const qualityLine = qualityBits.length
