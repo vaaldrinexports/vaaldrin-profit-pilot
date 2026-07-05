@@ -1014,7 +1014,7 @@ export async function generateSalesContractPDF(s: CalculatorState) {
     ["2. Quantity", `${s.quantity} ${s.uom}.`],
     ["3. Price", `${s.contractCurrency} ${fmtCurrency(quote.unitPrice, s.contractCurrency)} per ${s.uom}; total ${s.contractCurrency} ${fmtCurrency(quote.totalContractValue, s.contractCurrency)}.`],
     ["4. Payment", `${s.paymentTerms || "(To be finalised in writing — leaving this open invalidates the contract)"}.`],
-    ["5. Delivery", `${s.incoterm} ${s.portOfLoading || "(POL TBC)"} → ${s.portOfDischarge || "(POD TBC)"}, Incoterms 2020. Shipment within ${s.shipmentLeadTimeDays || 30} days of PO confirmation.`],
+    ["5. Delivery", `${s.incoterm} ${s.portOfLoading || "(POL TBC)"} to ${s.portOfDischarge || "(POD TBC)"}, Incoterms 2020. Shipment within ${s.shipmentLeadTimeDays || 30} days of PO confirmation.`],
     ["6. Quality", qualityLine],
     ["7. Inspection", "Pre-shipment inspection at seller's premises by buyer-nominated agency at buyer's cost, to be completed within 7 working days of shipment readiness notice."],
     ["8. Documents", `Seller shall provide: Commercial Invoice, Packing List, Bill of Lading / AWB, Certificate of Origin (FIEO / Chamber of Commerce), Phytosanitary Certificate where required, and ${s.qualityStandard || "agreed"} quality test report.`],
