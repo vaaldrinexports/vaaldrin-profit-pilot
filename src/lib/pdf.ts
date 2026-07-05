@@ -405,15 +405,15 @@ export async function generateQuotationPDF(s: CalculatorState) {
     state: s,
   });
 
-  drawSectionHeader(doc, "Exporter", margin, 140);
-  drawFieldBlock(doc, margin, 158, exporterRows(s));
+  drawSectionHeader(doc, "Exporter", margin, 130);
+  const exEndL = drawFieldBlock(doc, margin, 146, exporterRows(s));
 
-  drawSectionHeader(doc, "Buyer", W / 2 + 10, 140);
-  drawFieldBlock(doc, W / 2 + 10, 158, buyerRows(s, { includeContact: true }));
+  drawSectionHeader(doc, "Buyer", W / 2 + 10, 130);
+  const exEndR = drawFieldBlock(doc, W / 2 + 10, 146, buyerRows(s, { includeContact: true }));
 
-  const yTerms = 260;
-  drawSectionHeader(doc, "Shipment & Terms", margin, yTerms);
-  drawFieldBlock(doc, margin, yTerms + 18, [
+  let y = Math.max(exEndL, exEndR) + 16;
+  drawSectionHeader(doc, "Shipment & Terms", margin, y);
+  y = drawFieldBlock(doc, margin, y + 16, [
     ["Incoterm", `${s.incoterm} (Incoterms 2020)`],
     ["Port of Loading", s.portOfLoading || "(to be confirmed)"],
     ["Port of Discharge", s.portOfDischarge || "(to be confirmed)"],
@@ -427,8 +427,8 @@ export async function generateQuotationPDF(s: CalculatorState) {
   const quote = getBuyerQuote(c.recommendedPrice, s.quantity, s);
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: 388,
-    head: [["Product", "Grade", "HS Code", "Origin", "Qty", "UoM", `Unit Price (${s.contractCurrency})`, `Total (${s.contractCurrency})`]],
+    startY: y + 14,
+    head: [["Product", "Grade", "HS Code", "Origin", "Qty", "UoM", `Unit (${s.contractCurrency})`, `Total (${s.contractCurrency})`]],
     body: [[
       s.productName || "—",
       s.productGrade || "—",
@@ -439,38 +439,39 @@ export async function generateQuotationPDF(s: CalculatorState) {
       fmtCurrency(quote.unitPrice, s.contractCurrency),
       fmtCurrency(quote.totalContractValue, s.contractCurrency),
     ]],
+    styles: { fontSize: 8.5, cellPadding: 4 },
   });
 
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: lastY(doc) + 12,
+    startY: lastY(doc) + 6,
     head: [[`TOTAL CONTRACT VALUE (${s.contractCurrency})`]],
     body: [[fmtCurrency(quote.totalContractValue, s.contractCurrency)]],
     headStyles: { fillColor: BRAND.tableHeader, textColor: BRAND.red, fontStyle: "bold", halign: "center", lineColor: BRAND.border, lineWidth: 0.5 },
-    bodyStyles: { halign: "center", fontStyle: "bold", fontSize: 11, textColor: BRAND.text },
+    bodyStyles: { halign: "center", fontStyle: "bold", fontSize: 10.5, textColor: BRAND.text },
   });
 
-  const yTC = lastY(doc) + 24;
+  const yTC = lastY(doc) + 14;
   drawSectionHeader(doc, "Terms & Conditions", margin, yTC);
-  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...BRAND.text);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(...BRAND.text);
   const tcItems = [
     `1. Payment: ${s.paymentTerms || "(to be finalised with buyer prior to order confirmation)"}.`,
     `2. Delivery: ${s.incoterm} ${s.portOfLoading || "(POL TBC)"} to ${s.portOfDischarge || "(POD TBC)"}, Incoterms 2020.`,
     `3. Validity: ${s.quotationValidityDays} days from issue date.`,
     `4. Lead time: ${s.shipmentLeadTimeDays || 30} days from PO confirmation, subject to stock availability.`,
-    `5. Country of Origin: ${s.countryOfOrigin || "India"}. Certificate of Origin available on request (FIEO / Chamber of Commerce).`,
+    `5. Country of Origin: ${s.countryOfOrigin || "India"}. Certificate of Origin available on request.`,
     `6. Quality: as per agreed specification${s.qualityStandard ? ` (${s.qualityStandard})` : ""}. Pre-shipment inspection at buyer's option and cost.`,
     `7. All disputes subject to ${s.governingLaw || "Indian Law"} and exclusive jurisdiction of seller's office.`,
   ];
-  let yTCcur = yTC + 18;
+  let yTCcur = yTC + 14;
   const tcMaxW = W - margin * 2;
   tcItems.forEach((t) => {
     const wrapped = doc.splitTextToSize(t, tcMaxW);
     doc.text(wrapped, margin, yTCcur);
-    yTCcur += wrapped.length * 11 + 3;
+    yTCcur += wrapped.length * 10 + 2;
   });
 
-  drawSignatureBlock(doc, W, Math.max(yTC + 140, yTCcur + 30), "For " + (s.companyName || "Vaaldrin Exports"));
+  drawSignatureBlock(doc, W, placeSignatureY(doc, yTCcur + 20, H), "For " + (s.companyName || "Vaaldrin Exports"));
   finalizeDoc(doc, W, H, margin, "E&OE — Errors & Omissions Excepted");
   doc.save(`${s.quotationNumber || "quotation"}.pdf`);
 }
