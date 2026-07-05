@@ -491,19 +491,19 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
     proforma: true,
   });
 
-  drawSectionHeader(doc, "Exporter", margin, 140);
-  drawFieldBlock(doc, margin, 158, exporterRows(s));
+  drawSectionHeader(doc, "Exporter", margin, 130);
+  const exEndL = drawFieldBlock(doc, margin, 146, exporterRows(s));
 
-  drawSectionHeader(doc, "Buyer / Consignee", W / 2 + 10, 140);
-  drawFieldBlock(doc, W / 2 + 10, 158, buyerRows(s, { includeContact: true, includeTax: true }));
+  drawSectionHeader(doc, "Buyer / Consignee", W / 2 + 10, 130);
+  const exEndR = drawFieldBlock(doc, W / 2 + 10, 146, buyerRows(s, { includeContact: true, includeTax: true }));
 
-  const yShip = 260;
-  drawSectionHeader(doc, "Shipment", margin, yShip);
-  drawFieldBlock(doc, margin, yShip + 18, shipmentRows(s), 110);
+  let y = Math.max(exEndL, exEndR) + 14;
+  drawSectionHeader(doc, "Shipment", margin, y);
+  y = drawFieldBlock(doc, margin, y + 14, shipmentRows(s), 110);
 
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: yShip + 130,
+    startY: y + 12,
     head: [["HS Code", "Description", "Origin", "Qty", "UoM", `Unit (${s.contractCurrency})`, `Amount (${s.contractCurrency})`]],
     body: [[
       s.hsCode || "—",
@@ -514,24 +514,13 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
       fmtCurrency(quote.unitPrice, s.contractCurrency),
       fmtCurrency(quote.totalContractValue, s.contractCurrency),
     ]],
+    styles: { fontSize: 8.5, cellPadding: 4 },
   });
-
-  // Product traceability (food-export details)
-  const trace = productTraceRows(s);
-  if (trace.length) {
-    autoTable(doc, {
-      ...applyTableTheme(),
-      startY: lastY(doc) + 10,
-      head: [["Product Traceability", "Detail"]],
-      body: trace.map(([k, v]) => [k, v]),
-      columnStyles: { 0: { cellWidth: 160, fontStyle: "bold" }, 1: { halign: "left" } },
-    });
-  }
 
   const subtotal = quote.totalContractValue;
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: lastY(doc) + 10,
+    startY: lastY(doc) + 8,
     head: [["Summary", `Amount (${s.contractCurrency})`]],
     body: [
       ["Subtotal", fmtCurrency(subtotal, s.contractCurrency)],
@@ -541,18 +530,13 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
        { content: fmtCurrency(subtotal, s.contractCurrency), styles: { fontStyle: "bold", textColor: BRAND.red } }],
     ],
     columnStyles: { 1: { halign: "right" } },
+    styles: { fontSize: 8.5, cellPadding: 4 },
   });
 
-  // Payment terms
-  const yPay = lastY(doc) + 16;
-  drawSectionHeader(doc, "Payment Terms", margin, yPay);
-  doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(...BRAND.text);
-  doc.text(doc.splitTextToSize(s.paymentTerms || "(To be finalised with buyer prior to order confirmation)", W - margin * 2), margin, yPay + 18);
-
-  // Bank details
-  const yBank = yPay + 50;
+  // Bank details (compact two-column via field block)
+  const yBank = lastY(doc) + 12;
   drawSectionHeader(doc, "Bank Details (for remittance)", margin, yBank);
-  drawFieldBlock(doc, margin, yBank + 18, [
+  const bankEnd = drawFieldBlock(doc, margin, yBank + 14, [
     ["Bank Name", s.companyBankName || "—"],
     ["Account No.", s.companyBankAccount || "—"],
     ["SWIFT", s.companyBankSwift || "—"],
@@ -561,11 +545,14 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
     ["Branch", s.companyBankBranch || "—"],
   ], 80);
 
-  const yDecl = yBank + 110;
-  doc.setFont("helvetica", "italic"); doc.setFontSize(8.5); doc.setTextColor(...BRAND.muted);
-  doc.text("This is a Proforma Invoice and not a tax invoice. Verify bank details with exporter before remittance.", margin, yDecl);
+  const yDecl = bankEnd + 12;
+  doc.setFont("helvetica", "italic"); doc.setFontSize(8); doc.setTextColor(...BRAND.muted);
+  doc.text(
+    `Payment Terms: ${s.paymentTerms || "(To be finalised with buyer prior to order confirmation)"}. This is a Proforma Invoice and not a tax invoice.`,
+    margin, yDecl, { maxWidth: W - margin * 2 },
+  );
 
-  drawSignatureBlock(doc, W, yDecl + 16, "For " + (s.companyName || "Vaaldrin Exports"));
+  drawSignatureBlock(doc, W, placeSignatureY(doc, yDecl + 20, H), "For " + (s.companyName || "Vaaldrin Exports"));
   finalizeDoc(doc, W, H, margin);
   doc.save(`proforma-${s.quotationNumber}.pdf`);
 }
