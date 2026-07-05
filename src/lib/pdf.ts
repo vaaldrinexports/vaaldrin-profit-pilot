@@ -852,7 +852,7 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
     state: s,
   });
 
-  drawSectionHeader(doc, "Supplier", margin, 140);
+  drawSectionHeader(doc, "Supplier", margin, 130);
   const supRows: Array<[string, string]> = [
     ["Company", s.supplierName || "(supplier name required)"],
     ["Address", s.supplierAddress || "(supplier address required)"],
@@ -861,9 +861,9 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
   if (s.supplierContact) supRows.push(["Contact", s.supplierContact]);
   if (s.supplierEmail) supRows.push(["Email", s.supplierEmail]);
   if (s.supplierPhone) supRows.push(["Phone", s.supplierPhone]);
-  drawFieldBlock(doc, margin, 158, supRows);
+  const poEndL = drawFieldBlock(doc, margin, 146, supRows);
 
-  drawSectionHeader(doc, `Buyer (${s.companyName || "Vaaldrin"})`, W / 2 + 10, 140);
+  drawSectionHeader(doc, `Buyer (${s.companyName || "Vaaldrin"})`, W / 2 + 10, 130);
   const buyerSelfRows: Array<[string, string]> = [
     ["Company", s.companyName || "Vaaldrin Exports"],
     ["Address", s.companyAddress || "India"],
@@ -871,11 +871,11 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
   if (s.companyGstin) buyerSelfRows.push(["GSTIN", s.companyGstin]);
   if (s.companyEmail) buyerSelfRows.push(["Email", s.companyEmail]);
   if (s.companyPhone) buyerSelfRows.push(["Phone", s.companyPhone]);
-  drawFieldBlock(doc, W / 2 + 10, 158, buyerSelfRows);
+  const poEndR = drawFieldBlock(doc, W / 2 + 10, 146, buyerSelfRows);
 
-  const yPO = 260;
+  let yPO = Math.max(poEndL, poEndR) + 14;
   drawSectionHeader(doc, "Order Details", margin, yPO);
-  drawFieldBlock(doc, margin, yPO + 18, [
+  yPO = drawFieldBlock(doc, margin, yPO + 14, [
     ["PO Number", `PO-${s.quotationNumber}`],
     ["PO Date", s.quotationDate],
     ["Delivery Date", s.supplierDeliveryDate || "(to be confirmed)"],
@@ -890,7 +890,7 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
 
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: yPO + 110,
+    startY: yPO + 12,
     head: [["Description", "HSN/SAC", "Qty", "UoM", "Unit Price (INR)", "Amount (INR)"]],
     body: [[
       `${s.productName || "—"}${s.productGrade ? ` — ${s.productGrade}` : ""}`,
@@ -900,6 +900,7 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
       fmtCurrency(s.supplierPricePerUnit, "INR"),
       fmtCurrency(lineTotal, "INR"),
     ]],
+    styles: { fontSize: 8.5, cellPadding: 4 },
   });
 
   const gstRows: Array<Array<{ content: string; styles?: Record<string, unknown> } | string>> = [
@@ -920,22 +921,29 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
   ]);
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: lastY(doc) + 8,
+    startY: lastY(doc) + 6,
     body: gstRows,
     columnStyles: { 0: { cellWidth: W - 80 - 160 }, 1: { cellWidth: 160 } },
+    styles: { fontSize: 8.5, cellPadding: 3.5 },
   });
 
-  const y = lastY(doc) + 20;
+  const y = lastY(doc) + 14;
   drawSectionHeader(doc, "Delivery, Payment & Quality", margin, y);
-  doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(...BRAND.text);
-  doc.text([
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(...BRAND.text);
+  const poTerms = [
     `Delivery: by ${s.supplierDeliveryDate || "(date TBC)"} to ${s.companyAddress || "buyer warehouse"}.`,
     `Payment: ${s.supplierPaymentTerms || "Net 30 days from invoice receipt"}.`,
     `Quality: ${s.productGrade || "—"}${s.qualityStandard ? `, conforming to ${s.qualityStandard}` : ""}${s.qualityMoisturePct > 0 ? `, moisture <= ${s.qualityMoisturePct}%` : ""}${s.qualityActiveCompoundLabel && s.qualityActiveCompoundPct > 0 ? `, ${s.qualityActiveCompoundLabel} >= ${s.qualityActiveCompoundPct}%` : ""}.`,
     `Place of Supply: ${s.supplierPlaceOfSupply || "—"} (under GST).`,
-  ], margin, y + 18, { lineHeightFactor: 1.5 });
+  ];
+  let yPoT = y + 14;
+  poTerms.forEach((t) => {
+    const wrapped = doc.splitTextToSize(t, W - margin * 2);
+    doc.text(wrapped, margin, yPoT);
+    yPoT += wrapped.length * 10 + 2;
+  });
 
-  drawSignatureBlock(doc, W, y + 100, `Authorized By — ${s.companyName || "Vaaldrin Exports"}`);
+  drawSignatureBlock(doc, W, placeSignatureY(doc, yPoT + 20, H), `Authorized By — ${s.companyName || "Vaaldrin Exports"}`);
   finalizeDoc(doc, W, H, margin);
   doc.save(`purchase-order-${s.quotationNumber}.pdf`);
 }
