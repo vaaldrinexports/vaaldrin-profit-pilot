@@ -444,15 +444,22 @@ export async function generateQuotationPDF(s: CalculatorState) {
   const yTC = lastY(doc) + 24;
   drawSectionHeader(doc, "Terms & Conditions", margin, yTC);
   doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...BRAND.text);
-  doc.text([
+  const tcItems = [
     `1. Payment: ${s.paymentTerms || "(to be finalised with buyer prior to order confirmation)"}.`,
-    `2. Delivery: ${s.incoterm} ${s.portOfLoading || "(POL TBC)"} → ${s.portOfDischarge || "(POD TBC)"}, Incoterms 2020.`,
+    `2. Delivery: ${s.incoterm} ${s.portOfLoading || "(POL TBC)"} to ${s.portOfDischarge || "(POD TBC)"}, Incoterms 2020.`,
     `3. Validity: ${s.quotationValidityDays} days from issue date.`,
     `4. Lead time: ${s.shipmentLeadTimeDays || 30} days from PO confirmation, subject to stock availability.`,
     `5. Country of Origin: ${s.countryOfOrigin || "India"}. Certificate of Origin available on request (FIEO / Chamber of Commerce).`,
     `6. Quality: as per agreed specification${s.qualityStandard ? ` (${s.qualityStandard})` : ""}. Pre-shipment inspection at buyer's option and cost.`,
     `7. All disputes subject to ${s.governingLaw || "Indian Law"} and exclusive jurisdiction of seller's office.`,
-  ], margin, yTC + 18, { lineHeightFactor: 1.5 });
+  ];
+  let yTCcur = yTC + 18;
+  const tcMaxW = W - margin * 2;
+  tcItems.forEach((t) => {
+    const wrapped = doc.splitTextToSize(t, tcMaxW);
+    doc.text(wrapped, margin, yTCcur);
+    yTCcur += wrapped.length * 11 + 3;
+  });
 
   drawSignatureBlock(doc, W, yTC + 140, "For " + (s.companyName || "Vaaldrin Exports"));
   finalizeDoc(doc, W, H, margin, "E&OE — Errors & Omissions Excepted");
