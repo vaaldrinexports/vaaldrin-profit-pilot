@@ -167,10 +167,11 @@ function drawFieldBlock(
   y: number,
   rows: Array<[string, string]>,
   labelWidth = 90,
+  rowH = 11.5,
 ) {
-  doc.setFontSize(9.5);
+  doc.setFontSize(8.5);
   rows.forEach(([label, value], i) => {
-    const yy = y + i * 13;
+    const yy = y + i * rowH;
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...BRAND.muted);
     doc.text(label, x, yy);
@@ -178,7 +179,15 @@ function drawFieldBlock(
     doc.setTextColor(...BRAND.text);
     doc.text(value || "—", x + labelWidth, yy);
   });
-  return y + rows.length * 13;
+  return y + rows.length * rowH;
+}
+
+// Draw a signature block starting at y, clamped so it never crashes the footer.
+// Signature block visually occupies ~72pt (label + line + names).
+function placeSignatureY(doc: jsPDF, preferredY: number, H: number): number {
+  const footerTop = H - 72; // must not enter the footer band
+  const need = 72;
+  return Math.min(preferredY, footerTop - need);
 }
 
 function applyTableTheme(): Parameters<typeof autoTable>[1] {
