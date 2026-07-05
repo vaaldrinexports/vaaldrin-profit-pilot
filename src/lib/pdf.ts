@@ -461,7 +461,7 @@ export async function generateQuotationPDF(s: CalculatorState) {
     yTCcur += wrapped.length * 11 + 3;
   });
 
-  drawSignatureBlock(doc, W, yTC + 140, "For " + (s.companyName || "Vaaldrin Exports"));
+  drawSignatureBlock(doc, W, Math.max(yTC + 140, yTCcur + 30), "For " + (s.companyName || "Vaaldrin Exports"));
   finalizeDoc(doc, W, H, margin, "E&OE — Errors & Omissions Excepted");
   doc.save(`${s.quotationNumber || "quotation"}.pdf`);
 }
