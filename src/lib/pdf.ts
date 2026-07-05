@@ -675,15 +675,15 @@ export async function generatePackingListPDF(s: CalculatorState) {
     state: s,
   });
 
-  drawSectionHeader(doc, "Exporter", margin, 140);
-  drawFieldBlock(doc, margin, 158, exporterRows(s));
+  drawSectionHeader(doc, "Exporter", margin, 130);
+  const exEndL = drawFieldBlock(doc, margin, 146, exporterRows(s));
 
-  drawSectionHeader(doc, "Consignee", W / 2 + 10, 140);
-  drawFieldBlock(doc, W / 2 + 10, 158, buyerRows(s));
+  drawSectionHeader(doc, "Consignee", W / 2 + 10, 130);
+  const exEndR = drawFieldBlock(doc, W / 2 + 10, 146, buyerRows(s));
 
-  const yShip = 260;
-  drawSectionHeader(doc, "Shipment", margin, yShip);
-  drawFieldBlock(doc, margin, yShip + 18, [
+  let y = Math.max(exEndL, exEndR) + 14;
+  drawSectionHeader(doc, "Shipment", margin, y);
+  y = drawFieldBlock(doc, margin, y + 14, [
     ...shipmentRows(s),
     ["Vessel / Flight", s.vesselFlight || "(to be advised)"],
     ["Container No.", s.containerNo || "(to be advised)"],
@@ -696,7 +696,7 @@ export async function generatePackingListPDF(s: CalculatorState) {
 
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: yShip + 180,
+    startY: y + 12,
     head: [["Description", "Packaging", "Packages", `Net/pkg (kg)`, "Net Wt (kg)", "Gross Wt (kg)", "Dim/pkg (cm)"]],
     body: [[
       `${s.productName || "—"}${s.productGrade ? ` — ${s.productGrade}` : ""}`,
@@ -707,39 +707,26 @@ export async function generatePackingListPDF(s: CalculatorState) {
       grossWeight.toFixed(2),
       s.packageDimensionsCm || "—",
     ]],
-    styles: { fontSize: 8.5, cellPadding: 4 },
+    styles: { fontSize: 8, cellPadding: 3.5 },
   });
 
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: lastY(doc) + 10,
+    startY: lastY(doc) + 8,
     head: [["Totals", "Value"]],
     body: [
       ["Commercial Invoice No.", s.quotationNumber ? `CI-${s.quotationNumber}` : "—"],
       ["Total Packages", String(packages)],
-      ["Packaging Type", s.packageType || "(specify)"],
-      ["Dimensions per package (cm)", s.packageDimensionsCm || "(specify)"],
       ["Total Net Weight (kg)", netWeight.toFixed(2)],
       ["Total Gross Weight (kg)", grossWeight.toFixed(2)],
       ["Total Volume (CBM)", s.totalVolumeCbm > 0 ? s.totalVolumeCbm.toFixed(3) : "(to be advised)"],
       ["Marks & Numbers", s.marksAndNumbers || "(as per buyer instructions)"],
     ],
     columnStyles: { 1: { halign: "right" } },
+    styles: { fontSize: 8.5, cellPadding: 3.5 },
   });
 
-  // Product traceability block for food exports
-  const trace = productTraceRows(s);
-  if (trace.length) {
-    autoTable(doc, {
-      ...applyTableTheme(),
-      startY: lastY(doc) + 10,
-      head: [["Product Traceability", "Detail"]],
-      body: trace.map(([k, v]) => [k, v]),
-      columnStyles: { 0: { cellWidth: 160, fontStyle: "bold" }, 1: { halign: "left" } },
-    });
-  }
-
-  drawSignatureBlock(doc, W, lastY(doc) + 30, "For " + (s.companyName || "Vaaldrin Exports"));
+  drawSignatureBlock(doc, W, placeSignatureY(doc, lastY(doc) + 24, H), "For " + (s.companyName || "Vaaldrin Exports"));
   finalizeDoc(doc, W, H, margin);
   doc.save(`packing-list-${s.quotationNumber}.pdf`);
 }
