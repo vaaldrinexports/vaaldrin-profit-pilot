@@ -182,12 +182,28 @@ function drawFieldBlock(
   return y + rows.length * rowH;
 }
 
-// Draw a signature block starting at y, clamped so it never crashes the footer.
+// Draw a signature block starting at y. If it would collide with the footer,
+// add a new page instead of overlapping earlier content.
 // Signature block visually occupies ~72pt (label + line + names).
 function placeSignatureY(doc: jsPDF, preferredY: number, H: number): number {
   const footerTop = H - 72; // must not enter the footer band
   const need = 72;
-  return Math.min(preferredY, footerTop - need);
+  if (preferredY + need > footerTop) {
+    doc.addPage();
+    return 100; // top of the new page, below header area
+  }
+  return preferredY;
+}
+
+// Ensure there is at least `needed` pt of vertical room before the footer.
+// If not, start a new page and return the new y.
+function ensureRoom(doc: jsPDF, y: number, needed: number, H: number): number {
+  const footerTop = H - 72;
+  if (y + needed > footerTop) {
+    doc.addPage();
+    return 100;
+  }
+  return y;
 }
 
 function applyTableTheme(): Parameters<typeof autoTable>[1] {
