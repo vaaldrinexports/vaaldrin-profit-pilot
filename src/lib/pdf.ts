@@ -1,7 +1,21 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { CalculatorState } from "./calculations";
-import { computeCoreINR, fmtCurrency, getBuyerQuote } from "./calculations";
+import { computeCoreINR, fmtCurrency as fmtCurrencyRaw, getBuyerQuote } from "./calculations";
+import type { ContractCurrency } from "./calculations";
+
+// PDF-safe currency formatter. jsPDF's built-in Helvetica is Latin-1 only, so
+// glyphs like ₹ (U+20B9) render as garbled characters that visually collide
+// with adjacent digits. Strip/replace non-Latin1 currency symbols with their
+// ISO code so amounts render cleanly inside table cells.
+function fmtCurrency(n: number, currency: ContractCurrency): string {
+  const raw = fmtCurrencyRaw(n, currency);
+  return raw
+    .replace(/\u20B9\s*/g, "")          // ₹ — column header already says INR
+    .replace(/\u20AC\s*/g, "EUR ")      // €
+    .replace(/\u00A3\s*/g, "GBP ")      // £ (Latin-1 but keep consistent)
+    .replace(/\u00A0/g, " ");           // NBSP → normal space
+}
 import logoAsset from "@/assets/vaaldrin-logo.png.asset.json";
 import { SIGNATURE_PNG_DATA_URL, SIGNATURE_ASPECT } from "./signature";
 
