@@ -785,7 +785,7 @@ export async function generateInternalCostSheetPDF(s: CalculatorState) {
 
   autoTable(doc, {
     ...applyTableTheme(),
-    startY: 220,
+    startY: refEnd + 16,
     head: [["Cost Component", "Amount (INR)"]],
     body: [
       ["Supplier Cost", fmtCurrency(supplierTotal, "INR")],
