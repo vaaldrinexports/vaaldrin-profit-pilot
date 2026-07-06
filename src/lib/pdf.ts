@@ -979,12 +979,12 @@ export async function generateSalesContractPDF(s: CalculatorState) {
   });
 
   drawSectionHeader(doc, "Seller", margin, 140);
-  drawFieldBlock(doc, margin, 158, exporterRows(s));
+  const sellerEnd = drawFieldBlock(doc, margin, 158, exporterRows(s));
 
   drawSectionHeader(doc, "Buyer", W / 2 + 10, 140);
-  drawFieldBlock(doc, W / 2 + 10, 158, buyerRows(s, { includeContact: true }));
+  const buyerEnd = drawFieldBlock(doc, W / 2 + 10, 158, buyerRows(s, { includeContact: true }));
 
-  const y0 = 270;
+  let y0 = Math.max(sellerEnd, buyerEnd) + 18;
   drawSectionHeader(doc, "Contract Terms", margin, y0);
   const qualityBits: string[] = [];
   if (s.qualityStandard) qualityBits.push(`Standard: ${s.qualityStandard}`);
@@ -1002,55 +1002,58 @@ export async function generateSalesContractPDF(s: CalculatorState) {
     ["1. Goods", `${s.productName || "—"}${s.productGrade ? ` (${s.productGrade})` : ""}, HS ${s.hsCode || "—"}; Country of Origin: ${s.countryOfOrigin || "India"}.`],
     ["2. Quantity", `${s.quantity} ${s.uom}.`],
     ["3. Price", `${s.contractCurrency} ${fmtCurrency(quote.unitPrice, s.contractCurrency)} per ${s.uom}; total ${s.contractCurrency} ${fmtCurrency(quote.totalContractValue, s.contractCurrency)}.`],
-    ["4. Payment", `${s.paymentTerms || "(To be finalised in writing — leaving this open invalidates the contract)"}.`],
+    ["4. Payment", `${s.paymentTerms || "(To be finalised in writing prior to shipment)"}.`],
     ["5. Delivery", `${s.incoterm} ${s.portOfLoading || "(POL TBC)"} to ${s.portOfDischarge || "(POD TBC)"}, Incoterms 2020. Shipment within ${s.shipmentLeadTimeDays || 30} days of PO confirmation.`],
     ["6. Quality", qualityLine],
-    ["7. Inspection", "Pre-shipment inspection at seller's premises by buyer-nominated agency at buyer's cost, to be completed within 7 working days of shipment readiness notice."],
-    ["8. Documents", `Seller shall provide: Commercial Invoice, Packing List, Bill of Lading / AWB, Certificate of Origin (FIEO / Chamber of Commerce), Phytosanitary Certificate where required, and ${s.qualityStandard || "agreed"} quality test report.`],
+    ["7. Inspection", "Pre-shipment inspection at seller's premises by buyer-nominated agency at buyer's cost, within 7 working days of shipment readiness notice."],
+    ["8. Documents", `Seller to provide: Commercial Invoice, Packing List, Bill of Lading / AWB, Certificate of Origin, Phytosanitary Certificate where required, and ${s.qualityStandard || "agreed"} quality test report.`],
     ["9. Force Majeure", "Neither party liable for delays caused by events beyond reasonable control (acts of God, war, strikes, port closures, government restrictions)."],
-    ["10. Penalty", "Delay beyond agreed shipment window attracts liquidated damages of 0.5% of contract value per week, capped at 5%, unless waived in writing by buyer."],
+    ["10. Penalty", "Delay beyond agreed shipment window: liquidated damages of 0.5% of contract value per week, capped at 5%, unless waived in writing by buyer."],
     ["11. Governing Law", `This contract is governed by ${s.governingLaw || "Indian Law"}.`],
-    ["12. Disputes", `Subject to arbitration under ICC Rules; seat of arbitration: ${s.arbitrationVenue || s.companyAddress || "seller's office"}.`],
+    ["12. Disputes", `Arbitration under ICC Rules; seat: ${s.arbitrationVenue || s.companyAddress || "seller's office"}.`],
   ];
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
+  doc.setFontSize(8.5);
   doc.setTextColor(...BRAND.text);
-  let yy = y0 + 22;
+  const labelW = 78;
+  const bodyW = W - margin * 2 - labelW;
+  let yy = y0 + 18;
   clauses.forEach(([h, body]) => {
+    const lines = doc.splitTextToSize(body, bodyW);
+    const blockH = Math.max(11, lines.length * 10.5) + 3;
+    yy = ensureRoom(doc, yy, blockH, H);
     doc.setFont("helvetica", "bold");
     doc.text(h, margin, yy);
     doc.setFont("helvetica", "normal");
-    const lines = doc.splitTextToSize(body, W - margin * 2 - 90);
-    doc.text(lines, margin + 90, yy);
-    yy += Math.max(14, lines.length * 12);
+    doc.text(lines, margin + labelW, yy);
+    yy += blockH;
   });
 
-  // Dual signatures
-  yy += 20;
+  // Dual signatures — page-break if not enough room
+  yy = ensureRoom(doc, yy + 16, 74, H);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9.5);
   doc.setTextColor(...BRAND.text);
   doc.text("Buyer", margin, yy);
   doc.text(`Seller (${s.companyName || "Vaaldrin Exports"})`, W / 2 + 10, yy);
-  // Seller ink signature (buyer side stays blank for counter-party)
-  drawInkSignature(doc, W / 2 + 10, yy + 36, 200);
+  drawInkSignature(doc, W / 2 + 10, yy + 34, 200);
   doc.setDrawColor(...BRAND.text);
   doc.setLineWidth(0.5);
-  doc.line(margin, yy + 36, margin + 200, yy + 36);
-  doc.line(W / 2 + 10, yy + 36, W / 2 + 210, yy + 36);
+  doc.line(margin, yy + 34, margin + 200, yy + 34);
+  doc.line(W / 2 + 10, yy + 34, W / 2 + 210, yy + 34);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(...BRAND.muted);
-  doc.text("Authorized Signatory", margin, yy + 50);
-  // Seller name/title under the signed line
+  doc.text("Authorized Signatory", margin, yy + 48);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(...BRAND.text);
-  doc.text("Vishwas M.H.", W / 2 + 10, yy + 50);
+  doc.text("Vishwas M.H.", W / 2 + 10, yy + 48);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...BRAND.muted);
-  doc.text(`Proprietor, ${s.companyName || "Vaaldrin Exports"}`, W / 2 + 10, yy + 62);
+  doc.text(`Proprietor, ${s.companyName || "Vaaldrin Exports"}`, W / 2 + 10, yy + 60);
+
 
   finalizeDoc(doc, W, H, margin);
   doc.save(`sales-contract-${s.quotationNumber}.pdf`);
