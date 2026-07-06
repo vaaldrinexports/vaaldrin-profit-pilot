@@ -763,13 +763,14 @@ export async function generateInternalCostSheetPDF(s: CalculatorState) {
   });
 
   drawSectionHeader(doc, "Reference", margin, 140);
-  drawFieldBlock(doc, margin, 158, [
+  const refEnd = drawFieldBlock(doc, margin, 158, [
     ["Quote No.", s.quotationNumber],
     ["Buyer", s.buyerCompany],
     ["Product", s.productName],
   ]);
 
   // Cost breakdown
+
   const supplierTotal = s.supplierPricePerUnit * s.quantity;
   const packagingTotal = s.pouchCost + s.labelCost + s.cartonCost + s.palletCost + s.otherPackaging;
   const inlandTotal = s.factoryToWarehouse + s.warehouseToPort + s.loadingCharges + s.unloadingCharges;
