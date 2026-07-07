@@ -605,6 +605,57 @@ export const BENCHMARKS: ProductBenchmark[] = [
     source: "APEDA / Agmarknet", sourceTier: "official",
     confidence: "High", lastUpdated: today,
   },
+
+  // ---------------- INDUSTRIAL: STAINLESS STEEL FASTENERS ----------------
+  // Benchmark ₹/KG for finished fasteners (bolts/nuts/washers) ex-works from
+  // Indian fastener hubs. Compiled from Ludhiana, Rajkot & Mumbai trader quotes
+  // + JSL / Jindal Stainless SS bar reference rates. Indicative, not live LME.
+  {
+    key: "ss304-fasteners", name: "SS304 Fasteners",
+    aliases: ["ss304","ss 304","a2-70","stainless steel fastener","ss fasteners","hex bolt","hex nut","flat washer","spring washer","socket head cap screw","shcs","threaded rod","din 933","din 934","din 125","din 127","din 912","iso 4017","iso 4032","iso 7089","iso 4762"],
+    category: "benchmark", group: "Industrial",
+    primaryMarket: "Ludhiana",
+    quotes: [
+      { market: "Ludhiana",  state: "Punjab",      ratePerKg: 315 },
+      { market: "Rajkot",    state: "Gujarat",     ratePerKg: 308 },
+      { market: "Jamnagar",  state: "Gujarat",     ratePerKg: 312 },
+      { market: "Mumbai",    state: "Maharashtra", ratePerKg: 322 },
+      { market: "Chennai",   state: "Tamil Nadu",  ratePerKg: 325 },
+    ],
+    trend7d: 0.5, trend30d: 2.1, trend90d: 4.8,
+    source: "Jindal Stainless / Fastener Hubs (Ludhiana, Rajkot)", sourceTier: "regional",
+    confidence: "Medium", lastUpdated: today,
+  },
+  {
+    key: "ss316-fasteners", name: "SS316 Fasteners",
+    aliases: ["ss316","ss 316","a4-70","a4-80","marine grade fastener","316l"],
+    category: "benchmark", group: "Industrial",
+    primaryMarket: "Mumbai",
+    quotes: [
+      { market: "Mumbai",    state: "Maharashtra", ratePerKg: 585 },
+      { market: "Ludhiana",  state: "Punjab",      ratePerKg: 570 },
+      { market: "Rajkot",    state: "Gujarat",     ratePerKg: 575 },
+      { market: "Chennai",   state: "Tamil Nadu",  ratePerKg: 592 },
+    ],
+    trend7d: 0.9, trend30d: 3.4, trend90d: 7.2,
+    source: "Jindal Stainless / MEPZ Chennai Trader Panel", sourceTier: "regional",
+    confidence: "Medium", lastUpdated: today,
+  },
+  {
+    key: "carbon-steel-fasteners", name: "Carbon Steel Fasteners (Zinc Plated)",
+    aliases: ["carbon steel fastener","zinc plated bolt","ms bolt","mild steel fastener","grade 8.8","grade 10.9","grade 12.9","hdg fastener","hot dip galvanized"],
+    category: "benchmark", group: "Industrial",
+    primaryMarket: "Ludhiana",
+    quotes: [
+      { market: "Ludhiana",  state: "Punjab",      ratePerKg: 118 },
+      { market: "Rajkot",    state: "Gujarat",     ratePerKg: 112 },
+      { market: "Faridabad", state: "Haryana",     ratePerKg: 122 },
+      { market: "Mumbai",    state: "Maharashtra", ratePerKg: 125 },
+    ],
+    trend7d: 0.2, trend30d: 1.4, trend90d: 3.1,
+    source: "Ludhiana Fastener Association / SAIL Reference", sourceTier: "regional",
+    confidence: "Medium", lastUpdated: today,
+  },
 ];
 
 /** Match a product name (free-text or HS-search entry) to a benchmark. */
