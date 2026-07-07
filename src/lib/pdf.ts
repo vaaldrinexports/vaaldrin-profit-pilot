@@ -114,7 +114,7 @@ async function buildShell(opts: DocShellOptions) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(...BRAND.gold);
-  doc.text("Exporters of Premium Indian Agricultural Products", margin + 74, 66);
+  doc.text("Bringing India's Finest to the World", margin + 74, 66);
 
   // Compliance strip under company name (IEC / GSTIN / FSSAI)
   doc.setTextColor(...BRAND.muted);
