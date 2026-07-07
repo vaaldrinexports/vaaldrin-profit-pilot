@@ -186,6 +186,14 @@ export const GRADES_BY_HS: Record<string, string[]> = {
   "0712.90.90": ["Curry Leaves Whole","Curry Leaves Powder"],
   // Seafood
   "0306.17.00": ["Vannamei HLSO 16/20","HLSO 21/25","HLSO 26/30","PD 31/40","PD 41/50","Black Tiger HOSO"],
+  // Industrial: Stainless Steel Fasteners
+  "7318.15.00": ["SS304 Assorted","SS316 Assorted","SS304L","SS316L","A2-70","A4-70","A4-80","OEM / Custom"],
+  "7318.15.90": ["M6 x 20 SS304","M8 x 25 SS304","M10 x 30 SS304","M12 x 40 SS304","M16 x 50 SS304","M20 x 60 SS304","M24 x 80 SS304","M8 x 25 SS316","M10 x 30 SS316","M12 x 40 SS316","M16 x 50 SS316","A2-70","A4-70","A4-80"],
+  "7318.16.00": ["M6 SS304","M8 SS304","M10 SS304","M12 SS304","M16 SS304","M20 SS304","M24 SS304","M8 SS316","M10 SS316","M12 SS316","M16 SS316","Nyloc M8 SS304","Nyloc M10 SS304"],
+  "7318.22.00": ["M6 SS304","M8 SS304","M10 SS304","M12 SS304","M16 SS304","M20 SS304","M24 SS304","M30 SS304","M8 SS316","M10 SS316","M12 SS316","M16 SS316"],
+  "7318.21.00": ["M6 SS304","M8 SS304","M10 SS304","M12 SS304","M16 SS304","M20 SS304","M24 SS304","M8 SS316","M10 SS316","M12 SS316"],
+  "7318.15.10": ["M4 x 10 SS304","M5 x 12 SS304","M6 x 16 SS304","M8 x 20 SS304","M10 x 25 SS304","M12 x 30 SS304","M16 x 40 SS304","M20 x 50 SS304","M6 x 16 SS316","M8 x 20 SS316","M10 x 25 SS316","M12 x 30 SS316"],
+  "7318.15.91": ["M6 x 1m SS304","M8 x 1m SS304","M10 x 1m SS304","M12 x 1m SS304","M16 x 1m SS304","M20 x 1m SS304","M24 x 1m SS304","M8 x 1m SS316","M10 x 1m SS316","M12 x 1m SS316","M16 x 1m SS316","Custom Length"],
 };
 
 /** Resolve grade options for the current product. Accepts HS code or product name. */
