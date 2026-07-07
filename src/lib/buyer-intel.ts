@@ -60,6 +60,16 @@ const BUSINESS_TYPE_HINTS: { keyword: string; type: string }[] = [
   { keyword: "spice", type: "Spice Importer" },
   { keyword: "textile", type: "Textile Buyer" },
   { keyword: "logist", type: "Logistics Company" },
+  { keyword: "fastener", type: "Industrial / Fasteners Buyer" },
+  { keyword: "hardware", type: "Industrial Hardware Buyer" },
+  { keyword: "engineer", type: "Engineering / OEM Buyer" },
+  { keyword: "industrial", type: "Industrial Buyer" },
+  { keyword: "steel", type: "Steel / Metals Buyer" },
+  { keyword: "metals", type: "Steel / Metals Buyer" },
+  { keyword: "oem", type: "OEM Buyer" },
+  { keyword: "mep", type: "MEP / Construction Buyer" },
+  { keyword: "construction", type: "Construction / EPC Buyer" },
+  { keyword: "epc", type: "Construction / EPC Buyer" },
 ];
 
 export type CheckStatus = "ok" | "warn" | "fail" | "info";
