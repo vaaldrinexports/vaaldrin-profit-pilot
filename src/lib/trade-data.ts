@@ -99,6 +99,16 @@ export const HS_CODES: HsCodeEntry[] = [
   { hsCode: "0712.20.00", hsCodeFlat: "07122000", name: "Dried Onion Flakes / Powder", category: "Dried Products", rodtepPct: 1.7, dutyDrawbackPct: 1.5, keywords: ["dried onion","onion flakes","onion powder","dehydrated onion"] },
   { hsCode: "0712.90.40", hsCodeFlat: "07129040", name: "Dried Garlic Flakes / Powder", category: "Dried Products", rodtepPct: 1.7, dutyDrawbackPct: 1.5, keywords: ["dried garlic","garlic flakes","garlic powder","dehydrated garlic"] },
   { hsCode: "0712.90.90", hsCodeFlat: "07129090", name: "Curry Leaves, Dried", category: "Dried Products", rodtepPct: 1.7, dutyDrawbackPct: 1.5, keywords: ["curry leaves","kadi patta","dried curry leaf"] },
+
+  // ---------------- Industrial: Stainless Steel Fasteners ----------------
+  // ITC-HS Chapter 7318 — screws, bolts, nuts, washers of iron/steel.
+  { hsCode: "7318.15.00", hsCodeFlat: "73181500", name: "Stainless Steel Fasteners (Assorted)", category: "Industrial", rodtepPct: 1.7, dutyDrawbackPct: 1.9, keywords: ["stainless steel fasteners","ss fasteners","ss304","ss316","fastener","industrial","hardware","oem","din","iso"] },
+  { hsCode: "7318.15.90", hsCodeFlat: "73181590", name: "Hex Bolts, Stainless Steel (DIN 933 / ISO 4017)", category: "Industrial", rodtepPct: 1.7, dutyDrawbackPct: 1.9, keywords: ["hex bolt","hex bolts","hexagon bolt","din 933","din933","iso 4017","iso4017","ss304","ss316","fastener","industrial"] },
+  { hsCode: "7318.16.00", hsCodeFlat: "73181600", name: "Hex Nuts, Stainless Steel (DIN 934 / ISO 4032)", category: "Industrial", rodtepPct: 1.7, dutyDrawbackPct: 1.9, keywords: ["hex nut","hex nuts","hexagon nut","din 934","din934","iso 4032","iso4032","ss304","ss316","fastener","industrial"] },
+  { hsCode: "7318.22.00", hsCodeFlat: "73182200", name: "Flat Washers, Stainless Steel (DIN 125 / ISO 7089)", category: "Industrial", rodtepPct: 1.7, dutyDrawbackPct: 1.9, keywords: ["flat washer","washer","plain washer","din 125","din125","iso 7089","iso7089","ss304","ss316","fastener","industrial"] },
+  { hsCode: "7318.21.00", hsCodeFlat: "73182100", name: "Spring / Lock Washers, Stainless Steel (DIN 127)", category: "Industrial", rodtepPct: 1.7, dutyDrawbackPct: 1.9, keywords: ["spring washer","lock washer","din 127","din127","ss304","ss316","fastener","industrial"] },
+  { hsCode: "7318.15.10", hsCodeFlat: "73181510", name: "Socket Head Cap Screws, Stainless Steel (DIN 912 / ISO 4762)", category: "Industrial", rodtepPct: 1.7, dutyDrawbackPct: 1.9, keywords: ["socket head cap screw","shcs","allen bolt","din 912","din912","iso 4762","iso4762","ss304","ss316","fastener","industrial"] },
+  { hsCode: "7318.15.91", hsCodeFlat: "73181591", name: "Threaded Rods / Studs, Stainless Steel", category: "Industrial", rodtepPct: 1.7, dutyDrawbackPct: 1.9, keywords: ["threaded rod","stud bolt","all thread","anchor rod","ss304","ss316","fastener","industrial"] },
 ];
 
 // ---------------- Product grade dictionary ----------------
