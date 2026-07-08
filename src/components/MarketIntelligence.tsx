@@ -10,7 +10,7 @@ import { fetchLiveBenchmark, type LiveQuote } from "@/lib/market-scraper.functio
 import {
   findBenchmark, regionalAverage, lowestQuote, highestQuote, primaryRate,
   assessVariance, trendFromPct, statusFromTrend, recommendation,
-  type ProductBenchmark,
+  type ProductBenchmark, type MarketQuote,
 } from "@/lib/market-intel";
 
 const RED = "#A61D24";
