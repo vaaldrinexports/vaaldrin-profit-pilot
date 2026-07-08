@@ -1,13 +1,16 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, TrendingUp, TrendingDown, Minus, Info, BarChart3 } from "lucide-react";
+import { RefreshCw, TrendingUp, TrendingDown, Minus, Info, BarChart3, ExternalLink, Radio } from "lucide-react";
+import { fetchLiveBenchmark, type LiveQuote } from "@/lib/market-scraper.functions";
 import {
   findBenchmark, regionalAverage, lowestQuote, highestQuote, primaryRate,
   assessVariance, trendFromPct, statusFromTrend, recommendation,
-  type ProductBenchmark,
+  type ProductBenchmark, type MarketQuote,
 } from "@/lib/market-intel";
 
 const RED = "#A61D24";
@@ -46,9 +49,41 @@ export default function MarketIntelligence({
   supplierPricePerKg: number;
   uom: string;
 }) {
-  const [tick, setTick] = useState(0);
-  const [refreshedAt, setRefreshedAt] = useState<string | null>(null);
-  const benchmark = useMemo(() => findBenchmark(productName), [productName, tick]);
+  const benchmark = useMemo(() => findBenchmark(productName), [productName]);
+  const fetchLive = useServerFn(fetchLiveBenchmark);
+
+  const markets = useMemo(
+    () => benchmark?.quotes.map((q) => ({ market: q.market, state: q.state })) ?? [],
+    [benchmark],
+  );
+
+  const live = useQuery({
+    enabled: !!benchmark && markets.length > 0,
+    queryKey: ["live-benchmark", benchmark?.key, markets.map((m) => m.market).join("|")],
+    queryFn: () =>
+      fetchLive({
+        data: { productName: benchmark!.name, markets, unit: "kg" },
+      }),
+    // one day — user can Refresh for on-demand fetch
+    staleTime: 24 * 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+
+  const liveByMarket = useMemo(() => {
+    const m = new Map<string, LiveQuote>();
+    live.data?.quotes.forEach((q) => m.set(q.market.toLowerCase(), q));
+    return m;
+  }, [live.data]);
+
+  // Merge: live rate wins when present, else fall back to static benchmark
+  const mergedQuotes = useMemo<MarketQuote[]>(() => {
+    if (!benchmark) return [];
+    return benchmark.quotes.map((q) => {
+      const l = liveByMarket.get(q.market.toLowerCase());
+      return l && l.ratePerKg ? { ...q, ratePerKg: l.ratePerKg } : q;
+    });
+  }, [benchmark, liveByMarket]);
 
   if (!productName?.trim()) {
     return (
@@ -58,11 +93,11 @@ export default function MarketIntelligence({
           <div>
             <h3 className="text-sm font-bold tracking-wide" style={{ color: RED }}>MARKET INTELLIGENCE</h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Select a product to load South India procurement benchmarks.
+              Select a product to fetch today's live mandi/market prices.
             </p>
             <p className="text-[11px] text-muted-foreground mt-1 italic">
-              Benchmarks are static reference prices compiled from APEDA, Spices Board India and state APMC
-              sources. Each card shows the exact source and last-updated date — these are not live mandi feeds.
+              Live rates are scraped from open web sources (mandi portals, trade publications, APEDA, Spices Board)
+              via Firecrawl. Static benchmarks are used as a fallback when a market has no live quote today.
             </p>
           </div>
         </div>
@@ -79,7 +114,7 @@ export default function MarketIntelligence({
             <h3 className="text-sm font-bold tracking-wide" style={{ color: RED }}>MARKET INTELLIGENCE</h3>
             <p className="text-xs text-muted-foreground mt-1">
               No benchmark available for <strong className="text-foreground">{productName}</strong>.
-              Supported categories: spices, tea, coffee, cotton, herbals and dried products from South India.
+              Supported categories: spices, tea, coffee, cotton, herbals, dried products and stainless steel fasteners.
             </p>
           </div>
         </div>
@@ -87,17 +122,25 @@ export default function MarketIntelligence({
     );
   }
 
+  const liveBenchmark: ProductBenchmark = { ...benchmark, quotes: mergedQuotes };
   const uomKg = (uom || "").toUpperCase() === "KG" || (uom || "").toUpperCase().startsWith("KG");
   const supplierKg = uomKg ? supplierPricePerKg : 0;
-  const benchPrice = primaryRate(benchmark);
+  const benchPrice = primaryRate(liveBenchmark);
   const assessment = assessVariance(supplierKg || benchPrice, benchPrice);
   const trend30 = benchmark.trend30d;
   const trend = trendFromPct(trend30);
   const status = statusFromTrend(trend);
-  const avg = regionalAverage(benchmark);
-  const lo = lowestQuote(benchmark);
-  const hi = highestQuote(benchmark);
+  const avg = regionalAverage(liveBenchmark);
+  const lo = lowestQuote(liveBenchmark);
+  const hi = highestQuote(liveBenchmark);
   const reco = recommendation({ variancePct: assessment.variancePct, trend30d: trend30 });
+
+  const hits = live.data?.hits ?? 0;
+  const total = markets.length;
+  const isLive = hits > 0;
+  const fetchedAt = live.data?.fetchedAt
+    ? new Date(live.data.fetchedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
+    : null;
 
   const toneClass =
     assessment.tone === "green" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
@@ -112,28 +155,52 @@ export default function MarketIntelligence({
           <BarChart3 className="w-5 h-5" style={{ color: RED }} />
           <div>
             <h3 className="text-sm font-bold tracking-wider" style={{ color: RED }}>MARKET INTELLIGENCE</h3>
-            <p className="text-[11px] text-muted-foreground">South India procurement benchmark</p>
+            <p className="text-[11px] text-muted-foreground">
+              {isLive
+                ? `Live web-scraped rates · ${hits}/${total} markets updated today`
+                : live.isFetching
+                ? "Fetching today's live rates…"
+                : "Static benchmark (live fetch unavailable)"}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="bg-[#FFF7E6] border-[#C99A2E]/50 text-[10px] font-semibold" style={{ color: RED }}>
-            Benchmark Price · Static Reference
+          <Badge
+            variant="outline"
+            className={
+              isLive
+                ? "bg-emerald-50 border-emerald-300 text-emerald-700 text-[10px] font-semibold gap-1"
+                : "bg-[#FFF7E6] border-[#C99A2E]/50 text-[10px] font-semibold gap-1"
+            }
+            style={!isLive ? { color: RED } : undefined}
+          >
+            <Radio className="w-3 h-3" />
+            {isLive ? "LIVE" : "Static Benchmark"}
           </Badge>
           <ConfidenceBadge level={benchmark.confidence} />
           <Button
             size="sm"
             variant="outline"
             className="h-7 text-xs gap-1.5"
-            onClick={() => {
-              setTick((t) => t + 1);
-              const now = new Date();
-              setRefreshedAt(now.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }));
-              toast.success("Benchmark refreshed", {
-                description: benchmark ? `${benchmark.name} · ${benchmark.primaryMarket}` : "Re-checked benchmark data",
-              });
+            disabled={live.isFetching}
+            onClick={async () => {
+              const res = await live.refetch();
+              const d = res.data;
+              if (d && d.hits > 0) {
+                toast.success(`Live rates refreshed`, {
+                  description: `${d.hits}/${d.quotes.length} markets updated for ${benchmark.name}`,
+                });
+              } else if (d?.error) {
+                toast.error("Live fetch failed", { description: d.error });
+              } else {
+                toast.warning("No live prices found", {
+                  description: "Sources returned no verifiable rate. Showing benchmark.",
+                });
+              }
             }}
           >
-            <RefreshCw className="w-3 h-3" /> Refresh
+            <RefreshCw className={`w-3 h-3 ${live.isFetching ? "animate-spin" : ""}`} />
+            {live.isFetching ? "Fetching…" : "Refresh Live"}
           </Button>
         </div>
       </div>
@@ -149,7 +216,7 @@ export default function MarketIntelligence({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-md border p-3" style={{ borderColor: "#E5E7EB" }}>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Benchmark Price</div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{isLive ? "Live Price" : "Benchmark Price"}</div>
               <div className="text-xl font-bold" style={{ color: RED }}>{fmtINR(benchPrice)}<span className="text-xs font-normal text-muted-foreground">/kg</span></div>
             </div>
             <div className="rounded-md border p-3" style={{ borderColor: "#E5E7EB" }}>
@@ -200,13 +267,16 @@ export default function MarketIntelligence({
               <span className="text-muted-foreground">Status:</span>
               <span className="font-semibold" style={{ color: status === "Bullish" ? "#059669" : status === "Bearish" ? "#DC2626" : "#B45309" }}>{status}</span>
             </div>
+            <p className="text-[10px] text-muted-foreground mt-1 italic">
+              Trend % is derived from historical benchmark series; live prices update the current-day quote only.
+            </p>
           </div>
         </div>
 
         {/* Right: Multi-market comparison */}
         <div className="space-y-4">
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Regional Markets</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Regional Markets · Today</div>
             <div className="rounded-md border overflow-hidden" style={{ borderColor: "#E5E7EB" }}>
               <table className="w-full text-xs">
                 <thead className="bg-slate-50 text-slate-600">
@@ -214,19 +284,38 @@ export default function MarketIntelligence({
                     <th className="text-left px-3 py-1.5 font-semibold">Market</th>
                     <th className="text-left px-3 py-1.5 font-semibold">State</th>
                     <th className="text-right px-3 py-1.5 font-semibold">Rate/kg</th>
+                    <th className="text-center px-2 py-1.5 font-semibold">Src</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {benchmark.quotes.map((q) => {
+                  {liveBenchmark.quotes.map((q) => {
                     const isPrimary = q.market === benchmark.primaryMarket;
+                    const l = liveByMarket.get(q.market.toLowerCase());
+                    const isLiveRow = !!(l && l.ratePerKg);
                     return (
                       <tr key={q.market} className="border-t" style={{ borderColor: "#F1F5F9" }}>
                         <td className="px-3 py-1.5 font-medium">
                           {q.market}
                           {isPrimary && <span className="ml-1.5 text-[9px] uppercase font-bold" style={{ color: GOLD }}>Primary</span>}
+                          {isLiveRow && <span className="ml-1.5 text-[9px] uppercase font-bold text-emerald-700">Live</span>}
                         </td>
                         <td className="px-3 py-1.5 text-muted-foreground">{q.state}</td>
                         <td className="px-3 py-1.5 text-right font-semibold tabular-nums">{fmtINR(q.ratePerKg)}</td>
+                        <td className="px-2 py-1.5 text-center">
+                          {isLiveRow && l?.sourceUrl ? (
+                            <a
+                              href={l.sourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={l.sourceTitle ?? l.sourceUrl}
+                              className="inline-flex text-emerald-700 hover:text-emerald-900"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground text-[10px]">—</span>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -260,14 +349,21 @@ export default function MarketIntelligence({
 
           {/* Source */}
           <div className="text-[10px] text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span><strong className="text-foreground">Source:</strong> {benchmark.source}</span>
-            <span><strong className="text-foreground">Updated:</strong> {refreshedAt ?? benchmark.lastUpdated}</span>
-            <span className="italic">
-              {benchmark.category === "live" ? "Live Market Reference" : "Benchmark Price"}
+            <span>
+              <strong className="text-foreground">Source:</strong>{" "}
+              {isLive ? "Firecrawl web search · mandi & trade portals" : benchmark.source}
             </span>
+            <span>
+              <strong className="text-foreground">Updated:</strong>{" "}
+              {fetchedAt ?? benchmark.lastUpdated}
+            </span>
+            {live.data?.error && (
+              <span className="italic text-amber-700">Live fetch: {live.data.error}</span>
+            )}
           </div>
         </div>
       </div>
     </Card>
   );
 }
+
