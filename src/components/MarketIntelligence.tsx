@@ -169,10 +169,9 @@ export default function MarketIntelligence({
             variant="outline"
             className={
               isLive
-                ? "bg-emerald-50 border-emerald-300 text-emerald-700 text-[10px] font-semibold gap-1"
+                ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold gap-1"
                 : "bg-amber-500/10 border-amber-500/40 text-amber-800 dark:text-amber-400 text-[10px] font-semibold gap-1"
             }
-            style={!isLive ? { color: RED } : undefined}
           >
             <Radio className="w-3 h-3" />
             {isLive ? "LIVE" : "Static Benchmark"}
