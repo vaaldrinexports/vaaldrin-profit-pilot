@@ -33,9 +33,9 @@ function TrendIcon({ pct }: { pct: number }) {
 
 function ConfidenceBadge({ level }: { level: ProductBenchmark["confidence"] }) {
   const map: Record<string, string> = {
-    High: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    Medium: "bg-amber-50 text-amber-700 border-amber-200",
-    Low: "bg-slate-50 text-slate-700 border-slate-200",
+    High: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
+    Medium: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
+    Low: "bg-muted text-muted-foreground border-border",
   };
   return <Badge variant="outline" className={`${map[level]} text-[10px] font-semibold`}>Confidence: {level}</Badge>;
 }
@@ -143,14 +143,14 @@ export default function MarketIntelligence({
     : null;
 
   const toneClass =
-    assessment.tone === "green" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
-    assessment.tone === "red"   ? "bg-red-50 text-red-700 border-red-300" :
-                                  "bg-amber-50 text-amber-800 border-amber-300";
+    assessment.tone === "green" ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/40" :
+    assessment.tone === "red"   ? "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/40" :
+                                  "bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/40";
 
   return (
     <Card className="overflow-hidden border-l-4" style={{ borderLeftColor: GOLD }}>
       {/* Header */}
-      <div className="px-5 py-3 flex items-center justify-between border-b" style={{ borderColor: "#E5E7EB" }}>
+      <div className="px-5 py-3 flex items-center justify-between border-b border-border" >
         <div className="flex items-center gap-2.5">
           <BarChart3 className="w-5 h-5" style={{ color: RED }} />
           <div>
@@ -169,10 +169,9 @@ export default function MarketIntelligence({
             variant="outline"
             className={
               isLive
-                ? "bg-emerald-50 border-emerald-300 text-emerald-700 text-[10px] font-semibold gap-1"
-                : "bg-[#FFF7E6] border-[#C99A2E]/50 text-[10px] font-semibold gap-1"
+                ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold gap-1"
+                : "bg-amber-500/10 border-amber-500/40 text-amber-800 dark:text-amber-400 text-[10px] font-semibold gap-1"
             }
-            style={!isLive ? { color: RED } : undefined}
           >
             <Radio className="w-3 h-3" />
             {isLive ? "LIVE" : "Static Benchmark"}
@@ -215,11 +214,11 @@ export default function MarketIntelligence({
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-md border p-3" style={{ borderColor: "#E5E7EB" }}>
+            <div className="rounded-md border border-border p-3" >
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{isLive ? "Live Price" : "Benchmark Price"}</div>
               <div className="text-xl font-bold" style={{ color: RED }}>{fmtINR(benchPrice)}<span className="text-xs font-normal text-muted-foreground">/kg</span></div>
             </div>
-            <div className="rounded-md border p-3" style={{ borderColor: "#E5E7EB" }}>
+            <div className="rounded-md border border-border p-3" >
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Supplier Price</div>
               <div className="text-xl font-bold">{supplierKg > 0 ? fmtINR(supplierKg) : "—"}<span className="text-xs font-normal text-muted-foreground">/{uomKg ? "kg" : (uom || "unit")}</span></div>
               {!uomKg && supplierPricePerKg > 0 && (
@@ -251,7 +250,7 @@ export default function MarketIntelligence({
                 { label: "30-Day", v: benchmark.trend30d },
                 { label: "90-Day", v: benchmark.trend90d },
               ].map((t) => (
-                <div key={t.label} className="rounded-md border p-2" style={{ borderColor: "#E5E7EB" }}>
+                <div key={t.label} className="rounded-md border border-border p-2" >
                   <div className="text-[10px] text-muted-foreground">{t.label}</div>
                   <div className="flex items-center justify-center gap-1 font-semibold text-sm">
                     <TrendIcon pct={t.v} />
@@ -277,9 +276,9 @@ export default function MarketIntelligence({
         <div className="space-y-4">
           <div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Regional Markets · Today</div>
-            <div className="rounded-md border overflow-hidden" style={{ borderColor: "#E5E7EB" }}>
+            <div className="rounded-md border border-border overflow-hidden" >
               <table className="w-full text-xs">
-                <thead className="bg-slate-50 text-slate-600">
+                <thead className="bg-muted text-muted-foreground">
                   <tr>
                     <th className="text-left px-3 py-1.5 font-semibold">Market</th>
                     <th className="text-left px-3 py-1.5 font-semibold">State</th>
@@ -293,7 +292,7 @@ export default function MarketIntelligence({
                     const l = liveByMarket.get(q.market.toLowerCase());
                     const isLiveRow = !!(l && l.ratePerKg);
                     return (
-                      <tr key={q.market} className="border-t" style={{ borderColor: "#F1F5F9" }}>
+                      <tr key={q.market} className="border-t" style={{ borderColor: "hsl(var(--border) / 0.5)" }}>
                         <td className="px-3 py-1.5 font-medium">
                           {q.market}
                           {isPrimary && <span className="ml-1.5 text-[9px] uppercase font-bold" style={{ color: GOLD }}>Primary</span>}
@@ -323,17 +322,17 @@ export default function MarketIntelligence({
               </table>
             </div>
             <div className="grid grid-cols-3 gap-2 mt-2 text-center text-[11px]">
-              <div className="rounded border p-1.5" style={{ borderColor: "#E5E7EB" }}>
+              <div className="rounded border border-border p-1.5" >
                 <div className="text-muted-foreground">Lowest</div>
                 <div className="font-semibold text-emerald-700">{lo.market}</div>
                 <div className="tabular-nums">{fmtINR(lo.ratePerKg)}</div>
               </div>
-              <div className="rounded border p-1.5" style={{ borderColor: "#E5E7EB" }}>
+              <div className="rounded border border-border p-1.5" >
                 <div className="text-muted-foreground">Average</div>
                 <div className="font-semibold">—</div>
                 <div className="tabular-nums">{fmtINR(avg)}</div>
               </div>
-              <div className="rounded border p-1.5" style={{ borderColor: "#E5E7EB" }}>
+              <div className="rounded border border-border p-1.5" >
                 <div className="text-muted-foreground">Highest</div>
                 <div className="font-semibold text-red-700">{hi.market}</div>
                 <div className="tabular-nums">{fmtINR(hi.ratePerKg)}</div>
@@ -342,7 +341,7 @@ export default function MarketIntelligence({
           </div>
 
           {/* Recommendation */}
-          <div className="rounded-md p-3" style={{ background: "#FFF7E6", border: `1px solid ${GOLD}` }}>
+          <div className="rounded-md p-3 bg-amber-500/10 border border-amber-500/40">
             <div className="text-[10px] uppercase tracking-wider font-bold mb-1" style={{ color: RED }}>Procurement Recommendation</div>
             <p className="text-xs text-foreground leading-relaxed">{reco}</p>
           </div>

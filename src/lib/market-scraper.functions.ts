@@ -51,14 +51,12 @@ async function searchOneMarket(
         {
           type: "json",
           prompt:
-            `Extract the most recent market/mandi price for "${productName}" in ${market}, ${state}, India. ` +
-            `Return ONLY JSON of the form { "ratePerKg": number | null, "asOf": string | null }. ` +
-            `ratePerKg MUST be in Indian Rupees per kilogram. ` +
-            `If the source quotes per quintal (100 kg), divide by 100. ` +
-            `If per tonne (1000 kg), divide by 1000. ` +
-            `If per gram, multiply by 1000. ` +
-            `Ignore prices for a different product or a different region. ` +
-            `If no reliable current price is present, return { "ratePerKg": null, "asOf": null }.`,
+            `Extract the most recent wholesale/mandi market price for "${productName}" in ${market}, ${state}, India. ` +
+            `Return ONLY JSON: { "rawPrice": number | null, "unit": "kg" | "quintal" | "tonne" | "gram" | "50kg" | null, "currency": "INR" | "USD" | null, "asOf": string | null }. ` +
+            `rawPrice is the price exactly as printed on the source (do NOT convert). unit is the unit it is quoted in. ` +
+            `Common Indian mandi convention is per quintal (100 kg). Only choose "kg" if the source explicitly says per kg / ₹/kg. ` +
+            `Ignore prices for a different product, different grade, or a different region. ` +
+            `If no reliable current price is present, return all fields null.`,
         },
       ],
     },
@@ -93,23 +91,42 @@ async function searchOneMarket(
       web?: Array<{
         url?: string;
         title?: string;
-        json?: { ratePerKg?: number | null };
+        json?: {
+          rawPrice?: number | null;
+          unit?: string | null;
+          currency?: string | null;
+        };
       }>;
     };
   };
 
+  const unitDivisor: Record<string, number> = {
+    kg: 1, kgs: 1, kilogram: 1, kilo: 1,
+    gram: 0.001, g: 0.001, gm: 0.001,
+    quintal: 100, qtl: 100, q: 100,
+    "50kg": 50, bag: 50,
+    tonne: 1000, ton: 1000, mt: 1000, metricton: 1000,
+  };
+
   const items = json?.data?.web ?? [];
   for (const item of items) {
-    const rate = item?.json?.ratePerKg;
-    if (typeof rate === "number" && Number.isFinite(rate) && rate > 0 && rate < 100000) {
-      return {
-        market,
-        state,
-        ratePerKg: Math.round(rate),
-        sourceUrl: item.url ?? null,
-        sourceTitle: item.title ?? null,
-      };
-    }
+    const j = item?.json;
+    const raw = j?.rawPrice;
+    const unitKey = (j?.unit ?? "").toLowerCase().replace(/[\s._-]/g, "");
+    const currency = (j?.currency ?? "INR").toUpperCase();
+    if (typeof raw !== "number" || !Number.isFinite(raw) || raw <= 0) continue;
+    if (currency !== "INR") continue; // skip non-INR to avoid FX guesswork
+    const divisor = unitDivisor[unitKey];
+    if (!divisor) continue; // unknown unit → skip rather than mis-scale
+    const perKg = raw / divisor;
+    if (perKg < 5 || perKg > 50000) continue; // sanity band ₹/kg
+    return {
+      market,
+      state,
+      ratePerKg: Math.round(perKg),
+      sourceUrl: item.url ?? null,
+      sourceTitle: item.title ?? null,
+    };
   }
   return empty;
 }
