@@ -342,7 +342,7 @@ export default function MarketIntelligence({
           </div>
 
           {/* Recommendation */}
-          <div className="rounded-md p-3" className="bg-amber-500/10 border border-amber-500/40" style={undefined}>
+          <div className="rounded-md p-3 bg-amber-500/10 border border-amber-500/40">
             <div className="text-[10px] uppercase tracking-wider font-bold mb-1" style={{ color: RED }}>Procurement Recommendation</div>
             <p className="text-xs text-foreground leading-relaxed">{reco}</p>
           </div>
