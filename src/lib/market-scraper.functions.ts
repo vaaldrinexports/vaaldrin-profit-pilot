@@ -126,8 +126,7 @@ async function searchOneMarket(
       ratePerKg: Math.round(perKg),
       sourceUrl: item.url ?? null,
       sourceTitle: item.title ?? null,
-      };
-    }
+    };
   }
   return empty;
 }
