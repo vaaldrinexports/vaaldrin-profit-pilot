@@ -143,9 +143,9 @@ export default function MarketIntelligence({
     : null;
 
   const toneClass =
-    assessment.tone === "green" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
-    assessment.tone === "red"   ? "bg-red-50 text-red-700 border-red-300" :
-                                  "bg-amber-50 text-amber-800 border-amber-300";
+    assessment.tone === "green" ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/40" :
+    assessment.tone === "red"   ? "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/40" :
+                                  "bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/40";
 
   return (
     <Card className="overflow-hidden border-l-4" style={{ borderLeftColor: GOLD }}>
