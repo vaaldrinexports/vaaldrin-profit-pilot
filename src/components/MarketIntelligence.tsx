@@ -33,9 +33,9 @@ function TrendIcon({ pct }: { pct: number }) {
 
 function ConfidenceBadge({ level }: { level: ProductBenchmark["confidence"] }) {
   const map: Record<string, string> = {
-    High: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    Medium: "bg-amber-50 text-amber-700 border-amber-200",
-    Low: "bg-slate-50 text-slate-700 border-slate-200",
+    High: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
+    Medium: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
+    Low: "bg-muted text-muted-foreground border-border",
   };
   return <Badge variant="outline" className={`${map[level]} text-[10px] font-semibold`}>Confidence: {level}</Badge>;
 }
