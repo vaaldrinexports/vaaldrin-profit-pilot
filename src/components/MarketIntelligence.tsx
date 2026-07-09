@@ -170,7 +170,7 @@ export default function MarketIntelligence({
             className={
               isLive
                 ? "bg-emerald-50 border-emerald-300 text-emerald-700 text-[10px] font-semibold gap-1"
-                : "bg-[#FFF7E6] border-[#C99A2E]/50 text-[10px] font-semibold gap-1"
+                : "bg-amber-500/10 border-amber-500/40 text-amber-800 dark:text-amber-400 text-[10px] font-semibold gap-1"
             }
             style={!isLive ? { color: RED } : undefined}
           >
@@ -215,11 +215,11 @@ export default function MarketIntelligence({
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-md border p-3" >
+            <div className="rounded-md border border-border p-3" >
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{isLive ? "Live Price" : "Benchmark Price"}</div>
               <div className="text-xl font-bold" style={{ color: RED }}>{fmtINR(benchPrice)}<span className="text-xs font-normal text-muted-foreground">/kg</span></div>
             </div>
-            <div className="rounded-md border p-3" >
+            <div className="rounded-md border border-border p-3" >
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Supplier Price</div>
               <div className="text-xl font-bold">{supplierKg > 0 ? fmtINR(supplierKg) : "—"}<span className="text-xs font-normal text-muted-foreground">/{uomKg ? "kg" : (uom || "unit")}</span></div>
               {!uomKg && supplierPricePerKg > 0 && (
@@ -279,7 +279,7 @@ export default function MarketIntelligence({
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Regional Markets · Today</div>
             <div className="rounded-md border border-border overflow-hidden" >
               <table className="w-full text-xs">
-                <thead className="bg-slate-50 text-slate-600">
+                <thead className="bg-muted text-muted-foreground">
                   <tr>
                     <th className="text-left px-3 py-1.5 font-semibold">Market</th>
                     <th className="text-left px-3 py-1.5 font-semibold">State</th>
@@ -342,7 +342,7 @@ export default function MarketIntelligence({
           </div>
 
           {/* Recommendation */}
-          <div className="rounded-md p-3" style={{ background: "#FFF7E6", border: `1px solid ${GOLD}` }}>
+          <div className="rounded-md p-3" className="bg-amber-500/10 border border-amber-500/40" style={undefined}>
             <div className="text-[10px] uppercase tracking-wider font-bold mb-1" style={{ color: RED }}>Procurement Recommendation</div>
             <p className="text-xs text-foreground leading-relaxed">{reco}</p>
           </div>
