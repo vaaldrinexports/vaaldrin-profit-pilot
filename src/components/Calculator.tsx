@@ -1746,6 +1746,10 @@ export default function Calculator() {
             </GroupCard>
           </TabsContent>
 
+          <TabsContent value="market-intel" className="space-y-5">
+            <MarketIntelDashboard />
+          </TabsContent>
+
           {/* ADMIN — Banking tariff editor */}
           <TabsContent value="admin" className="space-y-5">
             <div className="flex items-center justify-between gap-3 rounded-lg border border-[#C99A2E]/40 bg-[#FAF5EC] px-4 py-3">
