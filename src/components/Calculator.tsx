@@ -24,7 +24,7 @@ import {
 } from "@/lib/pdf";
 import logoAsset from "@/assets/vaaldrin-logo.png.asset.json";
 import MarketIntelligence from "@/components/MarketIntelligence";
-import BuyerIntelligence from "@/components/BuyerIntelligence";
+import MarketIntelDashboard from "@/components/MarketIntelDashboard";
 
 type DocType =
   | "quotation"
@@ -761,7 +761,7 @@ export default function Calculator() {
             { id: "inputs", label: "Quotations", icon: FileText },
             { id: "inputs", label: "Buyers", icon: Users },
             { id: "inputs", label: "Products", icon: Boxes },
-            { id: "inputs", label: "Market Intel", icon: LineChartIcon },
+            { id: "market-intel", label: "Market Intel", icon: LineChartIcon },
             { id: "banking", label: "Banking & Forex", icon: Landmark },
             { id: "profit", label: "Profit", icon: TrendingUp },
             { id: "incoterms", label: "Documents", icon: FileDown },
@@ -1026,7 +1026,8 @@ export default function Calculator() {
               <span className="md:hidden">6. Scenario</span><span className="hidden md:inline">6. Scenarios</span>
             </TabsTrigger>
             <TabsTrigger value="audit" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">7. Audit</TabsTrigger>
-            <TabsTrigger value="admin" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">8. Admin</TabsTrigger>
+            <TabsTrigger value="market-intel" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">8. Market</TabsTrigger>
+            <TabsTrigger value="admin" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">9. Admin</TabsTrigger>
           </TabsList>
 
 
@@ -1113,16 +1114,6 @@ export default function Calculator() {
               <DestinationDutyCard country={s.buyerCountry} hsCode={s.hsCode} />
             </GroupCard>
 
-            <BuyerIntelligence
-              company={s.buyerCompany}
-              country={s.buyerCountry}
-              email={s.buyerEmail}
-              website={s.buyerWebsite}
-              phone={s.buyerPhone}
-              address={s.buyerAddress}
-              notes={s.buyerNotes}
-              onNotesChange={(v) => set("buyerNotes", v)}
-            />
 
             <MarketIntelligence
               productName={s.productName}
@@ -1753,6 +1744,10 @@ export default function Calculator() {
                 <KPI label="Break-even export price" value={fmtINR(c.breakEvenPrice)} sub="per unit" />
               </div>
             </GroupCard>
+          </TabsContent>
+
+          <TabsContent value="market-intel" className="space-y-5">
+            <MarketIntelDashboard />
           </TabsContent>
 
           {/* ADMIN — Banking tariff editor */}
