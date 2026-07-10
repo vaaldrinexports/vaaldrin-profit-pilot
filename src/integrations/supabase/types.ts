@@ -35,6 +35,219 @@ export type Database = {
         }
         Relationships: []
       }
+      mi_countries: {
+        Row: {
+          currency: string | null
+          iso2: string
+          name: string
+          region: string | null
+        }
+        Insert: {
+          currency?: string | null
+          iso2: string
+          name: string
+          region?: string | null
+        }
+        Update: {
+          currency?: string | null
+          iso2?: string
+          name?: string
+          region?: string | null
+        }
+        Relationships: []
+      }
+      mi_news: {
+        Row: {
+          captured_at: string
+          country_iso2: string | null
+          headline: string
+          id: string
+          product_id: string | null
+          published_at: string | null
+          sentiment: string | null
+          source: string | null
+          summary: string | null
+          url: string | null
+        }
+        Insert: {
+          captured_at?: string
+          country_iso2?: string | null
+          headline: string
+          id?: string
+          product_id?: string | null
+          published_at?: string | null
+          sentiment?: string | null
+          source?: string | null
+          summary?: string | null
+          url?: string | null
+        }
+        Update: {
+          captured_at?: string
+          country_iso2?: string | null
+          headline?: string
+          id?: string
+          product_id?: string | null
+          published_at?: string | null
+          sentiment?: string | null
+          source?: string | null
+          summary?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mi_news_country_iso2_fkey"
+            columns: ["country_iso2"]
+            isOneToOne: false
+            referencedRelation: "mi_countries"
+            referencedColumns: ["iso2"]
+          },
+          {
+            foreignKeyName: "mi_news_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "mi_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mi_products: {
+        Row: {
+          category: string | null
+          code: string
+          created_at: string
+          hs_code: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          category?: string | null
+          code: string
+          created_at?: string
+          hs_code?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string | null
+          code?: string
+          created_at?: string
+          hs_code?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      mi_scores: {
+        Row: {
+          ai_recommendation: string | null
+          avg_price_usd: number | null
+          competition: string | null
+          computed_at: string
+          country_iso2: string | null
+          demand_score: number | null
+          evidence: Json
+          id: string
+          opportunity_score: number | null
+          price_trend: string | null
+          product_id: string
+          supply_situation: string | null
+        }
+        Insert: {
+          ai_recommendation?: string | null
+          avg_price_usd?: number | null
+          competition?: string | null
+          computed_at?: string
+          country_iso2?: string | null
+          demand_score?: number | null
+          evidence?: Json
+          id?: string
+          opportunity_score?: number | null
+          price_trend?: string | null
+          product_id: string
+          supply_situation?: string | null
+        }
+        Update: {
+          ai_recommendation?: string | null
+          avg_price_usd?: number | null
+          competition?: string | null
+          computed_at?: string
+          country_iso2?: string | null
+          demand_score?: number | null
+          evidence?: Json
+          id?: string
+          opportunity_score?: number | null
+          price_trend?: string | null
+          product_id?: string
+          supply_situation?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mi_scores_country_iso2_fkey"
+            columns: ["country_iso2"]
+            isOneToOne: false
+            referencedRelation: "mi_countries"
+            referencedColumns: ["iso2"]
+          },
+          {
+            foreignKeyName: "mi_scores_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "mi_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mi_signals: {
+        Row: {
+          captured_at: string
+          country_iso2: string | null
+          id: string
+          meta: Json
+          product_id: string | null
+          signal_type: string
+          source: string | null
+          source_url: string | null
+          value: number | null
+        }
+        Insert: {
+          captured_at?: string
+          country_iso2?: string | null
+          id?: string
+          meta?: Json
+          product_id?: string | null
+          signal_type: string
+          source?: string | null
+          source_url?: string | null
+          value?: number | null
+        }
+        Update: {
+          captured_at?: string
+          country_iso2?: string | null
+          id?: string
+          meta?: Json
+          product_id?: string | null
+          signal_type?: string
+          source?: string | null
+          source_url?: string | null
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mi_signals_country_iso2_fkey"
+            columns: ["country_iso2"]
+            isOneToOne: false
+            referencedRelation: "mi_countries"
+            referencedColumns: ["iso2"]
+          },
+          {
+            foreignKeyName: "mi_signals_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "mi_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
           buyer_company: string | null
