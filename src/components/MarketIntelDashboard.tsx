@@ -278,7 +278,7 @@ export default function MarketIntelDashboard() {
                         </a>
                       ) : <span className="text-muted-foreground">—</span>}
                     </td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">{relTime((r.score?.computed_at ?? r.price?.captured_at) ?? null)}</td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">{relTime(r.score?.computed_at ?? r.price?.captured_at ?? null)}</td>
                   </tr>
                 ))}
                 {!productRows.length && <tr><td colSpan={9} className="px-3 py-8 text-center text-xs text-muted-foreground">No signals yet. Click Refresh.</td></tr>}
