@@ -30,7 +30,7 @@ const DATA_TYPE_LABEL: Record<string, { label: string; cls: string }> = {
   ai: { label: "🟣 AI Generated", cls: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30" },
 };
 
-function relTime(iso: string | null): string {
+function relTime(iso: string | null | undefined): string {
   if (!iso) return "never";
   const s = (Date.now() - new Date(iso).getTime()) / 1000;
   if (s < 60) return `${Math.round(s)}s ago`;
