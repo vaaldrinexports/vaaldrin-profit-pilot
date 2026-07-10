@@ -248,6 +248,54 @@ export type Database = {
           },
         ]
       }
+      mi_source_health: {
+        Row: {
+          category: string
+          data_type: string
+          duration_ms: number | null
+          id: string
+          last_attempt_at: string | null
+          last_error: string | null
+          last_success_at: string | null
+          records_last_run: number | null
+          refresh_interval_minutes: number
+          source_key: string
+          source_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          data_type: string
+          duration_ms?: number | null
+          id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          last_success_at?: string | null
+          records_last_run?: number | null
+          refresh_interval_minutes?: number
+          source_key: string
+          source_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          data_type?: string
+          duration_ms?: number | null
+          id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          last_success_at?: string | null
+          records_last_run?: number | null
+          refresh_interval_minutes?: number
+          source_key?: string
+          source_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       quotes: {
         Row: {
           buyer_company: string | null
