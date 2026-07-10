@@ -761,7 +761,7 @@ export default function Calculator() {
             { id: "inputs", label: "Quotations", icon: FileText },
             { id: "inputs", label: "Buyers", icon: Users },
             { id: "inputs", label: "Products", icon: Boxes },
-            { id: "inputs", label: "Market Intel", icon: LineChartIcon },
+            { id: "market-intel", label: "Market Intel", icon: LineChartIcon },
             { id: "banking", label: "Banking & Forex", icon: Landmark },
             { id: "profit", label: "Profit", icon: TrendingUp },
             { id: "incoterms", label: "Documents", icon: FileDown },
