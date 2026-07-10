@@ -1026,7 +1026,8 @@ export default function Calculator() {
               <span className="md:hidden">6. Scenario</span><span className="hidden md:inline">6. Scenarios</span>
             </TabsTrigger>
             <TabsTrigger value="audit" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">7. Audit</TabsTrigger>
-            <TabsTrigger value="admin" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">8. Admin</TabsTrigger>
+            <TabsTrigger value="market-intel" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">8. Market</TabsTrigger>
+            <TabsTrigger value="admin" className="py-2 px-1 text-xs md:text-sm min-w-0 truncate">9. Admin</TabsTrigger>
           </TabsList>
 
 
