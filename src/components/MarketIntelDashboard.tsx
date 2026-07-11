@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowDown, ArrowRight, ArrowUp, CheckCircle2, ExternalLink, Globe2, Loader2, RefreshCw, Search, TrendingUp, XCircle } from "lucide-react";
 import { refreshMarketIntelligence, getMarketHealth } from "@/lib/market-pipeline.functions";
+import MarketIntelInsights from "./MarketIntelInsights";
 
 type Product = { id: string; code: string; name: string; hs_code: string | null; category: string | null };
 type Country = { iso2: string; name: string; region: string | null; currency: string | null };
