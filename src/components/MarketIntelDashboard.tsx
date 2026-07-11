@@ -340,6 +340,9 @@ export default function MarketIntelDashboard() {
         </CardContent>
       </Card>
 
+      {/* Phase 3 — AI Decision Intelligence layered on top of Phase 2 data */}
+      <MarketIntelInsights />
+
       <p className="text-[11px] text-muted-foreground px-1">
         Refresh cadence is per-source: FX every 15m, News every 30m, Weather every 6h, Commodity prices daily. A background job runs every 15 minutes and only refreshes sources whose window has elapsed. Cached data stays visible during outages — nothing is fabricated.
       </p>
