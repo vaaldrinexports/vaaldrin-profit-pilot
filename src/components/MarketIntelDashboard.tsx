@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowDown, ArrowRight, ArrowUp, CheckCircle2, ExternalLink, Globe2, Loader2, RefreshCw, Search, TrendingUp, XCircle } from "lucide-react";
 import { refreshMarketIntelligence, getMarketHealth } from "@/lib/market-pipeline.functions";
+import MarketIntelInsights from "./MarketIntelInsights";
 
 type Product = { id: string; code: string; name: string; hs_code: string | null; category: string | null };
 type Country = { iso2: string; name: string; region: string | null; currency: string | null };
@@ -338,6 +339,9 @@ export default function MarketIntelDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Phase 3 — AI Decision Intelligence layered on top of Phase 2 data */}
+      <MarketIntelInsights />
 
       <p className="text-[11px] text-muted-foreground px-1">
         Refresh cadence is per-source: FX every 15m, News every 30m, Weather every 6h, Commodity prices daily. A background job runs every 15 minutes and only refreshes sources whose window has elapsed. Cached data stays visible during outages — nothing is fabricated.
