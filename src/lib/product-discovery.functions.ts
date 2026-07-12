@@ -251,14 +251,14 @@ export const discoverProducts = createServerFn({ method: "POST" }).handler(async
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const admin = supabaseAdmin;
   const result = await runProductDiscovery(admin);
-  const patch: Record<string, unknown> = {
-    last_attempt_at: new Date().toISOString(),
+  const now = new Date().toISOString();
+  await admin.from("mi_source_health").update({
+    last_attempt_at: now,
     status: result.ok ? "healthy" : "failed",
     records_last_run: result.records,
     duration_ms: result.duration_ms,
     last_error: result.error ?? null,
-  };
-  if (result.ok) patch.last_success_at = new Date().toISOString();
-  await admin.from("mi_source_health").update(patch).eq("source_key", "discovery.trends");
+    ...(result.ok ? { last_success_at: now } : {}),
+  }).eq("source_key", "discovery.trends");
   return result;
 });
