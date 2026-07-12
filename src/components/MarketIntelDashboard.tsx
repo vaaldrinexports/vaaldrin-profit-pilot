@@ -273,16 +273,18 @@ export default function MarketIntelDashboard() {
         </CardContent>
       </Card>
 
-      {/* Products in Demand */}
+      {/* Global Export Opportunities */}
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between gap-3 flex-wrap">
           <div>
-            <CardTitle className="text-base">Products Currently in Demand</CardTitle>
-            <p className="text-xs text-muted-foreground">Demand & opportunity are <DataTypeBadge type="ai" /> from live signals · price is <DataTypeBadge type="latest_available" /></p>
+            <CardTitle className="text-base">Global Export Opportunities</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Auto-discovered from live trade signals · demand & opportunity are <DataTypeBadge type="ai" /> · price is <DataTypeBadge type="latest_available" />
+            </p>
           </div>
           <div className="relative w-full max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product…" className="pl-8 h-9" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product, industry, HS, country…" className="pl-8 h-9" />
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -290,38 +292,52 @@ export default function MarketIntelDashboard() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left">
-                  <th className="w-10">#</th><th>Product</th><th>HS</th>
+                  <th className="w-10">#</th><th>Product</th><th>Category</th><th>HS</th>
                   <th className="text-right">Demand</th><th className="text-right">Opportunity</th>
-                  <th>Trend</th><th className="text-right">Price (₹/kg)</th>
-                  <th>Source</th><th>Updated</th>
+                  <th>Price Trend</th><th className="text-right">Price (₹/kg)</th>
+                  <th className="text-right">Confidence</th><th>Source</th><th>Updated</th>
                 </tr>
               </thead>
               <tbody className="[&>tr]:border-t [&>tr]:border-border">
-                {productRows.map((r, i) => (
-                  <tr key={r.product.id} className="hover:bg-muted/30">
-                    <td className="px-3 py-2 tabular-nums text-muted-foreground">{i + 1}</td>
-                    <td className="px-3 py-2 font-medium">{r.product.name}</td>
-                    <td className="px-3 py-2 text-muted-foreground tabular-nums">{r.product.hs_code ?? "—"}</td>
-                    <td className="px-3 py-2 text-right"><ScoreCell v={r.score?.demand_score ?? null} /></td>
-                    <td className="px-3 py-2 text-right"><ScoreCell v={r.score?.opportunity_score ?? null} /></td>
-                    <td className="px-3 py-2"><TrendChip trend={r.score?.price_trend ?? null} /></td>
-                    <td className="px-3 py-2 text-right tabular-nums">{r.price ? `₹${Number(r.price.value).toFixed(0)}` : "—"}</td>
-                    <td className="px-3 py-2 text-xs">
-                      {r.price?.source_url ? (
-                        <a href={r.price.source_url} target="_blank" rel="noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
-                          {r.price.source?.slice(0, 24) ?? "source"} <ExternalLink className="h-3 w-3" />
-                        </a>
-                      ) : <span className="text-muted-foreground">—</span>}
-                    </td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">{relTime(r.score?.computed_at ?? r.price?.captured_at ?? null)}</td>
-                  </tr>
-                ))}
-                {!productRows.length && <tr><td colSpan={9} className="px-3 py-8 text-center text-xs text-muted-foreground">No signals yet. Click Refresh.</td></tr>}
+                {productRows.map((r, i) => {
+                  const industry = r.product.industry ?? r.product.category ?? "Uncategorized";
+                  const conf = r.product.discovery_confidence != null
+                    ? Math.round(Number(r.product.discovery_confidence) * 100)
+                    : null;
+                  return (
+                    <tr key={r.product.id} className="hover:bg-muted/30">
+                      <td className="px-3 py-2 tabular-nums text-muted-foreground">{i + 1}</td>
+                      <td className="px-3 py-2 font-medium">
+                        {r.product.name}
+                        {r.product.status === "review" && <Badge variant="outline" className="ml-2 text-[9px]">review</Badge>}
+                      </td>
+                      <td className="px-3 py-2 text-xs"><Badge variant="secondary" className="text-[10px]">{industry}</Badge></td>
+                      <td className="px-3 py-2 text-muted-foreground tabular-nums">{r.product.hs_code ?? "—"}</td>
+                      <td className="px-3 py-2 text-right"><ScoreCell v={r.score?.demand_score ?? null} /></td>
+                      <td className="px-3 py-2 text-right"><ScoreCell v={r.score?.opportunity_score ?? null} /></td>
+                      <td className="px-3 py-2"><TrendChip trend={r.score?.price_trend ?? null} /></td>
+                      <td className="px-3 py-2 text-right tabular-nums">{r.price ? `₹${Number(r.price.value).toFixed(0)}` : "—"}</td>
+                      <td className="px-3 py-2 text-right text-xs tabular-nums text-muted-foreground">{conf != null ? `${conf}%` : "—"}</td>
+                      <td className="px-3 py-2 text-xs">
+                        {r.price?.source_url ? (
+                          <a href={r.price.source_url} target="_blank" rel="noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                            {r.price.source?.slice(0, 24) ?? "source"} <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ) : r.product.discovered_from ? (
+                          <span className="text-muted-foreground">{r.product.discovered_from}</span>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">{relTime(r.score?.computed_at ?? r.product.last_seen_at ?? r.price?.captured_at ?? null)}</td>
+                    </tr>
+                  );
+                })}
+                {!productRows.length && <tr><td colSpan={11} className="px-3 py-8 text-center text-xs text-muted-foreground">No products yet — click <b>Discover Products</b> to scan live trade signals.</td></tr>}
               </tbody>
             </table>
           </div>
         </CardContent>
       </Card>
+
 
       {/* Weather */}
       <Card>
