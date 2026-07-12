@@ -154,7 +154,18 @@ export default function MarketIntelDashboard() {
       const productNews = (news.data ?? []).filter((n) => n.product_id === p.id).slice(0, 3);
       return { product: p, score: sc, price, news: productNews };
     });
-    const filtered = q ? list.filter((r) => r.product.name.toLowerCase().includes(q.toLowerCase())) : list;
+    const needle = q.trim().toLowerCase();
+    const filtered = needle
+      ? list.filter((r) => {
+          const p = r.product;
+          return (
+            p.name.toLowerCase().includes(needle) ||
+            (p.industry ?? p.category ?? "").toLowerCase().includes(needle) ||
+            (p.hs_code ?? "").toLowerCase().includes(needle) ||
+            (p.search_terms ?? []).some((t) => t.toLowerCase().includes(needle))
+          );
+        })
+      : list;
     return filtered.sort((a, b) => (b.score?.opportunity_score ?? -1) - (a.score?.opportunity_score ?? -1));
   }, [products.data, scores.data, news.data, latestPricePerProduct, q]);
 
