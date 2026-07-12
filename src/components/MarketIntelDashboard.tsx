@@ -9,9 +9,15 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowDown, ArrowRight, ArrowUp, CheckCircle2, ExternalLink, Globe2, Loader2, RefreshCw, Search, TrendingUp, XCircle } from "lucide-react";
 import { refreshMarketIntelligence, getMarketHealth } from "@/lib/market-pipeline.functions";
+import { discoverProducts } from "@/lib/product-discovery.functions";
 import MarketIntelInsights from "./MarketIntelInsights";
 
-type Product = { id: string; code: string; name: string; hs_code: string | null; category: string | null };
+type Product = {
+  id: string; code: string; name: string; hs_code: string | null; category: string | null;
+  industry?: string | null; discovered_from?: string | null; discovery_confidence?: number | null;
+  evidence_count?: number | null; source_count?: number | null; status?: string | null;
+  last_seen_at?: string | null; search_terms?: string[] | null;
+};
 type Country = { iso2: string; name: string; region: string | null; currency: string | null };
 type Score = {
   id: string; product_id: string; country_iso2: string | null;
