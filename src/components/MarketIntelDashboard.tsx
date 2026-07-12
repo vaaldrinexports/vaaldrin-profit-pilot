@@ -191,10 +191,16 @@ export default function MarketIntelDashboard() {
                 <p className="text-xs text-muted-foreground">Live pipeline · every value carries source + timestamp · no fabricated data</p>
               </div>
             </div>
-            <Button size="sm" onClick={() => refreshMut.mutate()} disabled={refreshMut.isPending}>
-              {refreshMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-              Refresh Market Data
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => discoverMut.mutate()} disabled={discoverMut.isPending}>
+                {discoverMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <TrendingUp className="h-4 w-4 mr-2" />}
+                Discover Products
+              </Button>
+              <Button size="sm" onClick={() => refreshMut.mutate()} disabled={refreshMut.isPending}>
+                {refreshMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                Refresh Market Data
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>
