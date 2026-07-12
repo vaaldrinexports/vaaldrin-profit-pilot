@@ -91,6 +91,7 @@ export default function MarketIntelDashboard() {
 
   const refresh = useServerFn(refreshMarketIntelligence);
   const health = useServerFn(getMarketHealth);
+  const discover = useServerFn(discoverProducts);
   const healthQ = useQuery({ queryKey: ["mi_health"], queryFn: () => health(), refetchInterval: 30_000 });
 
   const refreshMut = useMutation({
@@ -100,6 +101,16 @@ export default function MarketIntelDashboard() {
       qc.invalidateQueries();
     },
     onError: (e: any) => toast.error(`Refresh failed: ${e?.message ?? e}`),
+  });
+
+  const discoverMut = useMutation({
+    mutationFn: () => discover(),
+    onSuccess: (res: any) => {
+      if (res.ok) toast.success(`Discovery run: ${res.records} products updated`);
+      else toast.error(`Discovery: ${res.error ?? "failed"}`);
+      qc.invalidateQueries();
+    },
+    onError: (e: any) => toast.error(`Discovery failed: ${e?.message ?? e}`),
   });
 
   const [q, setQ] = useState("");
