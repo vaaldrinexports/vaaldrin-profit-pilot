@@ -356,6 +356,10 @@ export const refreshMarketIntelligence = createServerFn({ method: "POST" })
     if (isDue("weather.open-meteo") && countries?.length) jobs.push(collectWeather(admin, countries));
     if (isDue("news.google") && products?.length) jobs.push(collectNews(admin, products));
     if (isDue("commodity.apeda") && products?.length) jobs.push(collectCommodityPrices(admin, products));
+    if (isDue("discovery.trends")) {
+      const { runProductDiscovery } = await import("./product-discovery.functions");
+      jobs.push(runProductDiscovery(admin));
+    }
 
     const results = await Promise.all(jobs);
     for (const r of results) await markHealth(admin, r.source_key, r);
