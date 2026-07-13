@@ -798,7 +798,7 @@ export default function Calculator() {
         />
       )}
 
-      <div className="min-w-0 flex flex-col">
+      <div className="min-w-0 flex flex-col overflow-x-hidden">
 
       {/* Header — frosted glass */}
       <header className="no-print sticky top-0 z-30 bg-background/60 backdrop-blur-xl backdrop-saturate-150 text-foreground border-b border-border/60 shadow-[0_1px_0_0_var(--gold)]/10">
