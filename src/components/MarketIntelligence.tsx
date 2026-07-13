@@ -276,8 +276,8 @@ export default function MarketIntelligence({
         <div className="space-y-4">
           <div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Regional Markets · Today</div>
-            <div className="rounded-md border border-border overflow-hidden" >
-              <table className="w-full text-xs">
+            <div className="rounded-md border border-border overflow-x-auto" >
+              <table className="w-full text-xs min-w-[420px]">
                 <thead className="bg-muted text-muted-foreground">
                   <tr>
                     <th className="text-left px-3 py-1.5 font-semibold">Market</th>
