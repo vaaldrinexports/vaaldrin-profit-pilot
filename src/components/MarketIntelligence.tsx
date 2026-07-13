@@ -150,12 +150,12 @@ export default function MarketIntelligence({
   return (
     <Card className="overflow-hidden border-l-4" style={{ borderLeftColor: GOLD }}>
       {/* Header */}
-      <div className="px-5 py-3 flex items-center justify-between border-b border-border" >
-        <div className="flex items-center gap-2.5">
-          <BarChart3 className="w-5 h-5" style={{ color: RED }} />
-          <div>
+      <div className="px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border">
+        <div className="flex items-start gap-2.5 min-w-0">
+          <BarChart3 className="w-5 h-5 shrink-0 mt-0.5" style={{ color: RED }} />
+          <div className="min-w-0">
             <h3 className="text-sm font-bold tracking-wider" style={{ color: RED }}>MARKET INTELLIGENCE</h3>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground break-words">
               {isLive
                 ? `Live web-scraped rates · ${hits}/${total} markets updated today`
                 : live.isFetching
@@ -164,7 +164,7 @@ export default function MarketIntelligence({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <Badge
             variant="outline"
             className={
@@ -204,7 +204,7 @@ export default function MarketIntelligence({
         </div>
       </div>
 
-      <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
         {/* Left: Benchmark summary */}
         <div className="space-y-4">
           <div>
