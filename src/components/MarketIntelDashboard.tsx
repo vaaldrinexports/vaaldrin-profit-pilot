@@ -250,10 +250,10 @@ export default function MarketIntelDashboard() {
 
       {/* Exchange Rates */}
       <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+        <CardHeader className="pb-3">
           <div>
             <CardTitle className="text-base">Exchange Rates (USD base)</CardTitle>
-            <p className="text-xs text-muted-foreground">Source: open.er-api.com · <DataTypeBadge type="live" /></p>
+            <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-1">Source: open.er-api.com · <DataTypeBadge type="live" /></p>
           </div>
         </CardHeader>
         <CardContent>
