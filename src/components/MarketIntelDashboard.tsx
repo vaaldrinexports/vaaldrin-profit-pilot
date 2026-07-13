@@ -184,19 +184,19 @@ export default function MarketIntelDashboard() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center gap-3 justify-between">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl p-2 bg-primary/10 text-primary"><Globe2 className="h-5 w-5" /></div>
-              <div>
-                <CardTitle className="text-lg">Global Market Intelligence</CardTitle>
-                <p className="text-xs text-muted-foreground">Live pipeline · every value carries source + timestamp · no fabricated data</p>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="rounded-xl p-2 bg-primary/10 text-primary shrink-0"><Globe2 className="h-5 w-5" /></div>
+              <div className="min-w-0">
+                <CardTitle className="text-base sm:text-lg truncate">Global Market Intelligence</CardTitle>
+                <p className="text-xs text-muted-foreground">Live pipeline · every value carries source + timestamp</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => discoverMut.mutate()} disabled={discoverMut.isPending}>
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={() => discoverMut.mutate()} disabled={discoverMut.isPending}>
                 {discoverMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <TrendingUp className="h-4 w-4 mr-2" />}
                 Discover Products
               </Button>
-              <Button size="sm" onClick={() => refreshMut.mutate()} disabled={refreshMut.isPending}>
+              <Button size="sm" className="flex-1 sm:flex-none" onClick={() => refreshMut.mutate()} disabled={refreshMut.isPending}>
                 {refreshMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                 Refresh Market Data
               </Button>
