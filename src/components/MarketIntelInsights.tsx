@@ -539,7 +539,7 @@ export default function MarketIntelInsights() {
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full text-xs min-w-[720px]">
               <thead className="bg-muted/50">
                 <tr>
                   <th className="px-3 py-2 text-left sticky left-0 bg-muted/50">Product</th>
