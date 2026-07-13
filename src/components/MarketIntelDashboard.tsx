@@ -275,16 +275,18 @@ export default function MarketIntelDashboard() {
 
       {/* Global Export Opportunities */}
       <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between gap-3 flex-wrap">
-          <div>
-            <CardTitle className="text-base">Global Export Opportunities</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Auto-discovered from live trade signals · demand & opportunity are <DataTypeBadge type="ai" /> · price is <DataTypeBadge type="latest_available" />
-            </p>
-          </div>
-          <div className="relative w-full max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product, industry, HS, country…" className="pl-8 h-9" />
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="min-w-0">
+              <CardTitle className="text-base">Global Export Opportunities</CardTitle>
+              <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-1">
+                Auto-discovered from live trade signals · demand & opportunity are <DataTypeBadge type="ai" /> · price is <DataTypeBadge type="latest_available" />
+              </p>
+            </div>
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product, industry, HS, country…" className="pl-8 h-9" />
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
