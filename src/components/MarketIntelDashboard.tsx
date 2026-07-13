@@ -291,7 +291,7 @@ export default function MarketIntelDashboard() {
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[980px]">
               <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left">
                   <th className="w-10">#</th><th>Product</th><th>Category</th><th>HS</th>
