@@ -731,7 +731,7 @@ export default function Calculator() {
   };
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
+    <div className="min-h-screen overflow-x-hidden lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
       {/* Sidebar — desktop rail + mobile drawer */}
       <aside
         className={
