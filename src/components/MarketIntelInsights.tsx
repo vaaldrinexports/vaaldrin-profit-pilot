@@ -363,16 +363,18 @@ export default function MarketIntelInsights() {
 
       {/* Country Opportunities */}
       <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-base">Country Market Opportunities</CardTitle>
-            <p className="text-xs text-muted-foreground">Weighted from Phase-2 signals · click a row for AI summary and drivers</p>
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="min-w-0">
+              <CardTitle className="text-base">Country Market Opportunities</CardTitle>
+              <p className="text-xs text-muted-foreground">Weighted from Phase-2 signals · click a row for AI summary and drivers</p>
+            </div>
+            <Button size="sm" variant="outline" className="self-start sm:self-auto shrink-0" onClick={exportCountriesCSV}><Download className="h-3.5 w-3.5 mr-1" /> CSV</Button>
           </div>
-          <Button size="sm" variant="outline" onClick={exportCountriesCSV}><Download className="h-3.5 w-3.5 mr-1" /> CSV</Button>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[960px]">
               <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left">
                   <th className="w-8"></th><th className="w-10">#</th><th>Country</th><th>Top Products</th>
@@ -456,7 +458,7 @@ export default function MarketIntelInsights() {
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[820px]">
               <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left">
                   <th className="w-8"></th><th>Product</th><th>HS</th>
@@ -537,7 +539,7 @@ export default function MarketIntelInsights() {
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full text-xs min-w-[720px]">
               <thead className="bg-muted/50">
                 <tr>
                   <th className="px-3 py-2 text-left sticky left-0 bg-muted/50">Product</th>
@@ -575,19 +577,21 @@ export default function MarketIntelInsights() {
 
       {/* Top Opportunities */}
       <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-base">Top Export Opportunities</CardTitle>
-            <p className="text-xs text-muted-foreground">Product × country pairs ranked by combined opportunity score</p>
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="min-w-0">
+              <CardTitle className="text-base">Top Export Opportunities</CardTitle>
+              <p className="text-xs text-muted-foreground">Product × country pairs ranked by combined opportunity score</p>
+            </div>
+            <Button size="sm" variant="outline" className="self-start sm:self-auto shrink-0" onClick={exportOpportunitiesCSV}><Download className="h-3.5 w-3.5 mr-1" /> CSV</Button>
           </div>
-          <Button size="sm" variant="outline" onClick={exportOpportunitiesCSV}><Download className="h-3.5 w-3.5 mr-1" /> CSV</Button>
         </CardHeader>
         <CardContent className="p-0">
           {topOpportunities.length === 0 ? (
             <p className="p-4 text-xs text-muted-foreground flex items-center gap-2"><Info className="h-3.5 w-3.5" /> Not enough evidence yet — trigger a market refresh above.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm min-w-[720px]">
                 <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                   <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left">
                     <th className="w-10">#</th><th>Product</th><th>Country</th>

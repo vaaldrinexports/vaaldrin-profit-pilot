@@ -184,19 +184,19 @@ export default function MarketIntelDashboard() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center gap-3 justify-between">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl p-2 bg-primary/10 text-primary"><Globe2 className="h-5 w-5" /></div>
-              <div>
-                <CardTitle className="text-lg">Global Market Intelligence</CardTitle>
-                <p className="text-xs text-muted-foreground">Live pipeline · every value carries source + timestamp · no fabricated data</p>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="rounded-xl p-2 bg-primary/10 text-primary shrink-0"><Globe2 className="h-5 w-5" /></div>
+              <div className="min-w-0">
+                <CardTitle className="text-base sm:text-lg truncate">Global Market Intelligence</CardTitle>
+                <p className="text-xs text-muted-foreground">Live pipeline · every value carries source + timestamp</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => discoverMut.mutate()} disabled={discoverMut.isPending}>
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={() => discoverMut.mutate()} disabled={discoverMut.isPending}>
                 {discoverMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <TrendingUp className="h-4 w-4 mr-2" />}
                 Discover Products
               </Button>
-              <Button size="sm" onClick={() => refreshMut.mutate()} disabled={refreshMut.isPending}>
+              <Button size="sm" className="flex-1 sm:flex-none" onClick={() => refreshMut.mutate()} disabled={refreshMut.isPending}>
                 {refreshMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                 Refresh Market Data
               </Button>
@@ -219,7 +219,7 @@ export default function MarketIntelDashboard() {
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[860px]">
               <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left">
                   <th>Source</th><th>Category</th><th>Type</th><th>Status</th><th>Last success</th><th>Records</th><th>Interval</th><th>Error</th>
@@ -250,10 +250,10 @@ export default function MarketIntelDashboard() {
 
       {/* Exchange Rates */}
       <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+        <CardHeader className="pb-3">
           <div>
             <CardTitle className="text-base">Exchange Rates (USD base)</CardTitle>
-            <p className="text-xs text-muted-foreground">Source: open.er-api.com · <DataTypeBadge type="live" /></p>
+            <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-1">Source: open.er-api.com · <DataTypeBadge type="live" /></p>
           </div>
         </CardHeader>
         <CardContent>
@@ -275,21 +275,23 @@ export default function MarketIntelDashboard() {
 
       {/* Global Export Opportunities */}
       <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between gap-3 flex-wrap">
-          <div>
-            <CardTitle className="text-base">Global Export Opportunities</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Auto-discovered from live trade signals · demand & opportunity are <DataTypeBadge type="ai" /> · price is <DataTypeBadge type="latest_available" />
-            </p>
-          </div>
-          <div className="relative w-full max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product, industry, HS, country…" className="pl-8 h-9" />
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="min-w-0">
+              <CardTitle className="text-base">Global Export Opportunities</CardTitle>
+              <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-1">
+                Auto-discovered from live trade signals · demand & opportunity are <DataTypeBadge type="ai" /> · price is <DataTypeBadge type="latest_available" />
+              </p>
+            </div>
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search product, industry, HS, country…" className="pl-8 h-9" />
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[980px]">
               <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left">
                   <th className="w-10">#</th><th>Product</th><th>Category</th><th>HS</th>
