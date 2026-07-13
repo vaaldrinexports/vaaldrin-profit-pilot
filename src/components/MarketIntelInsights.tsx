@@ -577,19 +577,21 @@ export default function MarketIntelInsights() {
 
       {/* Top Opportunities */}
       <Card>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-base">Top Export Opportunities</CardTitle>
-            <p className="text-xs text-muted-foreground">Product × country pairs ranked by combined opportunity score</p>
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="min-w-0">
+              <CardTitle className="text-base">Top Export Opportunities</CardTitle>
+              <p className="text-xs text-muted-foreground">Product × country pairs ranked by combined opportunity score</p>
+            </div>
+            <Button size="sm" variant="outline" className="self-start sm:self-auto shrink-0" onClick={exportOpportunitiesCSV}><Download className="h-3.5 w-3.5 mr-1" /> CSV</Button>
           </div>
-          <Button size="sm" variant="outline" onClick={exportOpportunitiesCSV}><Download className="h-3.5 w-3.5 mr-1" /> CSV</Button>
         </CardHeader>
         <CardContent className="p-0">
           {topOpportunities.length === 0 ? (
             <p className="p-4 text-xs text-muted-foreground flex items-center gap-2"><Info className="h-3.5 w-3.5" /> Not enough evidence yet — trigger a market refresh above.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm min-w-[720px]">
                 <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                   <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left">
                     <th className="w-10">#</th><th>Product</th><th>Country</th>
