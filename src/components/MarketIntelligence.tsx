@@ -276,50 +276,42 @@ export default function MarketIntelligence({
         <div className="space-y-4">
           <div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Regional Markets · Today</div>
-            <div className="rounded-md border border-border overflow-x-auto" >
-              <table className="w-full text-xs min-w-[420px]">
-                <thead className="bg-muted text-muted-foreground">
-                  <tr>
-                    <th className="text-left px-3 py-1.5 font-semibold">Market</th>
-                    <th className="text-left px-3 py-1.5 font-semibold">State</th>
-                    <th className="text-right px-3 py-1.5 font-semibold">Rate/kg</th>
-                    <th className="text-center px-2 py-1.5 font-semibold">Src</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {liveBenchmark.quotes.map((q) => {
-                    const isPrimary = q.market === benchmark.primaryMarket;
-                    const l = liveByMarket.get(q.market.toLowerCase());
-                    const isLiveRow = !!(l && l.ratePerKg);
-                    return (
-                      <tr key={q.market} className="border-t" style={{ borderColor: "hsl(var(--border) / 0.5)" }}>
-                        <td className="px-3 py-1.5 font-medium">
+            <div className="grid grid-cols-1 gap-2">
+              {liveBenchmark.quotes.map((q) => {
+                const isPrimary = q.market === benchmark.primaryMarket;
+                const l = liveByMarket.get(q.market.toLowerCase());
+                const isLiveRow = !!(l && l.ratePerKg);
+                return (
+                  <div key={q.market} className="rounded-md border border-border p-2.5 text-xs">
+                    <div className="flex min-w-0 items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="break-words font-semibold">
                           {q.market}
                           {isPrimary && <span className="ml-1.5 text-[9px] uppercase font-bold" style={{ color: GOLD }}>Primary</span>}
                           {isLiveRow && <span className="ml-1.5 text-[9px] uppercase font-bold text-emerald-700">Live</span>}
-                        </td>
-                        <td className="px-3 py-1.5 text-muted-foreground">{q.state}</td>
-                        <td className="px-3 py-1.5 text-right font-semibold tabular-nums">{fmtINR(q.ratePerKg)}</td>
-                        <td className="px-2 py-1.5 text-center">
-                          {isLiveRow && l?.sourceUrl ? (
-                            <a
-                              href={l.sourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title={l.sourceTitle ?? l.sourceUrl}
-                              className="inline-flex text-emerald-700 hover:text-emerald-900"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          ) : (
-                            <span className="text-muted-foreground text-[10px]">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </div>
+                        <div className="text-muted-foreground">{q.state}</div>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <div className="font-semibold tabular-nums">{fmtINR(q.ratePerKg)}/kg</div>
+                        {isLiveRow && l?.sourceUrl ? (
+                          <a
+                            href={l.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={l.sourceTitle ?? l.sourceUrl}
+                            className="inline-flex text-emerald-700 hover:text-emerald-900"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground text-[10px]">—</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <div className="grid grid-cols-3 gap-2 mt-2 text-center text-[11px]">
               <div className="rounded border border-border p-1.5" >
