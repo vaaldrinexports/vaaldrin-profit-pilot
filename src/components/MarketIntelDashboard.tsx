@@ -287,14 +287,14 @@ export default function MarketIntelDashboard() {
           </div>
         </CardHeader>
         <CardContent className="px-3 pb-3 pt-0">
-          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+          <div className="grid min-w-0 grid-cols-1 gap-3 xl:grid-cols-2">
             {productRows.map((r, i) => {
               const industry = r.product.industry ?? r.product.category ?? "Uncategorized";
               const conf = r.product.discovery_confidence != null
                 ? Math.round(Number(r.product.discovery_confidence) * 100)
                 : null;
               return (
-                <div key={r.product.id} className="rounded-lg border border-border bg-card/50 p-3">
+                <div key={r.product.id} className="min-w-0 overflow-hidden rounded-lg border border-border bg-card/50 p-3">
                   <div className="flex min-w-0 items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-xs tabular-nums text-muted-foreground">#{i + 1}</div>
@@ -305,7 +305,7 @@ export default function MarketIntelDashboard() {
                     </div>
                     <Badge variant="secondary" className="max-w-[45%] whitespace-normal break-words text-[10px]">{industry}</Badge>
                   </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+                  <div className="mt-3 grid min-w-0 grid-cols-[repeat(2,minmax(0,1fr))] gap-2 text-xs sm:grid-cols-[repeat(4,minmax(0,1fr))]">
                     <InfoCell label="HS">{r.product.hs_code ?? "—"}</InfoCell>
                     <InfoCell label="Demand"><ScoreCell v={r.score?.demand_score ?? null} /></InfoCell>
                     <InfoCell label="Opportunity"><ScoreCell v={r.score?.opportunity_score ?? null} /></InfoCell>
