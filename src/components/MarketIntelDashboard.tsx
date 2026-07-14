@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -217,33 +217,30 @@ export default function MarketIntelDashboard() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[860px]">
-              <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left">
-                  <th>Source</th><th>Category</th><th>Type</th><th>Status</th><th>Last success</th><th>Records</th><th>Interval</th><th>Error</th>
-                </tr>
-              </thead>
-              <tbody className="[&>tr]:border-t [&>tr]:border-border">
-                {(healthQ.data ?? []).map((h: Health) => (
-                  <tr key={h.source_key} className="hover:bg-muted/30">
-                    <td className="px-3 py-2 font-medium">{h.source_name}</td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">{h.category}</td>
-                    <td className="px-3 py-2"><DataTypeBadge type={h.data_type} /></td>
-                    <td className="px-3 py-2">
-                      {h.status === "healthy" ? <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-xs"><CheckCircle2 className="h-3 w-3" /> Healthy</span>
-                        : h.status === "failed" ? <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-xs"><XCircle className="h-3 w-3" /> Failed</span>
-                        : <span className="text-xs text-muted-foreground">Unknown</span>}
-                    </td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">{relTime(h.last_success_at)}</td>
-                    <td className="px-3 py-2 text-xs tabular-nums">{h.records_last_run ?? 0}</td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">{h.refresh_interval_minutes}m</td>
-                    <td className="px-3 py-2 text-xs text-red-500 truncate max-w-[240px]" title={h.last_error ?? ""}>{h.last_error ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <CardContent className="px-3 pb-3 pt-0">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {(healthQ.data ?? []).map((h: Health) => (
+              <div key={h.source_key} className="rounded-lg border border-border bg-card/50 p-3">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold">{h.source_name}</div>
+                    <div className="text-xs text-muted-foreground">{h.category}</div>
+                  </div>
+                  <DataTypeBadge type={h.data_type} />
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <InfoCell label="Status">
+                    {h.status === "healthy" ? <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400"><CheckCircle2 className="h-3 w-3" /> Healthy</span>
+                      : h.status === "failed" ? <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400"><XCircle className="h-3 w-3" /> Failed</span>
+                      : <span className="text-muted-foreground">Unknown</span>}
+                  </InfoCell>
+                  <InfoCell label="Last success">{relTime(h.last_success_at)}</InfoCell>
+                  <InfoCell label="Records">{h.records_last_run ?? 0}</InfoCell>
+                  <InfoCell label="Interval">{h.refresh_interval_minutes}m</InfoCell>
+                </div>
+                {h.last_error && <div className="mt-2 break-words rounded-md bg-red-500/10 p-2 text-xs text-red-600 dark:text-red-400">{h.last_error}</div>}
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -289,53 +286,47 @@ export default function MarketIntelDashboard() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[980px]">
-              <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left">
-                  <th className="w-10">#</th><th>Product</th><th>Category</th><th>HS</th>
-                  <th className="text-right">Demand</th><th className="text-right">Opportunity</th>
-                  <th>Price Trend</th><th className="text-right">Price (₹/kg)</th>
-                  <th className="text-right">Confidence</th><th>Source</th><th>Updated</th>
-                </tr>
-              </thead>
-              <tbody className="[&>tr]:border-t [&>tr]:border-border">
-                {productRows.map((r, i) => {
-                  const industry = r.product.industry ?? r.product.category ?? "Uncategorized";
-                  const conf = r.product.discovery_confidence != null
-                    ? Math.round(Number(r.product.discovery_confidence) * 100)
-                    : null;
-                  return (
-                    <tr key={r.product.id} className="hover:bg-muted/30">
-                      <td className="px-3 py-2 tabular-nums text-muted-foreground">{i + 1}</td>
-                      <td className="px-3 py-2 font-medium">
+        <CardContent className="px-3 pb-3 pt-0">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+            {productRows.map((r, i) => {
+              const industry = r.product.industry ?? r.product.category ?? "Uncategorized";
+              const conf = r.product.discovery_confidence != null
+                ? Math.round(Number(r.product.discovery_confidence) * 100)
+                : null;
+              return (
+                <div key={r.product.id} className="rounded-lg border border-border bg-card/50 p-3">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-xs tabular-nums text-muted-foreground">#{i + 1}</div>
+                      <div className="break-words text-sm font-semibold">
                         {r.product.name}
                         {r.product.status === "review" && <Badge variant="outline" className="ml-2 text-[9px]">review</Badge>}
-                      </td>
-                      <td className="px-3 py-2 text-xs"><Badge variant="secondary" className="text-[10px]">{industry}</Badge></td>
-                      <td className="px-3 py-2 text-muted-foreground tabular-nums">{r.product.hs_code ?? "—"}</td>
-                      <td className="px-3 py-2 text-right"><ScoreCell v={r.score?.demand_score ?? null} /></td>
-                      <td className="px-3 py-2 text-right"><ScoreCell v={r.score?.opportunity_score ?? null} /></td>
-                      <td className="px-3 py-2"><TrendChip trend={r.score?.price_trend ?? null} /></td>
-                      <td className="px-3 py-2 text-right tabular-nums">{r.price ? `₹${Number(r.price.value).toFixed(0)}` : "—"}</td>
-                      <td className="px-3 py-2 text-right text-xs tabular-nums text-muted-foreground">{conf != null ? `${conf}%` : "—"}</td>
-                      <td className="px-3 py-2 text-xs">
-                        {r.price?.source_url ? (
-                          <a href={r.price.source_url} target="_blank" rel="noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
-                            {r.price.source?.slice(0, 24) ?? "source"} <ExternalLink className="h-3 w-3" />
-                          </a>
-                        ) : r.product.discovered_from ? (
-                          <span className="text-muted-foreground">{r.product.discovered_from}</span>
-                        ) : <span className="text-muted-foreground">—</span>}
-                      </td>
-                      <td className="px-3 py-2 text-xs text-muted-foreground">{relTime(r.score?.computed_at ?? r.product.last_seen_at ?? r.price?.captured_at ?? null)}</td>
-                    </tr>
-                  );
-                })}
-                {!productRows.length && <tr><td colSpan={11} className="px-3 py-8 text-center text-xs text-muted-foreground">No products yet — click <b>Discover Products</b> to scan live trade signals.</td></tr>}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="max-w-[45%] whitespace-normal break-words text-[10px]">{industry}</Badge>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+                    <InfoCell label="HS">{r.product.hs_code ?? "—"}</InfoCell>
+                    <InfoCell label="Demand"><ScoreCell v={r.score?.demand_score ?? null} /></InfoCell>
+                    <InfoCell label="Opportunity"><ScoreCell v={r.score?.opportunity_score ?? null} /></InfoCell>
+                    <InfoCell label="Price">{r.price ? `₹${Number(r.price.value).toFixed(0)}/kg` : "—"}</InfoCell>
+                    <InfoCell label="Trend"><TrendChip trend={r.score?.price_trend ?? null} /></InfoCell>
+                    <InfoCell label="Confidence">{conf != null ? `${conf}%` : "—"}</InfoCell>
+                    <InfoCell label="Updated">{relTime(r.score?.computed_at ?? r.product.last_seen_at ?? r.price?.captured_at ?? null)}</InfoCell>
+                    <InfoCell label="Source">
+                      {r.price?.source_url ? (
+                        <a href={r.price.source_url} target="_blank" rel="noreferrer" className="inline-flex min-w-0 items-center gap-1 text-primary hover:underline">
+                          <span className="truncate">{r.price.source ?? "source"}</span> <ExternalLink className="h-3 w-3 shrink-0" />
+                        </a>
+                      ) : r.product.discovered_from ? (
+                        <span className="break-words text-muted-foreground">{r.product.discovered_from}</span>
+                      ) : <span className="text-muted-foreground">—</span>}
+                    </InfoCell>
+                  </div>
+                </div>
+              );
+            })}
+            {!productRows.length && <p className="rounded-lg border border-border p-6 text-center text-xs text-muted-foreground">No products yet — click <b>Discover Products</b> to scan live trade signals.</p>}
           </div>
         </CardContent>
       </Card>
@@ -398,6 +389,15 @@ export default function MarketIntelDashboard() {
       <p className="text-[11px] text-muted-foreground px-1">
         Refresh cadence is per-source: FX every 15m, News every 30m, Weather every 6h, Commodity prices daily. A background job runs every 15 minutes and only refreshes sources whose window has elapsed. Cached data stays visible during outages — nothing is fabricated.
       </p>
+    </div>
+  );
+}
+
+function InfoCell({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="min-w-0 rounded-md border border-border/70 bg-background/40 p-2">
+      <div className="mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="min-w-0 break-words text-xs font-medium">{children}</div>
     </div>
   );
 }
