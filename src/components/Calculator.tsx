@@ -731,7 +731,7 @@ export default function Calculator() {
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
+    <div className="min-h-screen lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
       {/* Sidebar — desktop rail + mobile drawer */}
       <aside
         className={
@@ -798,7 +798,7 @@ export default function Calculator() {
         />
       )}
 
-      <div className="min-w-0 flex flex-col overflow-x-auto">
+      <div className="min-w-0 flex flex-col">
 
       {/* Header — frosted glass */}
       <header className="no-print sticky top-0 z-30 bg-background/60 backdrop-blur-xl backdrop-saturate-150 text-foreground border-b border-border/60 shadow-[0_1px_0_0_var(--gold)]/10">
