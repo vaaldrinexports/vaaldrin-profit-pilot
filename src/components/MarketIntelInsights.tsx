@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -372,80 +372,73 @@ export default function MarketIntelInsights() {
             <Button size="sm" variant="outline" className="self-start sm:self-auto shrink-0" onClick={exportCountriesCSV}><Download className="h-3.5 w-3.5 mr-1" /> CSV</Button>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[960px]">
-              <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left">
-                  <th className="w-8"></th><th className="w-10">#</th><th>Country</th><th>Top Products</th>
-                  <th className="text-right">Demand</th><th>Competition</th><th>Currency</th><th>Weather</th>
-                  <th className="text-right">Opportunity</th><th className="text-right">Confidence</th><th>Recommendation</th><th>Updated</th>
-                </tr>
-              </thead>
-              <tbody className="[&>tr]:border-t [&>tr]:border-border">
-                {filteredCountries.map((c, i) => {
-                  const isOpen = expandedCountry === c.country.iso2;
-                  return (
-                    <>
-                      <tr key={c.country.iso2} className="hover:bg-muted/30 cursor-pointer" onClick={() => setExpandedCountry(isOpen ? null : c.country.iso2)}>
-                        <td className="px-3 py-2">{isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</td>
-                        <td className="px-3 py-2 tabular-nums text-muted-foreground">{i + 1}</td>
-                        <td className="px-3 py-2 font-medium">{c.country.name} <span className="text-xs text-muted-foreground">({c.country.iso2})</span></td>
-                        <td className="px-3 py-2 text-xs text-muted-foreground max-w-[220px] truncate">
-                          {c.products.length ? c.products.map((p) => p.product.name).join(", ") : "—"}
-                        </td>
-                        <td className="px-3 py-2 text-right">{c.demand != null ? <Badge variant="outline" className={bandFromScore(c.demand).cls}>{c.demand}</Badge> : <span className="text-xs text-muted-foreground">Insufficient Data</span>}</td>
-                        <td className="px-3 py-2 text-xs">{c.competition}</td>
-                        <td className="px-3 py-2 text-xs">{c.currencyAdvantage}</td>
-                        <td className="px-3 py-2 text-xs">{c.weatherStatus}</td>
-                        <td className="px-3 py-2 text-right"><Badge variant="outline" className={bandFromScore(c.opportunity).cls}>{c.sufficient ? c.opportunity : "—"}</Badge></td>
-                        <td className="px-3 py-2 text-right text-xs tabular-nums">{c.sufficient ? `${c.confidence}%` : "—"}</td>
-                        <td className="px-3 py-2 text-xs">{c.sufficient ? c.recommendation : "Insufficient Data"}</td>
-                        <td className="px-3 py-2 text-xs text-muted-foreground">{relTime(c.latest)}</td>
-                      </tr>
-                      {isOpen && (
-                        <tr key={`${c.country.iso2}-exp`} className="bg-muted/20">
-                          <td colSpan={12} className="px-4 py-4">
-                            <div className="grid md:grid-cols-2 gap-4">
-                              <div>
-                                <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">AI Market Summary</h4>
-                                <ul className="text-sm space-y-1 list-disc pl-4">
-                                  {c.summary.map((line, k) => <li key={k}>{line}</li>)}
-                                </ul>
-                                <h4 className="text-xs font-semibold uppercase text-muted-foreground mt-4 mb-2">Score Breakdown (weighted)</h4>
-                                <div className="grid grid-cols-2 gap-1 text-xs">
-                                  {Object.entries(c.parts).map(([k, v]) => (
-                                    <div key={k} className="flex justify-between border-b border-border/50 py-1">
-                                      <span className="text-muted-foreground capitalize">{k} <span className="opacity-60">({Math.round((c.weights as any)[k] * 100)}%)</span></span>
-                                      <span className="tabular-nums font-medium">{Math.round(v as number)}</span>
-                                    </div>
-                                  ))}
-                                </div>
+        <CardContent className="px-3 pb-3 pt-0">
+          <div className="grid grid-cols-1 gap-3">
+            {filteredCountries.map((c, i) => {
+              const isOpen = expandedCountry === c.country.iso2;
+              return (
+                <div key={c.country.iso2} className="rounded-lg border border-border bg-card/50 p-3">
+                  <button type="button" className="w-full text-left" onClick={() => setExpandedCountry(isOpen ? null : c.country.iso2)}>
+                    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2">
+                      {isOpen ? <ChevronDown className="mt-0.5 h-4 w-4" /> : <ChevronRight className="mt-0.5 h-4 w-4" />}
+                      <div className="min-w-0">
+                        <div className="break-words text-sm font-semibold">{c.country.name} <span className="text-xs text-muted-foreground">({c.country.iso2})</span></div>
+                        <div className="mt-1 flex flex-wrap gap-1.5">
+                          {c.products.length ? c.products.map((p) => <Badge key={p.product.id} variant="secondary" className="whitespace-normal break-words text-[10px]">{p.product.name}</Badge>) : <span className="text-xs text-muted-foreground">No matched products</span>}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className={bandFromScore(c.opportunity).cls}>{c.sufficient ? c.recommendation : "Insufficient Data"}</Badge>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4 lg:grid-cols-6">
+                      <InfoCell label="Rank">#{i + 1}</InfoCell>
+                      <InfoCell label="Demand">{c.demand != null ? <Badge variant="outline" className={bandFromScore(c.demand).cls}>{c.demand}</Badge> : "Insufficient"}</InfoCell>
+                      <InfoCell label="Competition">{c.competition}</InfoCell>
+                      <InfoCell label="Currency">{c.currencyAdvantage}</InfoCell>
+                      <InfoCell label="Weather">{c.weatherStatus}</InfoCell>
+                      <InfoCell label="Opportunity"><Badge variant="outline" className={bandFromScore(c.opportunity).cls}>{c.sufficient ? c.opportunity : "—"}</Badge></InfoCell>
+                      <InfoCell label="Confidence">{c.sufficient ? `${c.confidence}%` : "—"}</InfoCell>
+                      <InfoCell label="Updated">{relTime(c.latest)}</InfoCell>
+                    </div>
+                  </button>
+                  {isOpen && (
+                    <div className="mt-4 border-t border-border pt-4">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">AI Market Summary</h4>
+                          <ul className="space-y-1 break-words pl-4 text-sm list-disc">
+                            {c.summary.map((line, k) => <li key={k}>{line}</li>)}
+                          </ul>
+                          <h4 className="mb-2 mt-4 text-xs font-semibold uppercase text-muted-foreground">Score Breakdown (weighted)</h4>
+                          <div className="grid grid-cols-1 gap-1 text-xs sm:grid-cols-2">
+                            {Object.entries(c.parts).map(([k, v]) => (
+                              <div key={k} className="flex min-w-0 justify-between gap-2 border-b border-border/50 py-1">
+                                <span className="break-words text-muted-foreground capitalize">{k} <span className="opacity-60">({Math.round((c.weights as any)[k] * 100)}%)</span></span>
+                                <span className="shrink-0 tabular-nums font-medium">{Math.round(v as number)}</span>
                               </div>
-                              <div>
-                                <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Recent News ({c.news.length})</h4>
-                                {c.news.length === 0 ? <p className="text-xs text-muted-foreground">No news captured yet.</p> : (
-                                  <ul className="text-xs space-y-2">
-                                    {c.news.map((n) => (
-                                      <li key={n.id}>
-                                        <a href={n.url ?? "#"} target="_blank" rel="noreferrer" className="hover:underline">{n.headline}</a>
-                                        <div className="text-muted-foreground">{n.source} · {relTime(n.published_at)}</div>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                )}
-                                <h4 className="text-xs font-semibold uppercase text-muted-foreground mt-4 mb-2">Evidence</h4>
-                                <p className="text-xs text-muted-foreground">{c.evidence} signals combined · confidence {c.confidence}%</p>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </>
-                  );
-                })}
-              </tbody>
-            </table>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Recent News ({c.news.length})</h4>
+                          {c.news.length === 0 ? <p className="text-xs text-muted-foreground">No news captured yet.</p> : (
+                            <ul className="space-y-2 text-xs">
+                              {c.news.map((n) => (
+                                <li key={n.id} className="break-words">
+                                  <a href={n.url ?? "#"} target="_blank" rel="noreferrer" className="hover:underline">{n.headline}</a>
+                                  <div className="text-muted-foreground">{n.source} · {relTime(n.published_at)}</div>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          <h4 className="mb-2 mt-4 text-xs font-semibold uppercase text-muted-foreground">Evidence</h4>
+                          <p className="text-xs text-muted-foreground">{c.evidence} signals combined · confidence {c.confidence}%</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -456,77 +449,67 @@ export default function MarketIntelInsights() {
           <CardTitle className="text-base">Product Demand Intelligence</CardTitle>
           <p className="text-xs text-muted-foreground">Click a row for why-explanation, evidence, and price history</p>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[820px]">
-              <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left">
-                  <th className="w-8"></th><th>Product</th><th>HS</th>
-                  <th className="text-right">Demand</th><th className="text-right">Opportunity</th>
-                  <th className="text-right">Confidence</th><th className="text-right">Evidence</th>
-                  <th>Trend</th><th>Status</th><th>Updated</th>
-                </tr>
-              </thead>
-              <tbody className="[&>tr]:border-t [&>tr]:border-border">
-                {filteredProducts.map((p) => {
-                  const isOpen = expandedProduct === p.product.id;
-                  return (
-                    <>
-                      <tr key={p.product.id} className="hover:bg-muted/30 cursor-pointer" onClick={() => setExpandedProduct(isOpen ? null : p.product.id)}>
-                        <td className="px-3 py-2">{isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</td>
-                        <td className="px-3 py-2 font-medium">{p.product.name}</td>
-                        <td className="px-3 py-2 text-xs text-muted-foreground tabular-nums">{p.product.hs_code ?? "—"}</td>
-                        <td className="px-3 py-2 text-right">{p.sufficient && p.demand != null ? <Badge variant="outline" className={bandFromScore(p.demand).cls}>{p.demand}</Badge> : <span className="text-xs text-muted-foreground">Insufficient Data</span>}</td>
-                        <td className="px-3 py-2 text-right">{p.sufficient && p.opportunity != null ? <Badge variant="outline" className={bandFromScore(p.opportunity).cls}>{p.opportunity}</Badge> : <span className="text-xs text-muted-foreground">—</span>}</td>
-                        <td className="px-3 py-2 text-right text-xs tabular-nums">{p.sufficient ? `${p.confidence}%` : "—"}</td>
-                        <td className="px-3 py-2 text-right text-xs tabular-nums">{p.evidenceCount}</td>
-                        <td className="px-3 py-2 text-xs">{p.priceTrend ?? "—"}</td>
-                        <td className="px-3 py-2 text-xs">{p.sufficient ? "Active" : "Awaiting Data"}</td>
-                        <td className="px-3 py-2 text-xs text-muted-foreground">{relTime(p.latest)}</td>
-                      </tr>
-                      {isOpen && (
-                        <tr key={`${p.product.id}-exp`} className="bg-muted/20">
-                          <td colSpan={10} className="px-4 py-4">
-                            <div className="grid md:grid-cols-2 gap-4">
-                              <div>
-                                <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Why this score?</h4>
-                                {p.reasons.length === 0 ? <p className="text-xs text-muted-foreground">Insufficient evidence collected. Trigger a refresh.</p> :
-                                  <ul className="text-sm space-y-1">
-                                    {p.reasons.map((r, k) => <li key={k}>✓ {r}</li>)}
-                                  </ul>}
-                                <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
-                                  <div className="rounded border p-2"><div className="text-muted-foreground">Confidence</div><div className="font-semibold">{p.confidence}%</div></div>
-                                  <div className="rounded border p-2"><div className="text-muted-foreground">Evidence</div><div className="font-semibold">{p.evidenceCount} signals</div></div>
-                                  <div className="rounded border p-2"><div className="text-muted-foreground">Sources</div><div className="font-semibold">{p.sourceCount}</div></div>
-                                </div>
-                              </div>
-                              <div>
-                                <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Price History (₹/kg)</h4>
-                                {p.priceHistory.length ? (
-                                  <div className="flex items-end gap-1 h-16">
-                                    {p.priceHistory.map((v, k) => {
-                                      const max = Math.max(...p.priceHistory);
-                                      const h = max ? (v / max) * 100 : 0;
-                                      return <div key={k} className="flex-1 bg-primary/40 rounded-t" style={{ height: `${h}%` }} title={`₹${v.toFixed(0)}`} />;
-                                    })}
-                                  </div>
-                                ) : <p className="text-xs text-muted-foreground">No price observations yet.</p>}
-                                {p.latestPrice && <p className="text-xs mt-2">Latest ₹{p.latestPrice.toFixed(0)}/kg · trend <b>{p.priceTrend ?? "n/a"}</b> {p.priceChangePct != null && `(${p.priceChangePct.toFixed(1)}%)`}</p>}
-                                <h4 className="text-xs font-semibold uppercase text-muted-foreground mt-4 mb-2">Related news</h4>
-                                {p.newsSample.length === 0 ? <p className="text-xs text-muted-foreground">No news captured.</p> :
-                                  <ul className="text-xs space-y-1">
-                                    {p.newsSample.map((n) => <li key={n.id}><a href={n.url ?? "#"} target="_blank" rel="noreferrer" className="hover:underline">{n.headline}</a></li>)}
-                                  </ul>}
-                              </div>
+        <CardContent className="px-3 pb-3 pt-0">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+            {filteredProducts.map((p) => {
+              const isOpen = expandedProduct === p.product.id;
+              return (
+                <div key={p.product.id} className="rounded-lg border border-border bg-card/50 p-3">
+                  <button type="button" className="w-full text-left" onClick={() => setExpandedProduct(isOpen ? null : p.product.id)}>
+                    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2">
+                      {isOpen ? <ChevronDown className="mt-0.5 h-4 w-4" /> : <ChevronRight className="mt-0.5 h-4 w-4" />}
+                      <div className="min-w-0 break-words text-sm font-semibold">{p.product.name}</div>
+                      <Badge variant="outline" className={p.sufficient && p.opportunity != null ? bandFromScore(p.opportunity).cls : "bg-muted text-muted-foreground"}>{p.sufficient ? "Active" : "Awaiting Data"}</Badge>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+                      <InfoCell label="HS">{p.product.hs_code ?? "—"}</InfoCell>
+                      <InfoCell label="Demand">{p.sufficient && p.demand != null ? <Badge variant="outline" className={bandFromScore(p.demand).cls}>{p.demand}</Badge> : "Insufficient"}</InfoCell>
+                      <InfoCell label="Opportunity">{p.sufficient && p.opportunity != null ? <Badge variant="outline" className={bandFromScore(p.opportunity).cls}>{p.opportunity}</Badge> : "—"}</InfoCell>
+                      <InfoCell label="Confidence">{p.sufficient ? `${p.confidence}%` : "—"}</InfoCell>
+                      <InfoCell label="Evidence">{p.evidenceCount}</InfoCell>
+                      <InfoCell label="Trend">{p.priceTrend ?? "—"}</InfoCell>
+                      <InfoCell label="Updated">{relTime(p.latest)}</InfoCell>
+                    </div>
+                  </button>
+                  {isOpen && (
+                    <div className="mt-4 border-t border-border pt-4">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Why this score?</h4>
+                          {p.reasons.length === 0 ? <p className="text-xs text-muted-foreground">Insufficient evidence collected. Trigger a refresh.</p> :
+                            <ul className="space-y-1 break-words text-sm">
+                              {p.reasons.map((r, k) => <li key={k}>✓ {r}</li>)}
+                            </ul>}
+                          <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-3">
+                            <InfoCell label="Confidence">{p.confidence}%</InfoCell>
+                            <InfoCell label="Evidence">{p.evidenceCount} signals</InfoCell>
+                            <InfoCell label="Sources">{p.sourceCount}</InfoCell>
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Price History (₹/kg)</h4>
+                          {p.priceHistory.length ? (
+                            <div className="flex h-16 items-end gap-1">
+                              {p.priceHistory.map((v, k) => {
+                                const max = Math.max(...p.priceHistory);
+                                const h = max ? (v / max) * 100 : 0;
+                                return <div key={k} className="flex-1 rounded-t bg-primary/40" style={{ height: `${h}%` }} title={`₹${v.toFixed(0)}`} />;
+                              })}
                             </div>
-                          </td>
-                        </tr>
-                      )}
-                    </>
-                  );
-                })}
-              </tbody>
-            </table>
+                          ) : <p className="text-xs text-muted-foreground">No price observations yet.</p>}
+                          {p.latestPrice && <p className="mt-2 break-words text-xs">Latest ₹{p.latestPrice.toFixed(0)}/kg · trend <b>{p.priceTrend ?? "n/a"}</b> {p.priceChangePct != null && `(${p.priceChangePct.toFixed(1)}%)`}</p>}
+                          <h4 className="mb-2 mt-4 text-xs font-semibold uppercase text-muted-foreground">Related news</h4>
+                          {p.newsSample.length === 0 ? <p className="text-xs text-muted-foreground">No news captured.</p> :
+                            <ul className="space-y-1 text-xs">
+                              {p.newsSample.map((n) => <li key={n.id} className="break-words"><a href={n.url ?? "#"} target="_blank" rel="noreferrer" className="hover:underline">{n.headline}</a></li>)}
+                            </ul>}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -537,40 +520,28 @@ export default function MarketIntelInsights() {
           <CardTitle className="text-base">Product × Country Demand Matrix</CardTitle>
           <p className="text-xs text-muted-foreground">Heatmap of derived demand — Very High → Very Low</p>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs min-w-[720px]">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="px-3 py-2 text-left sticky left-0 bg-muted/50">Product</th>
-                  {filteredCountries.slice(0, 12).map((c) => (
-                    <th key={c.country.iso2} className="px-2 py-2 text-center whitespace-nowrap">{c.country.iso2}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="[&>tr]:border-t [&>tr]:border-border">
-                {productIntel.filter((p) => p.sufficient).slice(0, 15).map((p) => (
-                  <tr key={p.product.id}>
-                    <td className="px-3 py-1.5 font-medium sticky left-0 bg-background">{p.product.name}</td>
-                    {filteredCountries.slice(0, 12).map((c) => {
-                      // cell demand: blend of product demand and country demand + news co-occurrence
-                      const coNews = (news.data ?? []).filter((n) => n.product_id === p.product.id && n.country_iso2 === c.country.iso2).length;
-                      const cell = p.demand != null && c.demand != null
-                        ? Math.round((p.demand * 0.6) + (c.demand * 0.4) + coNews * 5)
-                        : null;
-                      const b = bandFromScore(cell);
-                      return (
-                        <td key={c.country.iso2} className="px-1 py-1 text-center">
-                          <div className={`rounded px-1.5 py-1 border ${b.cls}`} title={cell != null ? `${cell}/100` : "no data"}>
-                            {cell != null ? <>{b.emoji} <span className="text-[10px]">{b.label}</span></> : "—"}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <CardContent className="px-3 pb-3 pt-0">
+          <div className="grid grid-cols-1 gap-3">
+            {productIntel.filter((p) => p.sufficient).slice(0, 15).map((p) => (
+              <div key={p.product.id} className="rounded-lg border border-border bg-card/50 p-3">
+                <div className="mb-2 break-words text-sm font-semibold">{p.product.name}</div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                  {filteredCountries.slice(0, 12).map((c) => {
+                    const coNews = (news.data ?? []).filter((n) => n.product_id === p.product.id && n.country_iso2 === c.country.iso2).length;
+                    const cell = p.demand != null && c.demand != null
+                      ? Math.round((p.demand * 0.6) + (c.demand * 0.4) + coNews * 5)
+                      : null;
+                    const b = bandFromScore(cell);
+                    return (
+                      <div key={c.country.iso2} className={`min-w-0 rounded border px-2 py-1.5 text-center text-xs ${b.cls}`} title={cell != null ? `${cell}/100` : "no data"}>
+                        <div className="font-semibold">{c.country.iso2}</div>
+                        <div className="break-words text-[10px]">{cell != null ? `${b.emoji} ${b.label}` : "—"}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -590,29 +561,23 @@ export default function MarketIntelInsights() {
           {topOpportunities.length === 0 ? (
             <p className="p-4 text-xs text-muted-foreground flex items-center gap-2"><Info className="h-3.5 w-3.5" /> Not enough evidence yet — trigger a market refresh above.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[720px]">
-                <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left">
-                    <th className="w-10">#</th><th>Product</th><th>Country</th>
-                    <th className="text-right">Opportunity</th><th className="text-right">Confidence</th>
-                    <th>Recommendation</th><th>Reason</th>
-                  </tr>
-                </thead>
-                <tbody className="[&>tr]:border-t [&>tr]:border-border">
-                  {topOpportunities.map((r, i) => (
-                    <tr key={`${r.productId}-${r.iso2}`} className="hover:bg-muted/30">
-                      <td className="px-3 py-2 tabular-nums text-muted-foreground">{i + 1}</td>
-                      <td className="px-3 py-2 font-medium">{r.product}</td>
-                      <td className="px-3 py-2">{r.country}</td>
-                      <td className="px-3 py-2 text-right"><Badge variant="outline" className={bandFromScore(r.opportunity).cls}>{r.opportunity}</Badge></td>
-                      <td className="px-3 py-2 text-right text-xs tabular-nums">{r.confidence}%</td>
-                      <td className="px-3 py-2 text-xs">{r.recommendation}</td>
-                      <td className="px-3 py-2 text-xs text-muted-foreground max-w-[320px] truncate" title={r.reason}>{r.reason}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid grid-cols-1 gap-3 px-3 pb-3 xl:grid-cols-2">
+              {topOpportunities.map((r, i) => (
+                <div key={`${r.productId}-${r.iso2}`} className="rounded-lg border border-border bg-card/50 p-3">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-xs tabular-nums text-muted-foreground">#{i + 1} · {r.country}</div>
+                      <div className="break-words text-sm font-semibold">{r.product}</div>
+                    </div>
+                    <Badge variant="outline" className={bandFromScore(r.opportunity).cls}>{r.opportunity}</Badge>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
+                    <InfoCell label="Confidence">{r.confidence}%</InfoCell>
+                    <InfoCell label="Recommendation">{r.recommendation}</InfoCell>
+                    <InfoCell label="Reason">{r.reason}</InfoCell>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
@@ -633,5 +598,14 @@ function KpiCard({ title, value, sub, icon }: { title: string; value: number | s
         {sub && <div className="text-[11px] text-muted-foreground">{sub}</div>}
       </CardContent>
     </Card>
+  );
+}
+
+function InfoCell({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="min-w-0 overflow-hidden rounded-md border border-border/70 bg-background/40 p-2">
+      <div className="mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="min-w-0 break-words text-xs font-medium [overflow-wrap:anywhere]">{children}</div>
+    </div>
   );
 }
