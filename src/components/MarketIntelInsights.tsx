@@ -603,9 +603,9 @@ function KpiCard({ title, value, sub, icon }: { title: string; value: number | s
 
 function InfoCell({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="min-w-0 rounded-md border border-border/70 bg-background/40 p-2">
+    <div className="min-w-0 overflow-hidden rounded-md border border-border/70 bg-background/40 p-2">
       <div className="mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="min-w-0 break-words text-xs font-medium">{children}</div>
+      <div className="min-w-0 break-words text-xs font-medium [overflow-wrap:anywhere]">{children}</div>
     </div>
   );
 }

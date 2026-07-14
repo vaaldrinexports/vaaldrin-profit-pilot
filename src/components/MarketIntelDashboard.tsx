@@ -315,8 +315,8 @@ export default function MarketIntelDashboard() {
                     <InfoCell label="Updated">{relTime(r.score?.computed_at ?? r.product.last_seen_at ?? r.price?.captured_at ?? null)}</InfoCell>
                     <InfoCell label="Source">
                       {r.price?.source_url ? (
-                        <a href={r.price.source_url} target="_blank" rel="noreferrer" className="inline-flex min-w-0 items-center gap-1 text-primary hover:underline">
-                          <span className="truncate">{r.price.source ?? "source"}</span> <ExternalLink className="h-3 w-3 shrink-0" />
+                        <a href={r.price.source_url} target="_blank" rel="noreferrer" className="block min-w-0 break-words text-primary hover:underline">
+                          {r.price.source ?? "source"} <ExternalLink className="inline h-3 w-3 align-[-2px]" />
                         </a>
                       ) : r.product.discovered_from ? (
                         <span className="break-words text-muted-foreground">{r.product.discovered_from}</span>
@@ -395,9 +395,9 @@ export default function MarketIntelDashboard() {
 
 function InfoCell({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="min-w-0 rounded-md border border-border/70 bg-background/40 p-2">
+    <div className="min-w-0 overflow-hidden rounded-md border border-border/70 bg-background/40 p-2">
       <div className="mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="min-w-0 break-words text-xs font-medium">{children}</div>
+      <div className="min-w-0 break-words text-xs font-medium [overflow-wrap:anywhere]">{children}</div>
     </div>
   );
 }
