@@ -35,6 +35,36 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_log: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          event: string
+          id: string
+          metadata: Json
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          event: string
+          id?: string
+          metadata?: Json
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          event?: string
+          id?: string
+          metadata?: Json
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       mi_countries: {
         Row: {
           currency: string | null
