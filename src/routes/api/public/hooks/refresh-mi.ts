@@ -18,7 +18,7 @@ function isAuthorized(request: Request): boolean {
   if (!expected) return false; // fail closed
   const bearer = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
   const custom = request.headers.get("x-cron-secret") ?? "";
-  return (bearer && timingSafeEq(bearer, expected)) || (custom && timingSafeEq(custom, expected));
+  return Boolean((bearer && timingSafeEq(bearer, expected)) || (custom && timingSafeEq(custom, expected)));
 }
 
 export const Route = createFileRoute("/api/public/hooks/refresh-mi")({
