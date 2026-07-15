@@ -100,7 +100,10 @@ function AuthPage() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input id="password" type="password" required minLength={10} autoComplete={mode === "signin" ? "current-password" : "new-password"} value={password} onChange={(e) => setPassword(e.target.value)} />
+            {mode === "signup" && (
+              <p className="text-xs text-muted-foreground">Minimum 10 characters. Compromised passwords are rejected.</p>
+            )}
           </div>
           <Button type="submit" className="w-full" disabled={busy}>
             {mode === "signin" ? "Sign in" : "Create account"}

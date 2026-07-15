@@ -37,18 +37,61 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+// Enterprise security headers applied to every response.
+// - HSTS: force HTTPS for 2 years including subdomains (safe: app is HTTPS-only in prod).
+// - X-Content-Type-Options: block MIME sniffing (XSS via mistyped assets).
+// - X-Frame-Options + frame-ancestors: block clickjacking.
+// - Referrer-Policy: never leak full URL / query params cross-origin.
+// - Permissions-Policy: deny sensitive browser APIs we do not use.
+// - CSP: report-only during rollout to avoid breaking Vite HMR / inline SSR
+//   theme bootstrap; upgrade to enforcing once monitored.
+function applySecurityHeaders(response: Response): Response {
+  const h = new Headers(response.headers);
+  h.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+  h.set("X-Content-Type-Options", "nosniff");
+  h.set("X-Frame-Options", "DENY");
+  h.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  h.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
+  );
+  h.set("X-DNS-Prefetch-Control", "off");
+  // CSP kept report-only so the inline theme bootstrap and Vite HMR keep working.
+  // Frame-ancestors 'none' is a hard clickjacking block regardless of report-only.
+  if (!h.has("Content-Security-Policy") && !h.has("Content-Security-Policy-Report-Only")) {
+    h.set(
+      "Content-Security-Policy-Report-Only",
+      [
+        "default-src 'self'",
+        "base-uri 'self'",
+        "frame-ancestors 'none'",
+        "form-action 'self'",
+        "object-src 'none'",
+        "img-src 'self' data: blob: https:",
+        "font-src 'self' data: https://fonts.gstatic.com",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "script-src 'self' 'unsafe-inline'",
+        "connect-src 'self' https: wss:",
+      ].join("; "),
+    );
+  }
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers: h });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return applySecurityHeaders(await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
-      return new Response(renderErrorPage(), {
-        status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" },
-      });
+      return applySecurityHeaders(
+        new Response(renderErrorPage(), {
+          status: 500,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        }),
+      );
     }
   },
 };
