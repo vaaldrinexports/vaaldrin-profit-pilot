@@ -1,6 +1,7 @@
 import type { CalculatorState } from "@/lib/calculations";
 import { compute, getBuyerQuote } from "@/lib/calculations";
 import { supabase } from "@/integrations/supabase/client";
+import { recordAudit } from "@/lib/audit-log";
 
 export interface SavedQuote {
   id: string;
