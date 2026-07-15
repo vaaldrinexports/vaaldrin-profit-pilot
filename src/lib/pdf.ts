@@ -4,6 +4,28 @@ import type { CalculatorState } from "./calculations";
 import { computeCoreINR, fmtCurrency as fmtCurrencyRaw, getBuyerQuote } from "./calculations";
 import type { ContractCurrency } from "./calculations";
 
+// Security: strip PDF-hostile Unicode from every user-controlled string before
+// it reaches jsPDF. Blocks (a) bidi/RTL override characters used for visual
+// amount-spoofing (e.g. flipping "1000" to "0001" on the invoice), (b) zero-
+// width joiners used for homograph attacks in buyer names, (c) ASCII/Unicode
+// control chars that can corrupt PDF text streams, and (d) unbounded string
+// lengths that would blow up table layout or crash the client. Applied
+// centrally so every field on every document inherits the same guarantee.
+const PDF_HOSTILE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g;
+function safeStr(v: unknown, maxLen = 500): string {
+  if (v == null) return "";
+  const s = String(v).replace(PDF_HOSTILE, "").trim();
+  return s.length > maxLen ? s.slice(0, maxLen) + "…" : s;
+}
+function sanitizeStateForPdf(s: CalculatorState): CalculatorState {
+  const out: any = { ...s };
+  for (const k of Object.keys(out)) {
+    if (typeof out[k] === "string") out[k] = safeStr(out[k], k === "buyerAddress" || k === "buyerNotes" || k === "qualitySpecs" ? 2000 : 500);
+  }
+  return out as CalculatorState;
+}
+
+
 // PDF-safe currency formatter. jsPDF's built-in Helvetica is Latin-1 only, so
 // glyphs like ₹ (U+20B9) render as garbled characters that visually collide
 // with adjacent digits. Strip/replace non-Latin1 currency symbols with their
