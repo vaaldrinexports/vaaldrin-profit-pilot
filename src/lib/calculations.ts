@@ -400,7 +400,18 @@ export const defaultState: CalculatorState = {
 };
 
 
-const num = (n: number) => (isFinite(n) ? n : 0);
+// Business-logic hardening: all financial inputs are clamped to non-negative
+// and bounded, so a tampered form (negative supplier price, negative freight,
+// astronomical quantity) cannot underflow costs, invert margins, or overflow
+// downstream arithmetic. Applied centrally so every cost line inherits it.
+const MAX_FINANCIAL = 1e12; // ₹1 trillion ceiling — export invoices never legitimately exceed this
+const num = (n: number) => {
+  const v = Number(n);
+  if (!isFinite(v)) return 0;
+  if (v < 0) return 0;
+  if (v > MAX_FINANCIAL) return MAX_FINANCIAL;
+  return v;
+};
 
 export interface AuditRow {
   section: "Input" | "Intermediate" | "Final";
