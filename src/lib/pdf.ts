@@ -449,6 +449,7 @@ function packageSummary(s: CalculatorState) {
 // ============================================================
 
 export async function generateQuotationPDF(s: CalculatorState) {
+  s = sanitizeStateForPdf(s);
   const c = computeCoreINR(s);
   const { doc, W, H, margin } = await buildShell({
     title: "EXPORT QUOTATION",
@@ -533,6 +534,7 @@ export async function generateQuotationPDF(s: CalculatorState) {
 // ============================================================
 
 export async function generateProformaInvoicePDF(s: CalculatorState) {
+  s = sanitizeStateForPdf(s);
   const c = computeCoreINR(s);
   const quote = getBuyerQuote(c.recommendedPrice, s.quantity, s);
   const { doc, W, H, margin } = await buildShell({
@@ -614,6 +616,7 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
 // ============================================================
 
 export async function generateCommercialInvoicePDF(s: CalculatorState) {
+  s = sanitizeStateForPdf(s);
   const c = computeCoreINR(s);
   const quote = getBuyerQuote(c.recommendedPrice, s.quantity, s);
   const { doc, W, H, margin } = await buildShell({
@@ -720,6 +723,7 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
 // ============================================================
 
 export async function generatePackingListPDF(s: CalculatorState) {
+  s = sanitizeStateForPdf(s);
   const { doc, W, H, margin } = await buildShell({
     title: "PACKING LIST",
     docNumber: `PL-${s.quotationNumber}`,
@@ -788,6 +792,7 @@ export async function generatePackingListPDF(s: CalculatorState) {
 // ============================================================
 
 export async function generateInternalCostSheetPDF(s: CalculatorState) {
+  s = sanitizeStateForPdf(s);
   const c = computeCoreINR(s);
   const quote = getBuyerQuote(c.recommendedPrice, s.quantity, s);
   const { doc, W, H, margin } = await buildShell({
@@ -898,6 +903,7 @@ export async function generateInternalCostSheetPDF(s: CalculatorState) {
 // ============================================================
 
 export async function generatePurchaseOrderPDF(s: CalculatorState) {
+  s = sanitizeStateForPdf(s);
   const { doc, W, H, margin } = await buildShell({
     title: "PURCHASE ORDER",
     docNumber: `PO-${s.quotationNumber}`,
@@ -1006,6 +1012,7 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
 // ============================================================
 
 export async function generateSalesContractPDF(s: CalculatorState) {
+  s = sanitizeStateForPdf(s);
   const c = computeCoreINR(s);
   const quote = getBuyerQuote(c.recommendedPrice, s.quantity, s);
   const { doc, W, H, margin } = await buildShell({
