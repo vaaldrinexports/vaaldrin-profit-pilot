@@ -27,7 +27,7 @@ export async function recordAudit(
       event,
       entity_type: opts.entityType ?? null,
       entity_id: opts.entityId ?? null,
-      metadata: opts.metadata ?? {},
+      metadata: (opts.metadata ?? {}) as any,
     });
   } catch {
     // audit must never break the user flow
