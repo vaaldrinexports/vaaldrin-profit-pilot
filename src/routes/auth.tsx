@@ -50,9 +50,12 @@ function AuthPage() {
         if (error) throw error;
         toast.success("Account created — check your email to confirm, then sign in.");
         setMode("signin");
+        // Audit: signup attempt (row will be created when the user first signs in)
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        const { recordAudit } = await import("@/lib/audit-log");
+        void recordAudit("auth.signed_in", { metadata: { method: "password" } });
         navigate({ to: "/" });
       }
     } catch (err: any) {
@@ -70,12 +73,15 @@ function AuthPage() {
       });
       if (result.error) throw result.error;
       if (result.redirected) return;
+      const { recordAudit } = await import("@/lib/audit-log");
+      void recordAudit("auth.signed_in", { metadata: { method: "google" } });
       navigate({ to: "/" });
     } catch (err: any) {
       toast.error(err?.message || "Google sign-in failed");
       setBusy(false);
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">

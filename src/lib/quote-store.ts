@@ -1,6 +1,7 @@
 import type { CalculatorState } from "@/lib/calculations";
 import { compute, getBuyerQuote } from "@/lib/calculations";
 import { supabase } from "@/integrations/supabase/client";
+import { recordAudit } from "@/lib/audit-log";
 
 export interface SavedQuote {
   id: string;
@@ -89,16 +90,28 @@ export async function saveQuoteSnapshot(state: CalculatorState): Promise<SavedQu
     console.error("saveQuoteSnapshot", error);
     throw error;
   }
-  return fromRow(data as Row);
+  const saved = fromRow(data as Row);
+  void recordAudit("quote.saved", {
+    entityType: "quote",
+    entityId: saved.id,
+    metadata: { quotationNumber: saved.quotationNumber, totalContractValue: saved.totalContractValue },
+  });
+  return saved;
 }
 
 export async function loadQuote(id: string): Promise<SavedQuote | null> {
   const { data, error } = await supabase.from("quotes").select("*").eq("id", id).maybeSingle();
   if (error || !data) return null;
+  void recordAudit("quote.loaded", { entityType: "quote", entityId: id });
   return fromRow(data as Row);
 }
 
 export async function deleteQuote(id: string): Promise<void> {
   const { error } = await supabase.from("quotes").delete().eq("id", id);
-  if (error) console.error("deleteQuote", error);
+  if (error) {
+    console.error("deleteQuote", error);
+    return;
+  }
+  void recordAudit("quote.deleted", { entityType: "quote", entityId: id });
 }
+
