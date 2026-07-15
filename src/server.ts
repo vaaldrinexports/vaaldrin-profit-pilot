@@ -56,11 +56,13 @@ function applySecurityHeaders(response: Response): Response {
     "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
   );
   h.set("X-DNS-Prefetch-Control", "off");
-  // CSP kept report-only so the inline theme bootstrap and Vite HMR keep working.
-  // Frame-ancestors 'none' is a hard clickjacking block regardless of report-only.
+  // CSP now ENFORCING (Phase 7). 'unsafe-inline' on script-src stays for the
+  // SSR theme bootstrap; harden further with a nonce once every inline script
+  // is inventoried. frame-ancestors 'none' + X-Frame-Options: DENY block
+  // clickjacking regardless. connect-src includes wss: for Vite HMR in dev.
   if (!h.has("Content-Security-Policy") && !h.has("Content-Security-Policy-Report-Only")) {
     h.set(
-      "Content-Security-Policy-Report-Only",
+      "Content-Security-Policy",
       [
         "default-src 'self'",
         "base-uri 'self'",
