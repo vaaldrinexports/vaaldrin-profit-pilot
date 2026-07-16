@@ -380,7 +380,9 @@ export const refreshMarketIntelligence = createServerFn({ method: "POST" })
     };
   });
 
-export const getMarketHealth = createServerFn({ method: "GET" }).handler(async () => {
+export const getMarketHealth = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin.from("mi_source_health").select("*").order("category");
   if (error) throw error;
