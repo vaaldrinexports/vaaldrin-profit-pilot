@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
  * Phase 5 — Dynamic Product Discovery Engine.
@@ -247,7 +248,9 @@ export async function runProductDiscovery(admin: any): Promise<CollectorResult> 
 }
 
 // Standalone endpoint for the UI "Discover Products" button.
-export const discoverProducts = createServerFn({ method: "POST" }).handler(async () => {
+export const discoverProducts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const admin = supabaseAdmin;
   const result = await runProductDiscovery(admin);

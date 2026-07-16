@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
 /**
@@ -132,6 +133,7 @@ async function searchOneMarket(
 }
 
 export const fetchLiveBenchmark = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => MarketInput.parse(data))
   .handler(async ({ data }): Promise<LiveBenchmarkResult> => {
     const apiKey = process.env.FIRECRAWL_API_KEY;
