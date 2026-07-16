@@ -333,6 +333,7 @@ async function computeScores(admin: any, products: { id: string }[], countries: 
 
 // ============ ORCHESTRATOR ============
 export const refreshMarketIntelligence = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: { sources?: string[] } | undefined) => data ?? {})
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
