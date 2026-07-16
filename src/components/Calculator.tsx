@@ -1283,8 +1283,8 @@ export default function Calculator() {
                           </div>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                          <NumField label={`Market ${cc} rate`} value={s[marketKey]} onChange={(v) => set(marketKey, v)} step={0.01} suffix="₹" hint="Click Fetch live rate to auto-fill today's market rate" />
                           <NumField label={`Actual bank ${cc} rate`} value={s[bankKey]} onChange={(v) => set(bankKey, v)} step={0.01} suffix="₹" hint="Rate your bank actually credits — typically lower than market" />
+                          <NumField label={`Market ${cc} rate`} value={s[marketKey]} onChange={(v) => set(marketKey, v)} step={0.01} suffix="₹" hint="Click Fetch live rate to auto-fill today's market rate" />
                           <NumField label="Forex risk buffer" value={s.forexBufferPct} onChange={(v) => set("forexBufferPct", v)} step={0.1} suffix="%" />
                           <NumField label="Forex exposure (informational)" value={calculateForexExposure(c.expectedRevenue, s)} onChange={() => {}} readOnly suffix="₹" />
                         </div>
