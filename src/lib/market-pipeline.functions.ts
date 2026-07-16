@@ -332,53 +332,56 @@ async function computeScores(admin: any, products: { id: string }[], countries: 
 }
 
 // ============ ORCHESTRATOR ============
+// Internal runner — no middleware. Callable from the authenticated server fn
+// below AND from the CRON_SECRET-protected /api/public/hooks/refresh-mi route.
+export async function runRefreshMarketIntelligence(data: { sources?: string[] } = {}) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const admin = supabaseAdmin;
+  const [{ data: products }, { data: countries }, { data: health }] = await Promise.all([
+    admin.from("mi_products").select("id,name"),
+    admin.from("mi_countries").select("iso2"),
+    admin.from("mi_source_health").select("*"),
+  ]);
+  const now = Date.now();
+  const filter = data?.sources && data.sources.length ? new Set(data.sources) : null;
+  const isDue = (key: string) => {
+    if (filter) return filter.has(key);
+    const h = (health ?? []).find((x: any) => x.source_key === key);
+    if (!h || !h.last_success_at) return true;
+    return now - new Date(h.last_success_at).getTime() > h.refresh_interval_minutes * 60000;
+  };
+
+  const jobs: Promise<CollectorResult>[] = [];
+  if (isDue("fx.erapi")) jobs.push(collectFx(admin));
+  if (isDue("weather.open-meteo") && countries?.length) jobs.push(collectWeather(admin, countries));
+  if (isDue("news.google") && products?.length) jobs.push(collectNews(admin, products));
+  if (isDue("commodity.apeda") && products?.length) jobs.push(collectCommodityPrices(admin, products));
+  if (isDue("discovery.trends")) {
+    const { runProductDiscovery } = await import("./product-discovery.functions");
+    jobs.push(runProductDiscovery(admin));
+  }
+
+  const results = await Promise.all(jobs);
+  for (const r of results) await markHealth(admin, r.source_key, r);
+
+  let scoresWritten = 0;
+  if (products?.length && countries?.length) {
+    try { scoresWritten = await computeScores(admin, products, countries); } catch (e) { console.error(e); }
+  }
+
+  return {
+    ran: results.length,
+    results,
+    scoresWritten,
+    skipped: (health ?? []).filter((h: any) => !results.find((r) => r.source_key === h.source_key)).map((h: any) => h.source_key),
+    at: new Date().toISOString(),
+  };
+}
+
 export const refreshMarketIntelligence = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { sources?: string[] } | undefined) => data ?? {})
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = supabaseAdmin;
-    const [{ data: products }, { data: countries }, { data: health }] = await Promise.all([
-      admin.from("mi_products").select("id,name"),
-      admin.from("mi_countries").select("iso2"),
-      admin.from("mi_source_health").select("*"),
-    ]);
-    const now = Date.now();
-    const filter = data?.sources && data.sources.length ? new Set(data.sources) : null;
-    // pick collectors whose interval has elapsed (or requested explicitly)
-    const isDue = (key: string) => {
-      if (filter) return filter.has(key);
-      const h = (health ?? []).find((x: any) => x.source_key === key);
-      if (!h || !h.last_success_at) return true;
-      return now - new Date(h.last_success_at).getTime() > h.refresh_interval_minutes * 60000;
-    };
-
-    const jobs: Promise<CollectorResult>[] = [];
-    if (isDue("fx.erapi")) jobs.push(collectFx(admin));
-    if (isDue("weather.open-meteo") && countries?.length) jobs.push(collectWeather(admin, countries));
-    if (isDue("news.google") && products?.length) jobs.push(collectNews(admin, products));
-    if (isDue("commodity.apeda") && products?.length) jobs.push(collectCommodityPrices(admin, products));
-    if (isDue("discovery.trends")) {
-      const { runProductDiscovery } = await import("./product-discovery.functions");
-      jobs.push(runProductDiscovery(admin));
-    }
-
-    const results = await Promise.all(jobs);
-    for (const r of results) await markHealth(admin, r.source_key, r);
-
-    let scoresWritten = 0;
-    if (products?.length && countries?.length) {
-      try { scoresWritten = await computeScores(admin, products, countries); } catch (e) { console.error(e); }
-    }
-
-    return {
-      ran: results.length,
-      results,
-      scoresWritten,
-      skipped: (health ?? []).filter((h: any) => !results.find((r) => r.source_key === h.source_key)).map((h: any) => h.source_key),
-      at: new Date().toISOString(),
-    };
-  });
+  .handler(async ({ data }) => runRefreshMarketIntelligence(data));
 
 export const getMarketHealth = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
