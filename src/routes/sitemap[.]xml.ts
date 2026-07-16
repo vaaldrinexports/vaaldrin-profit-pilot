@@ -1,4 +1,4 @@
-/// <reference types="@tanstack/start-client-core/dist/esm/serverRoute" />
+/// <reference path="../../node_modules/@tanstack/start-client-core/dist/esm/serverRoute.d.ts" />
 import { createFileRoute } from "@tanstack/react-router";
 
 const BASE_URL = "https://vaaldrin-profit-pilot.lovable.app";
