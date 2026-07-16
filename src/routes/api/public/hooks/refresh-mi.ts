@@ -33,7 +33,7 @@ export const Route = createFileRoute("/api/public/hooks/refresh-mi")({
           // Cap payload size — refuse anything >4KB (hook takes no meaningful input).
           if (raw.length > 4096) return new Response("Payload too large", { status: 413 });
           const body = raw ? JSON.parse(raw) : {};
-          const result = await refreshMarketIntelligence({ data: body ?? {} });
+          const result = await runRefreshMarketIntelligence(body ?? {});
           return Response.json({ ok: true, result });
         } catch (e: any) {
           // Do not leak stack traces to callers.
