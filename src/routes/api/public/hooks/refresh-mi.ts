@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { refreshMarketIntelligence } from "@/lib/market-pipeline.functions";
+import { runRefreshMarketIntelligence } from "@/lib/market-pipeline.functions";
 
 // Public hook — called by pg_cron on a schedule.
 // SECURITY: requires shared secret in `Authorization: Bearer <CRON_SECRET>`
