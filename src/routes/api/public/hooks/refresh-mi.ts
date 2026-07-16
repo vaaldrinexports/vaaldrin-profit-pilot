@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import "@tanstack/react-start";
 import { runRefreshMarketIntelligence } from "@/lib/market-pipeline.functions";
 
 // Public hook — called by pg_cron on a schedule.
