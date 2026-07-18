@@ -58,6 +58,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { SIGNATURE_PNG_DATA_URL } from "@/lib/signature";
+import WorkspaceSwitcher from "@/components/WorkspaceSwitcher";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   LineChart, Line, CartesianGrid,
@@ -754,6 +755,8 @@ export default function Calculator() {
             <X className="h-4 w-4" />
           </button>
         </div>
+        <div className="mx-3 mb-3 h-px bg-border" />
+        <WorkspaceSwitcher />
         <div className="mx-3 mb-3 h-px bg-border" />
         <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
           {[
