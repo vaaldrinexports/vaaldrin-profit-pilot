@@ -2,6 +2,7 @@ import type { CalculatorState } from "@/lib/calculations";
 import { compute, getBuyerQuote } from "@/lib/calculations";
 import { supabase } from "@/integrations/supabase/client";
 import { recordAudit } from "@/lib/audit-log";
+import { requireCurrentOrgId } from "@/lib/org-store";
 
 export interface SavedQuote {
   id: string;
@@ -68,10 +69,12 @@ export async function saveQuoteSnapshot(state: CalculatorState): Promise<SavedQu
   const { data: userRes } = await supabase.auth.getUser();
   const user = userRes.user;
   if (!user) throw new Error("Not signed in");
+  const orgId = await requireCurrentOrgId();
   const c = compute(state);
   const q = getBuyerQuote(c.recommendedPrice, state.quantity, state);
   const row = {
     user_id: user.id,
+    org_id: orgId,
     quotation_number: state.quotationNumber,
     buyer_company: state.buyerCompany,
     product_name: state.productName,
