@@ -17,23 +17,34 @@ export type Database = {
       app_settings: {
         Row: {
           created_at: string
+          org_id: string
           settings: Json
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          org_id: string
           settings?: Json
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          org_id?: string
           settings?: Json
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "app_settings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audit_log: {
         Row: {
@@ -43,6 +54,7 @@ export type Database = {
           event: string
           id: string
           metadata: Json
+          org_id: string | null
           user_id: string | null
         }
         Insert: {
@@ -52,6 +64,7 @@ export type Database = {
           event: string
           id?: string
           metadata?: Json
+          org_id?: string | null
           user_id?: string | null
         }
         Update: {
@@ -61,30 +74,94 @@ export type Database = {
           event?: string
           id?: string
           metadata?: Json
+          org_id?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          org_id: string
+          role: Database["public"]["Enums"]["org_role"]
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          org_id: string
+          role?: Database["public"]["Enums"]["org_role"]
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          org_id?: string
+          role?: Database["public"]["Enums"]["org_role"]
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mi_countries: {
         Row: {
           currency: string | null
           iso2: string
           name: string
+          org_id: string
           region: string | null
         }
         Insert: {
           currency?: string | null
           iso2: string
           name: string
+          org_id: string
           region?: string | null
         }
         Update: {
           currency?: string | null
           iso2?: string
           name?: string
+          org_id?: string
           region?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "mi_countries_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mi_news: {
         Row: {
@@ -92,6 +169,7 @@ export type Database = {
           country_iso2: string | null
           headline: string
           id: string
+          org_id: string
           product_id: string | null
           published_at: string | null
           sentiment: string | null
@@ -104,6 +182,7 @@ export type Database = {
           country_iso2?: string | null
           headline: string
           id?: string
+          org_id: string
           product_id?: string | null
           published_at?: string | null
           sentiment?: string | null
@@ -116,6 +195,7 @@ export type Database = {
           country_iso2?: string | null
           headline?: string
           id?: string
+          org_id?: string
           product_id?: string | null
           published_at?: string | null
           sentiment?: string | null
@@ -130,6 +210,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "mi_countries"
             referencedColumns: ["iso2"]
+          },
+          {
+            foreignKeyName: "mi_news_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "mi_news_product_id_fkey"
@@ -148,6 +235,7 @@ export type Database = {
           hs_code: string | null
           id: string
           name: string
+          org_id: string
         }
         Insert: {
           category?: string | null
@@ -156,6 +244,7 @@ export type Database = {
           hs_code?: string | null
           id?: string
           name: string
+          org_id: string
         }
         Update: {
           category?: string | null
@@ -164,8 +253,17 @@ export type Database = {
           hs_code?: string | null
           id?: string
           name?: string
+          org_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "mi_products_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mi_scores: {
         Row: {
@@ -178,6 +276,7 @@ export type Database = {
           evidence: Json
           id: string
           opportunity_score: number | null
+          org_id: string
           price_trend: string | null
           product_id: string
           supply_situation: string | null
@@ -192,6 +291,7 @@ export type Database = {
           evidence?: Json
           id?: string
           opportunity_score?: number | null
+          org_id: string
           price_trend?: string | null
           product_id: string
           supply_situation?: string | null
@@ -206,6 +306,7 @@ export type Database = {
           evidence?: Json
           id?: string
           opportunity_score?: number | null
+          org_id?: string
           price_trend?: string | null
           product_id?: string
           supply_situation?: string | null
@@ -217,6 +318,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "mi_countries"
             referencedColumns: ["iso2"]
+          },
+          {
+            foreignKeyName: "mi_scores_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "mi_scores_product_id_fkey"
@@ -233,6 +341,7 @@ export type Database = {
           country_iso2: string | null
           id: string
           meta: Json
+          org_id: string
           product_id: string | null
           signal_type: string
           source: string | null
@@ -244,6 +353,7 @@ export type Database = {
           country_iso2?: string | null
           id?: string
           meta?: Json
+          org_id: string
           product_id?: string | null
           signal_type: string
           source?: string | null
@@ -255,6 +365,7 @@ export type Database = {
           country_iso2?: string | null
           id?: string
           meta?: Json
+          org_id?: string
           product_id?: string | null
           signal_type?: string
           source?: string | null
@@ -268,6 +379,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "mi_countries"
             referencedColumns: ["iso2"]
+          },
+          {
+            foreignKeyName: "mi_signals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "mi_signals_product_id_fkey"
@@ -287,6 +405,7 @@ export type Database = {
           last_attempt_at: string | null
           last_error: string | null
           last_success_at: string | null
+          org_id: string
           records_last_run: number | null
           refresh_interval_minutes: number
           source_key: string
@@ -302,6 +421,7 @@ export type Database = {
           last_attempt_at?: string | null
           last_error?: string | null
           last_success_at?: string | null
+          org_id: string
           records_last_run?: number | null
           refresh_interval_minutes?: number
           source_key: string
@@ -317,12 +437,122 @@ export type Database = {
           last_attempt_at?: string | null
           last_error?: string | null
           last_success_at?: string | null
+          org_id?: string
           records_last_run?: number | null
           refresh_interval_minutes?: number
           source_key?: string
           source_name?: string
           status?: string
           updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mi_source_health_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_members: {
+        Row: {
+          created_at: string
+          org_id: string
+          role: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          org_id: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          org_id?: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          company_address: string | null
+          company_gstin: string | null
+          created_at: string
+          created_by: string | null
+          current_period_end: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          slug: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_address?: string | null
+          company_gstin?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_period_end?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          slug: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_address?: string | null
+          company_gstin?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_period_end?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          slug?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_admins: {
+        Row: {
+          granted_at: string
+          granted_by: string | null
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string
+          granted_by?: string | null
+          user_id: string
+        }
+        Update: {
+          granted_at?: string
+          granted_by?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -333,6 +563,7 @@ export type Database = {
           created_at: string
           id: string
           net_profit_inr: number | null
+          org_id: string
           product_name: string | null
           profit_pct: number | null
           quantity: number | null
@@ -351,6 +582,7 @@ export type Database = {
           created_at?: string
           id?: string
           net_profit_inr?: number | null
+          org_id: string
           product_name?: string | null
           profit_pct?: number | null
           quantity?: number | null
@@ -369,6 +601,7 @@ export type Database = {
           created_at?: string
           id?: string
           net_profit_inr?: number | null
+          org_id?: string
           product_name?: string | null
           profit_pct?: number | null
           quantity?: number | null
@@ -381,17 +614,72 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "quotes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usage_counters: {
+        Row: {
+          mi_refreshes: number
+          org_id: string
+          period_start: string
+          quotes_created: number
+          updated_at: string
+        }
+        Insert: {
+          mi_refreshes?: number
+          org_id: string
+          period_start: string
+          quotes_created?: number
+          updated_at?: string
+        }
+        Update: {
+          mi_refreshes?: number
+          org_id?: string
+          period_start?: string
+          quotes_created?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_counters_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_org_access: {
+        Args: {
+          _org: string
+          _roles?: Database["public"]["Enums"]["org_role"][]
+        }
+        Returns: boolean
+      }
+      is_platform_admin: { Args: { _user?: string }; Returns: boolean }
+      my_org_ids: { Args: never; Returns: string[] }
     }
     Enums: {
-      [_ in never]: never
+      org_role: "owner" | "admin" | "member" | "viewer"
+      subscription_plan: "free" | "pro" | "business" | "enterprise"
+      subscription_status:
+        | "trialing"
+        | "active"
+        | "past_due"
+        | "canceled"
+        | "paused"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -518,6 +806,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      org_role: ["owner", "admin", "member", "viewer"],
+      subscription_plan: ["free", "pro", "business", "enterprise"],
+      subscription_status: [
+        "trialing",
+        "active",
+        "past_due",
+        "canceled",
+        "paused",
+      ],
+    },
   },
 } as const
