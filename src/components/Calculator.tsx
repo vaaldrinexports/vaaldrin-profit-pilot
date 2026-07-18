@@ -755,6 +755,8 @@ export default function Calculator() {
           </button>
         </div>
         <div className="mx-3 mb-3 h-px bg-border" />
+        <WorkspaceSwitcher />
+        <div className="mx-3 mb-3 h-px bg-border" />
         <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
           {[
             { id: "inputs", label: "Dashboard", icon: LayoutDashboard },
