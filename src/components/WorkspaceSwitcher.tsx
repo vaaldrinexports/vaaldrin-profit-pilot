@@ -135,6 +135,12 @@ export default function WorkspaceSwitcher() {
               <Settings2 className="h-4 w-4 mr-2" /> Workspace settings
             </Link>
           </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link to="/app/settings/billing">
+              <Settings2 className="h-4 w-4 mr-2" /> Billing & plan
+            </Link>
+          </DropdownMenuItem>
+
         </DropdownMenuContent>
       </DropdownMenu>
 

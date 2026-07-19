@@ -24,6 +24,7 @@ import { Route as AuthenticatedInviteTokenRouteImport } from './routes/_authenti
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicHooksRefreshMiRouteImport } from './routes/api/public/hooks/refresh-mi'
 import { Route as AuthenticatedAppSettingsWorkspaceRouteImport } from './routes/_authenticated/app.settings.workspace'
+import { Route as AuthenticatedAppSettingsBillingRouteImport } from './routes/_authenticated/app.settings.billing'
 import { Route as AuthenticatedAppBillingSuccessRouteImport } from './routes/_authenticated/app.billing.success'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -103,6 +104,12 @@ const AuthenticatedAppSettingsWorkspaceRoute =
     path: '/settings/workspace',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppSettingsBillingRoute =
+  AuthenticatedAppSettingsBillingRouteImport.update({
+    id: '/settings/billing',
+    path: '/settings/billing',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppBillingSuccessRoute =
   AuthenticatedAppBillingSuccessRouteImport.update({
     id: '/billing/success',
@@ -123,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/legal/terms': typeof LegalTermsRoute
   '/invite/$token': typeof AuthenticatedInviteTokenRoute
   '/app/billing/success': typeof AuthenticatedAppBillingSuccessRoute
+  '/app/settings/billing': typeof AuthenticatedAppSettingsBillingRoute
   '/app/settings/workspace': typeof AuthenticatedAppSettingsWorkspaceRoute
   '/api/public/hooks/refresh-mi': typeof ApiPublicHooksRefreshMiRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -140,6 +148,7 @@ export interface FileRoutesByTo {
   '/legal/terms': typeof LegalTermsRoute
   '/invite/$token': typeof AuthenticatedInviteTokenRoute
   '/app/billing/success': typeof AuthenticatedAppBillingSuccessRoute
+  '/app/settings/billing': typeof AuthenticatedAppSettingsBillingRoute
   '/app/settings/workspace': typeof AuthenticatedAppSettingsWorkspaceRoute
   '/api/public/hooks/refresh-mi': typeof ApiPublicHooksRefreshMiRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -159,6 +168,7 @@ export interface FileRoutesById {
   '/legal/terms': typeof LegalTermsRoute
   '/_authenticated/invite/$token': typeof AuthenticatedInviteTokenRoute
   '/_authenticated/app/billing/success': typeof AuthenticatedAppBillingSuccessRoute
+  '/_authenticated/app/settings/billing': typeof AuthenticatedAppSettingsBillingRoute
   '/_authenticated/app/settings/workspace': typeof AuthenticatedAppSettingsWorkspaceRoute
   '/api/public/hooks/refresh-mi': typeof ApiPublicHooksRefreshMiRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/legal/terms'
     | '/invite/$token'
     | '/app/billing/success'
+    | '/app/settings/billing'
     | '/app/settings/workspace'
     | '/api/public/hooks/refresh-mi'
     | '/api/public/payments/webhook'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/legal/terms'
     | '/invite/$token'
     | '/app/billing/success'
+    | '/app/settings/billing'
     | '/app/settings/workspace'
     | '/api/public/hooks/refresh-mi'
     | '/api/public/payments/webhook'
@@ -213,6 +225,7 @@ export interface FileRouteTypes {
     | '/legal/terms'
     | '/_authenticated/invite/$token'
     | '/_authenticated/app/billing/success'
+    | '/_authenticated/app/settings/billing'
     | '/_authenticated/app/settings/workspace'
     | '/api/public/hooks/refresh-mi'
     | '/api/public/payments/webhook'
@@ -340,6 +353,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppSettingsWorkspaceRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/settings/billing': {
+      id: '/_authenticated/app/settings/billing'
+      path: '/settings/billing'
+      fullPath: '/app/settings/billing'
+      preLoaderRoute: typeof AuthenticatedAppSettingsBillingRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/billing/success': {
       id: '/_authenticated/app/billing/success'
       path: '/billing/success'
@@ -352,11 +372,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppBillingSuccessRoute: typeof AuthenticatedAppBillingSuccessRoute
+  AuthenticatedAppSettingsBillingRoute: typeof AuthenticatedAppSettingsBillingRoute
   AuthenticatedAppSettingsWorkspaceRoute: typeof AuthenticatedAppSettingsWorkspaceRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppBillingSuccessRoute: AuthenticatedAppBillingSuccessRoute,
+  AuthenticatedAppSettingsBillingRoute: AuthenticatedAppSettingsBillingRoute,
   AuthenticatedAppSettingsWorkspaceRoute:
     AuthenticatedAppSettingsWorkspaceRoute,
 }
