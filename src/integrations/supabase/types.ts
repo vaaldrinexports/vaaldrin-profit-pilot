@@ -486,6 +486,8 @@ export type Database = {
       }
       organizations: {
         Row: {
+          billing_environment: string
+          cancel_at_period_end: boolean
           company_address: string | null
           company_gstin: string | null
           created_at: string
@@ -494,6 +496,9 @@ export type Database = {
           id: string
           logo_url: string | null
           name: string
+          paddle_customer_id: string | null
+          paddle_price_id: string | null
+          paddle_subscription_id: string | null
           plan: Database["public"]["Enums"]["subscription_plan"]
           slug: string
           stripe_customer_id: string | null
@@ -503,6 +508,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          billing_environment?: string
+          cancel_at_period_end?: boolean
           company_address?: string | null
           company_gstin?: string | null
           created_at?: string
@@ -511,6 +518,9 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name: string
+          paddle_customer_id?: string | null
+          paddle_price_id?: string | null
+          paddle_subscription_id?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
           slug: string
           stripe_customer_id?: string | null
@@ -520,6 +530,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          billing_environment?: string
+          cancel_at_period_end?: boolean
           company_address?: string | null
           company_gstin?: string | null
           created_at?: string
@@ -528,6 +540,9 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name?: string
+          paddle_customer_id?: string | null
+          paddle_price_id?: string | null
+          paddle_subscription_id?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
           slug?: string
           stripe_customer_id?: string | null
@@ -668,8 +683,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_quote_usage: { Args: { _org: string }; Returns: number }
       is_platform_admin: { Args: { _user?: string }; Returns: boolean }
       my_org_ids: { Args: never; Returns: string[] }
+      org_has_active_plan: { Args: { _org: string }; Returns: boolean }
     }
     Enums: {
       org_role: "owner" | "admin" | "member" | "viewer"
