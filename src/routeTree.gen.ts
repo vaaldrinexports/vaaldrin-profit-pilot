@@ -12,10 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
-import { Route as AuthenticatedSettingsWorkspaceRouteImport } from './routes/_authenticated/settings.workspace'
+import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedInviteTokenRouteImport } from './routes/_authenticated/invite.$token'
 import { Route as ApiPublicHooksRefreshMiRouteImport } from './routes/api/public/hooks/refresh-mi'
+import { Route as AuthenticatedAppSettingsWorkspaceRouteImport } from './routes/_authenticated/app.settings.workspace'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -31,17 +31,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedSettingsWorkspaceRoute =
-  AuthenticatedSettingsWorkspaceRouteImport.update({
-    id: '/settings/workspace',
-    path: '/settings/workspace',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedInviteTokenRoute =
   AuthenticatedInviteTokenRouteImport.update({
     id: '/invite/$token',
@@ -53,21 +47,29 @@ const ApiPublicHooksRefreshMiRoute = ApiPublicHooksRefreshMiRouteImport.update({
   path: '/api/public/hooks/refresh-mi',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAppSettingsWorkspaceRoute =
+  AuthenticatedAppSettingsWorkspaceRouteImport.update({
+    id: '/settings/workspace',
+    path: '/settings/workspace',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthenticatedIndexRoute
+  '/': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/app': typeof AuthenticatedAppRouteWithChildren
   '/invite/$token': typeof AuthenticatedInviteTokenRoute
-  '/settings/workspace': typeof AuthenticatedSettingsWorkspaceRoute
+  '/app/settings/workspace': typeof AuthenticatedAppSettingsWorkspaceRoute
   '/api/public/hooks/refresh-mi': typeof ApiPublicHooksRefreshMiRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/': typeof AuthenticatedIndexRoute
+  '/app': typeof AuthenticatedAppRouteWithChildren
   '/invite/$token': typeof AuthenticatedInviteTokenRoute
-  '/settings/workspace': typeof AuthenticatedSettingsWorkspaceRoute
+  '/app/settings/workspace': typeof AuthenticatedAppSettingsWorkspaceRoute
   '/api/public/hooks/refresh-mi': typeof ApiPublicHooksRefreshMiRoute
 }
 export interface FileRoutesById {
@@ -75,9 +77,9 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/invite/$token': typeof AuthenticatedInviteTokenRoute
-  '/_authenticated/settings/workspace': typeof AuthenticatedSettingsWorkspaceRoute
+  '/_authenticated/app/settings/workspace': typeof AuthenticatedAppSettingsWorkspaceRoute
   '/api/public/hooks/refresh-mi': typeof ApiPublicHooksRefreshMiRoute
 }
 export interface FileRouteTypes {
@@ -86,25 +88,27 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/sitemap.xml'
+    | '/app'
     | '/invite/$token'
-    | '/settings/workspace'
+    | '/app/settings/workspace'
     | '/api/public/hooks/refresh-mi'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/auth'
     | '/sitemap.xml'
-    | '/'
+    | '/app'
     | '/invite/$token'
-    | '/settings/workspace'
+    | '/app/settings/workspace'
     | '/api/public/hooks/refresh-mi'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
     | '/sitemap.xml'
-    | '/_authenticated/'
+    | '/_authenticated/app'
     | '/_authenticated/invite/$token'
-    | '/_authenticated/settings/workspace'
+    | '/_authenticated/app/settings/workspace'
     | '/api/public/hooks/refresh-mi'
   fileRoutesById: FileRoutesById
 }
@@ -138,18 +142,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/': {
-      id: '/_authenticated/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/settings/workspace': {
-      id: '/_authenticated/settings/workspace'
-      path: '/settings/workspace'
-      fullPath: '/settings/workspace'
-      preLoaderRoute: typeof AuthenticatedSettingsWorkspaceRouteImport
+    '/_authenticated/app': {
+      id: '/_authenticated/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AuthenticatedAppRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/invite/$token': {
@@ -166,19 +163,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksRefreshMiRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/app/settings/workspace': {
+      id: '/_authenticated/app/settings/workspace'
+      path: '/settings/workspace'
+      fullPath: '/app/settings/workspace'
+      preLoaderRoute: typeof AuthenticatedAppSettingsWorkspaceRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
   }
 }
 
+interface AuthenticatedAppRouteChildren {
+  AuthenticatedAppSettingsWorkspaceRoute: typeof AuthenticatedAppSettingsWorkspaceRoute
+}
+
+const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
+  AuthenticatedAppSettingsWorkspaceRoute:
+    AuthenticatedAppSettingsWorkspaceRoute,
+}
+
+const AuthenticatedAppRouteWithChildren =
+  AuthenticatedAppRoute._addFileChildren(AuthenticatedAppRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAppRoute: typeof AuthenticatedAppRouteWithChildren
   AuthenticatedInviteTokenRoute: typeof AuthenticatedInviteTokenRoute
-  AuthenticatedSettingsWorkspaceRoute: typeof AuthenticatedSettingsWorkspaceRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAppRoute: AuthenticatedAppRouteWithChildren,
   AuthenticatedInviteTokenRoute: AuthenticatedInviteTokenRoute,
-  AuthenticatedSettingsWorkspaceRoute: AuthenticatedSettingsWorkspaceRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -193,13 +207,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

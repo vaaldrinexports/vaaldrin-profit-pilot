@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import Calculator from "@/components/Calculator";
 import { Toaster } from "@/components/ui/sonner";
 
-export const Route = createFileRoute("/_authenticated/")({
+export const Route = createFileRoute("/_authenticated/app")({
   head: () => ({
     meta: [
       { title: "Vaaldrin Exports — Export Pricing & Profit Control" },
