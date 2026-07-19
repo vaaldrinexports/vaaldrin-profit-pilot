@@ -61,7 +61,7 @@ function AcceptInvite() {
       if (accErr) throw accErr;
       setCurrentOrgId(invite.org_id);
       toast.success(`Joined ${org?.name}`);
-      navigate({ to: "/" });
+      navigate({ to: "/app" });
       setTimeout(() => window.location.reload(), 200);
     } catch (e: any) {
       toast.error(e.message);
@@ -83,12 +83,12 @@ function AcceptInvite() {
               </p>
               <div className="flex gap-2">
                 <Button onClick={accept} disabled={busy} className="flex-1">Accept invitation</Button>
-                <Button variant="ghost" onClick={() => navigate({ to: "/" })}>Decline</Button>
+                <Button variant="ghost" onClick={() => navigate({ to: "/app" })}>Decline</Button>
               </div>
             </>
           )}
           {error && (
-            <Button variant="outline" onClick={() => navigate({ to: "/" })} className="w-full">
+            <Button variant="outline" onClick={() => navigate({ to: "/app" })} className="w-full">
               Go to dashboard
             </Button>
           )}
