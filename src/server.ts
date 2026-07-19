@@ -72,9 +72,12 @@ function applySecurityHeaders(response: Response): Response {
         "img-src 'self' data: blob: https:",
         "font-src 'self' data: https://fonts.gstatic.com",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "script-src 'self' 'unsafe-inline'",
+        "script-src 'self' 'unsafe-inline' https://cdn.paddle.com https://*.paddle.com",
         "connect-src 'self' https: wss:",
+        "frame-src 'self' https://*.paddle.com https://buy.paddle.com https://checkout.paddle.com https://sandbox-buy.paddle.com https://sandbox-checkout.paddle.com",
+        "child-src 'self' https://*.paddle.com",
       ].join("; "),
+
     );
   }
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers: h });
