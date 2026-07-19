@@ -70,6 +70,33 @@ export async function saveQuoteSnapshot(state: CalculatorState): Promise<SavedQu
   const user = userRes.user;
   if (!user) throw new Error("Not signed in");
   const orgId = await requireCurrentOrgId();
+
+  // Enforce Free-tier monthly quote cap (5/mo). Pro=100, Business=unlimited.
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("plan, subscription_status, current_period_end")
+    .eq("id", orgId)
+    .maybeSingle();
+  const plan = (org?.plan as string) ?? "free";
+  const limit = plan === "business" ? Infinity : plan === "pro" ? 100 : 5;
+  if (Number.isFinite(limit)) {
+    const periodStart = new Date();
+    periodStart.setUTCDate(1);
+    periodStart.setUTCHours(0, 0, 0, 0);
+    const { data: usage } = await supabase
+      .from("usage_counters")
+      .select("quotes_created")
+      .eq("org_id", orgId)
+      .eq("period_start", periodStart.toISOString().slice(0, 10))
+      .maybeSingle();
+    const used = usage?.quotes_created ?? 0;
+    if (used >= limit) {
+      throw new Error(
+        `Monthly quote limit reached (${limit}/mo on the ${plan} plan). Upgrade at /pricing to save more.`,
+      );
+    }
+  }
+
   const c = compute(state);
   const q = getBuyerQuote(c.recommendedPrice, state.quantity, state);
   const row = {
@@ -93,6 +120,8 @@ export async function saveQuoteSnapshot(state: CalculatorState): Promise<SavedQu
     console.error("saveQuoteSnapshot", error);
     throw error;
   }
+  // Increment monthly usage counter (best-effort — RLS-safe RPC).
+  void supabase.rpc("increment_quote_usage", { _org: orgId });
   const saved = fromRow(data as Row);
   void recordAudit("quote.saved", {
     entityType: "quote",
