@@ -30,7 +30,7 @@ interface Invitation {
   created_at: string;
 }
 
-export const Route = createFileRoute("/_authenticated/settings/workspace")({
+export const Route = createFileRoute("/_authenticated/app/settings/workspace")({
   head: () => ({ meta: [{ title: "Workspace Settings — Vaaldrin" }] }),
   component: WorkspaceSettings,
 });

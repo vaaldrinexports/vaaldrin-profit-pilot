@@ -131,7 +131,7 @@ export default function WorkspaceSwitcher() {
             <Plus className="h-4 w-4 mr-2" /> New workspace
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link to="/settings/workspace">
+            <Link to="/app/settings/workspace">
               <Settings2 className="h-4 w-4 mr-2" /> Workspace settings
             </Link>
           </DropdownMenuItem>

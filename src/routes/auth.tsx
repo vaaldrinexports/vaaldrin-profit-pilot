@@ -27,14 +27,18 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const initialMode: "signin" | "signup" =
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mode") === "signup"
+      ? "signup"
+      : "signin";
+  const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/" });
+      if (data.session) navigate({ to: "/app" });
     });
   }, [navigate]);
 
@@ -56,7 +60,7 @@ function AuthPage() {
         if (error) throw error;
         const { recordAudit } = await import("@/lib/audit-log");
         void recordAudit("auth.signed_in", { metadata: { method: "password" } });
-        navigate({ to: "/" });
+        navigate({ to: "/app" });
       }
     } catch (err: any) {
       toast.error(err?.message || "Auth failed");
@@ -75,7 +79,7 @@ function AuthPage() {
       if (result.redirected) return;
       const { recordAudit } = await import("@/lib/audit-log");
       void recordAudit("auth.signed_in", { metadata: { method: "google" } });
-      navigate({ to: "/" });
+      navigate({ to: "/app" });
     } catch (err: any) {
       toast.error(err?.message || "Google sign-in failed");
       setBusy(false);
