@@ -19,7 +19,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
-import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
+import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as AuthenticatedInviteTokenRouteImport } from './routes/_authenticated/invite.$token'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicHooksRefreshMiRouteImport } from './routes/api/public/hooks/refresh-mi'
@@ -76,9 +76,9 @@ const LegalPrivacyRoute = LegalPrivacyRouteImport.update({
   path: '/legal/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
-  id: '/app',
-  path: '/app',
+const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
+  id: '/app/',
+  path: '/app/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedInviteTokenRoute =
@@ -100,21 +100,21 @@ const ApiPublicHooksRefreshMiRoute = ApiPublicHooksRefreshMiRouteImport.update({
 } as any)
 const AuthenticatedAppSettingsWorkspaceRoute =
   AuthenticatedAppSettingsWorkspaceRouteImport.update({
-    id: '/settings/workspace',
-    path: '/settings/workspace',
-    getParentRoute: () => AuthenticatedAppRoute,
+    id: '/app/settings/workspace',
+    path: '/app/settings/workspace',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAppSettingsBillingRoute =
   AuthenticatedAppSettingsBillingRouteImport.update({
-    id: '/settings/billing',
-    path: '/settings/billing',
-    getParentRoute: () => AuthenticatedAppRoute,
+    id: '/app/settings/billing',
+    path: '/app/settings/billing',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAppBillingSuccessRoute =
   AuthenticatedAppBillingSuccessRouteImport.update({
-    id: '/billing/success',
-    path: '/billing/success',
-    getParentRoute: () => AuthenticatedAppRoute,
+    id: '/app/billing/success',
+    path: '/app/billing/success',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -125,10 +125,10 @@ export interface FileRoutesByFullPath {
   '/features': typeof FeaturesRoute
   '/pricing': typeof PricingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/app': typeof AuthenticatedAppRouteWithChildren
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/invite/$token': typeof AuthenticatedInviteTokenRoute
+  '/app/': typeof AuthenticatedAppIndexRoute
   '/app/billing/success': typeof AuthenticatedAppBillingSuccessRoute
   '/app/settings/billing': typeof AuthenticatedAppSettingsBillingRoute
   '/app/settings/workspace': typeof AuthenticatedAppSettingsWorkspaceRoute
@@ -143,10 +143,10 @@ export interface FileRoutesByTo {
   '/features': typeof FeaturesRoute
   '/pricing': typeof PricingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/app': typeof AuthenticatedAppRouteWithChildren
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/invite/$token': typeof AuthenticatedInviteTokenRoute
+  '/app': typeof AuthenticatedAppIndexRoute
   '/app/billing/success': typeof AuthenticatedAppBillingSuccessRoute
   '/app/settings/billing': typeof AuthenticatedAppSettingsBillingRoute
   '/app/settings/workspace': typeof AuthenticatedAppSettingsWorkspaceRoute
@@ -163,10 +163,10 @@ export interface FileRoutesById {
   '/features': typeof FeaturesRoute
   '/pricing': typeof PricingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/terms': typeof LegalTermsRoute
   '/_authenticated/invite/$token': typeof AuthenticatedInviteTokenRoute
+  '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/billing/success': typeof AuthenticatedAppBillingSuccessRoute
   '/_authenticated/app/settings/billing': typeof AuthenticatedAppSettingsBillingRoute
   '/_authenticated/app/settings/workspace': typeof AuthenticatedAppSettingsWorkspaceRoute
@@ -183,10 +183,10 @@ export interface FileRouteTypes {
     | '/features'
     | '/pricing'
     | '/sitemap.xml'
-    | '/app'
     | '/legal/privacy'
     | '/legal/terms'
     | '/invite/$token'
+    | '/app/'
     | '/app/billing/success'
     | '/app/settings/billing'
     | '/app/settings/workspace'
@@ -201,10 +201,10 @@ export interface FileRouteTypes {
     | '/features'
     | '/pricing'
     | '/sitemap.xml'
-    | '/app'
     | '/legal/privacy'
     | '/legal/terms'
     | '/invite/$token'
+    | '/app'
     | '/app/billing/success'
     | '/app/settings/billing'
     | '/app/settings/workspace'
@@ -220,10 +220,10 @@ export interface FileRouteTypes {
     | '/features'
     | '/pricing'
     | '/sitemap.xml'
-    | '/_authenticated/app'
     | '/legal/privacy'
     | '/legal/terms'
     | '/_authenticated/invite/$token'
+    | '/_authenticated/app/'
     | '/_authenticated/app/billing/success'
     | '/_authenticated/app/settings/billing'
     | '/_authenticated/app/settings/workspace'
@@ -318,11 +318,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LegalPrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/app': {
-      id: '/_authenticated/app'
+    '/_authenticated/app/': {
+      id: '/_authenticated/app/'
       path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AuthenticatedAppRouteImport
+      fullPath: '/app/'
+      preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/invite/$token': {
@@ -348,52 +348,43 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/app/settings/workspace': {
       id: '/_authenticated/app/settings/workspace'
-      path: '/settings/workspace'
+      path: '/app/settings/workspace'
       fullPath: '/app/settings/workspace'
       preLoaderRoute: typeof AuthenticatedAppSettingsWorkspaceRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/app/settings/billing': {
       id: '/_authenticated/app/settings/billing'
-      path: '/settings/billing'
+      path: '/app/settings/billing'
       fullPath: '/app/settings/billing'
       preLoaderRoute: typeof AuthenticatedAppSettingsBillingRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/app/billing/success': {
       id: '/_authenticated/app/billing/success'
-      path: '/billing/success'
+      path: '/app/billing/success'
       fullPath: '/app/billing/success'
       preLoaderRoute: typeof AuthenticatedAppBillingSuccessRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
-interface AuthenticatedAppRouteChildren {
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedInviteTokenRoute: typeof AuthenticatedInviteTokenRoute
+  AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
   AuthenticatedAppBillingSuccessRoute: typeof AuthenticatedAppBillingSuccessRoute
   AuthenticatedAppSettingsBillingRoute: typeof AuthenticatedAppSettingsBillingRoute
   AuthenticatedAppSettingsWorkspaceRoute: typeof AuthenticatedAppSettingsWorkspaceRoute
 }
 
-const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedInviteTokenRoute: AuthenticatedInviteTokenRoute,
+  AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
   AuthenticatedAppBillingSuccessRoute: AuthenticatedAppBillingSuccessRoute,
   AuthenticatedAppSettingsBillingRoute: AuthenticatedAppSettingsBillingRoute,
   AuthenticatedAppSettingsWorkspaceRoute:
     AuthenticatedAppSettingsWorkspaceRoute,
-}
-
-const AuthenticatedAppRouteWithChildren =
-  AuthenticatedAppRoute._addFileChildren(AuthenticatedAppRouteChildren)
-
-interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAppRoute: typeof AuthenticatedAppRouteWithChildren
-  AuthenticatedInviteTokenRoute: typeof AuthenticatedInviteTokenRoute
-}
-
-const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAppRoute: AuthenticatedAppRouteWithChildren,
-  AuthenticatedInviteTokenRoute: AuthenticatedInviteTokenRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -416,13 +407,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
