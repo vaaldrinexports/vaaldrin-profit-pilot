@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { resolveCurrentOrgId } from "@/lib/org-store";
 import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+import { initializePaddle, getPaddlePriceId } from "@/lib/paddle";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -102,6 +103,8 @@ function PricingPage() {
   const [cycle, setCycle] = useState<Cycle>("monthly");
   const [session, setSession] = useState<{ userId: string; email: string; orgId: string } | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [localized, setLocalized] = useState<Record<string, string>>({});
+  const [localCurrency, setLocalCurrency] = useState<string | null>(null);
   const { openCheckout } = usePaddleCheckout();
 
   useEffect(() => {
@@ -113,6 +116,32 @@ function PricingPage() {
       setSession({ userId: data.user.id, email: data.user.email ?? "", orgId });
     })();
   }, []);
+
+  // Fetch localized prices via Paddle.PricePreview (auto-detects visitor country by IP).
+  useEffect(() => {
+    (async () => {
+      try {
+        await initializePaddle();
+        const externalIds = ["pro_monthly", "pro_annual", "business_monthly", "business_annual"];
+        const paddleIds = await Promise.all(externalIds.map((id) => getPaddlePriceId(id)));
+        const items = paddleIds.map((id) => ({ priceId: id, quantity: 1 }));
+        const result = await (window as any).Paddle.PricePreview({ items });
+        const lineItems = result?.data?.details?.lineItems ?? [];
+        const map: Record<string, string> = {};
+        lineItems.forEach((li: any, idx: number) => {
+          const formatted = li?.formattedTotals?.subtotal;
+          if (formatted) map[externalIds[idx]] = formatted;
+        });
+        setLocalized(map);
+        const cc = result?.data?.currencyCode ?? null;
+        setLocalCurrency(cc);
+      } catch (err) {
+        // Non-fatal: fall back to USD display
+        console.warn("PricePreview failed", err);
+      }
+    })();
+  }, []);
+
 
   const handleUpgrade = async (tier: Tier) => {
     const priceId = cycle === "monthly" ? tier.priceIdMonthly : tier.priceIdAnnual;
@@ -176,6 +205,8 @@ function PricingPage() {
             const priceNum = cycle === "monthly" ? t.monthly : t.annual;
             const isFree = t.key === "free";
             const isBusy = busyKey === t.key + cycle;
+            const extId = cycle === "monthly" ? t.priceIdMonthly : t.priceIdAnnual;
+            const localFormatted = extId ? localized[extId] : undefined;
             return (
               <div
                 key={t.key}
@@ -194,15 +225,20 @@ function PricingPage() {
                 <div className="text-lg font-semibold">{t.name}</div>
                 <div className="mt-4 flex items-baseline gap-1">
                   <span className="text-4xl font-semibold">
-                    {isFree ? "$0" : `$${priceNum.toLocaleString()}`}
+                    {isFree ? "$0" : localFormatted ?? `$${priceNum.toLocaleString()}`}
                   </span>
                   <span className="text-sm text-muted-foreground">
                     {isFree ? "forever" : cycle === "monthly" ? "/ month" : "/ year"}
                   </span>
                 </div>
-                {!isFree && cycle === "annual" && (
+                {!isFree && cycle === "annual" && !localFormatted && (
                   <div className="mt-1 text-xs text-muted-foreground">
                     ${(priceNum / 12).toFixed(0)}/mo effective
+                  </div>
+                )}
+                {!isFree && localFormatted && localCurrency && localCurrency !== "USD" && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Billed in {localCurrency} — auto-detected for your region
                   </div>
                 )}
                 <p className="mt-2 text-sm text-muted-foreground">{t.tagline}</p>
