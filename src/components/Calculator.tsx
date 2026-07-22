@@ -22,9 +22,13 @@ import {
   generatePurchaseOrderPDF,
   generateSalesContractPDF,
 } from "@/lib/pdf";
+import { setPdfPreviewMode } from "@/lib/pdf";
 import logoAsset from "@/assets/vaaldrin-logo.png.asset.json";
 import MarketIntelligence from "@/components/MarketIntelligence";
 import MarketIntelDashboard from "@/components/MarketIntelDashboard";
+import { PlanLock } from "@/components/PlanLock";
+import { useCurrentOrgId } from "@/hooks/useCurrentOrgId";
+import { useEntitlements, canUse } from "@/lib/entitlements";
 
 type DocType =
   | "quotation"
