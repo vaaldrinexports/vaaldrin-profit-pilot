@@ -303,6 +303,11 @@ function drawFooter(doc: jsPDF, W: number, H: number, margin: number, extra?: st
   if (extra) doc.text(extra, W / 2, H - 22, { align: "center" });
 }
 
+// Preview mode: when true, adds a bold "PREVIEW — UPGRADE TO REMOVE" watermark
+// on every page. Toggle via setPdfPreviewMode() before calling any generator.
+let PDF_PREVIEW_MODE = false;
+export function setPdfPreviewMode(v: boolean) { PDF_PREVIEW_MODE = v; }
+
 // Draws a very faint centered brand mark used as a page watermark.
 function drawWatermark(doc: jsPDF, W: number, H: number) {
   const d = doc as unknown as { GState?: new (o: { opacity: number }) => unknown; setGState?: (g: unknown) => void };
@@ -317,9 +322,16 @@ function drawWatermark(doc: jsPDF, W: number, H: number) {
   doc.setFontSize(20);
   doc.setTextColor(...BRAND.gold);
   doc.text("EXPORTS  •  PREMIUM INDIAN AGRI EXPORTS", W / 2, H / 2 + 40, { align: "center", angle: -30 });
+  if (PDF_PREVIEW_MODE) {
+    setOpacity(0.18);
+    doc.setFontSize(56);
+    doc.setTextColor(...BRAND.red);
+    doc.text("PREVIEW — UPGRADE TO REMOVE", W / 2, H / 2 + 120, { align: "center", angle: -30 });
+  }
   setOpacity(1);
   doc.setTextColor(...BRAND.text);
 }
+
 
 // Remove trailing pages auto-created by jsPDF/autoTable overflow that were
 // never actually drawn on (heuristic: a blank page has very few stream ops).

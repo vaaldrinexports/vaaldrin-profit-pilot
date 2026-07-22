@@ -22,9 +22,13 @@ import {
   generatePurchaseOrderPDF,
   generateSalesContractPDF,
 } from "@/lib/pdf";
+import { setPdfPreviewMode } from "@/lib/pdf";
 import logoAsset from "@/assets/vaaldrin-logo.png.asset.json";
 import MarketIntelligence from "@/components/MarketIntelligence";
 import MarketIntelDashboard from "@/components/MarketIntelDashboard";
+import { PlanLock } from "@/components/PlanLock";
+import { useCurrentOrgId } from "@/hooks/useCurrentOrgId";
+import { useEntitlements, canUse } from "@/lib/entitlements";
 
 type DocType =
   | "quotation"
@@ -507,6 +511,13 @@ export default function Calculator() {
   const [fxStatus, setFxStatus] = useState<"loading" | "live" | "cached" | "stale">("loading");
   const [activeTab, setActiveTab] = useState<string>("inputs");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const orgId = useCurrentOrgId();
+  const { data: ent } = useEntitlements(orgId);
+  const isFree = !ent || ent.plan === "free";
+  const isPastDue = ent?.status === "past_due";
+  const miAllowed = canUse(ent, "marketIntelligence");
+  const quoteLimit = ent?.limits.quotesPerMonth ?? null;
+  const quotesUsed = ent?.quotesUsedThisMonth ?? 0;
 
   const fetchLiveFx = async (showToast = false): Promise<boolean> => {
     try {
@@ -688,14 +699,20 @@ export default function Calculator() {
   const generatePDF = async () => {
     if (lockTriggered && docType !== "internal_cost") { toast.error("Margin lock active — adjust pricing first"); return; }
     if (c.validationErrors.length) { toast.error(c.validationErrors[0]); return; }
-    switch (docType) {
-      case "quotation":          await generateQuotationPDF(s); break;
-      case "proforma":           await generateProformaInvoicePDF(s); break;
-      case "commercial_invoice": await generateCommercialInvoicePDF(s); break;
-      case "packing_list":       await generatePackingListPDF(s); break;
-      case "internal_cost":      await generateInternalCostSheetPDF(s); break;
-      case "purchase_order":     await generatePurchaseOrderPDF(s); break;
-      case "sales_contract":     await generateSalesContractPDF(s); break;
+    // Free plan → stamp a PREVIEW watermark; paid plans → clean export.
+    setPdfPreviewMode(isFree);
+    try {
+      switch (docType) {
+        case "quotation":          await generateQuotationPDF(s); break;
+        case "proforma":           await generateProformaInvoicePDF(s); break;
+        case "commercial_invoice": await generateCommercialInvoicePDF(s); break;
+        case "packing_list":       await generatePackingListPDF(s); break;
+        case "internal_cost":      await generateInternalCostSheetPDF(s); break;
+        case "purchase_order":     await generatePurchaseOrderPDF(s); break;
+        case "sales_contract":     await generateSalesContractPDF(s); break;
+      }
+    } finally {
+      setPdfPreviewMode(false);
     }
   };
   const buyerQuote = getBuyerQuote(incotermPrice, s.quantity, s);
@@ -1010,6 +1027,34 @@ export default function Calculator() {
           </div>
         )}
 
+        {isPastDue && (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-200 px-4 py-3 flex items-center justify-between gap-3">
+            <div className="text-sm">
+              <span className="font-semibold">Payment failed.</span> Your workspace is in a grace period — update your card to keep access.
+            </div>
+            <Button size="sm" variant="outline" onClick={() => navigate({ to: "/app/settings/billing" })}>
+              Update payment
+            </Button>
+          </div>
+        )}
+
+        {quoteLimit !== null && (
+          <div className={`rounded-xl border px-4 py-3 flex flex-wrap items-center justify-between gap-3 ${
+            quotesUsed >= quoteLimit ? "border-red-500/40 bg-red-500/10 text-red-200"
+              : quotesUsed / quoteLimit >= 0.8 ? "border-gold/40 bg-gold/10 text-gold"
+              : "border-border bg-card/60 text-muted-foreground"
+          }`}>
+            <div className="text-sm">
+              <span className="font-semibold">{quotesUsed} / {quoteLimit}</span> quotes used this month on the {ent?.plan === "free" ? "Free" : ent?.plan === "pro" ? "Pro" : "Business"} plan.
+              {quotesUsed >= quoteLimit && " Limit reached — saving new quotes is disabled until you upgrade."}
+            </div>
+            {isFree && (
+              <Button size="sm" className="bg-[#A61D24] hover:bg-[#8a181e] text-white" onClick={() => navigate({ to: "/pricing" })}>
+                Upgrade
+              </Button>
+            )}
+          </div>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
           <TabsList className="lg:hidden grid grid-cols-4 md:grid-cols-8 w-full h-auto p-1.5 rounded-2xl gap-1.5 bg-card border border-border">
@@ -1118,11 +1163,18 @@ export default function Calculator() {
             </GroupCard>
 
 
-            <MarketIntelligence
-              productName={s.productName}
-              supplierPricePerKg={s.supplierPricePerUnit}
-              uom={s.uom}
-            />
+            <PlanLock
+              requiredPlan="pro"
+              featureName="Market Intelligence"
+              description="See live procurement benchmarks, mandi rates and margin guidance for your product."
+              locked={!miAllowed}
+            >
+              <MarketIntelligence
+                productName={s.productName}
+                supplierPricePerKg={s.supplierPricePerUnit}
+                uom={s.uom}
+              />
+            </PlanLock>
 
             <GroupCard icon={Coins} title="Product cost" subtitle="What you pay your supplier — the foundation of pricing">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1750,7 +1802,14 @@ export default function Calculator() {
           </TabsContent>
 
           <TabsContent value="market-intel" className="space-y-5">
-            <MarketIntelDashboard />
+            <PlanLock
+              requiredPlan="pro"
+              featureName="Global Market Intelligence"
+              description="AI-ranked signals, dynamic country tracking, and product discovery across global markets."
+              locked={!miAllowed}
+            >
+              <MarketIntelDashboard />
+            </PlanLock>
           </TabsContent>
 
           {/* ADMIN — Banking tariff editor */}
