@@ -699,14 +699,20 @@ export default function Calculator() {
   const generatePDF = async () => {
     if (lockTriggered && docType !== "internal_cost") { toast.error("Margin lock active — adjust pricing first"); return; }
     if (c.validationErrors.length) { toast.error(c.validationErrors[0]); return; }
-    switch (docType) {
-      case "quotation":          await generateQuotationPDF(s); break;
-      case "proforma":           await generateProformaInvoicePDF(s); break;
-      case "commercial_invoice": await generateCommercialInvoicePDF(s); break;
-      case "packing_list":       await generatePackingListPDF(s); break;
-      case "internal_cost":      await generateInternalCostSheetPDF(s); break;
-      case "purchase_order":     await generatePurchaseOrderPDF(s); break;
-      case "sales_contract":     await generateSalesContractPDF(s); break;
+    // Free plan → stamp a PREVIEW watermark; paid plans → clean export.
+    setPdfPreviewMode(isFree);
+    try {
+      switch (docType) {
+        case "quotation":          await generateQuotationPDF(s); break;
+        case "proforma":           await generateProformaInvoicePDF(s); break;
+        case "commercial_invoice": await generateCommercialInvoicePDF(s); break;
+        case "packing_list":       await generatePackingListPDF(s); break;
+        case "internal_cost":      await generateInternalCostSheetPDF(s); break;
+        case "purchase_order":     await generatePurchaseOrderPDF(s); break;
+        case "sales_contract":     await generateSalesContractPDF(s); break;
+      }
+    } finally {
+      setPdfPreviewMode(false);
     }
   };
   const buyerQuote = getBuyerQuote(incotermPrice, s.quantity, s);
