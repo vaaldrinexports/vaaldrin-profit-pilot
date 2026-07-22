@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { resolveCurrentOrgId } from "@/lib/org-store";
 import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
+import { initializePaddle, getPaddlePriceId } from "@/lib/paddle";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 
