@@ -205,6 +205,8 @@ function PricingPage() {
             const priceNum = cycle === "monthly" ? t.monthly : t.annual;
             const isFree = t.key === "free";
             const isBusy = busyKey === t.key + cycle;
+            const extId = cycle === "monthly" ? t.priceIdMonthly : t.priceIdAnnual;
+            const localFormatted = extId ? localized[extId] : undefined;
             return (
               <div
                 key={t.key}
@@ -223,15 +225,20 @@ function PricingPage() {
                 <div className="text-lg font-semibold">{t.name}</div>
                 <div className="mt-4 flex items-baseline gap-1">
                   <span className="text-4xl font-semibold">
-                    {isFree ? "$0" : `$${priceNum.toLocaleString()}`}
+                    {isFree ? "$0" : localFormatted ?? `$${priceNum.toLocaleString()}`}
                   </span>
                   <span className="text-sm text-muted-foreground">
                     {isFree ? "forever" : cycle === "monthly" ? "/ month" : "/ year"}
                   </span>
                 </div>
-                {!isFree && cycle === "annual" && (
+                {!isFree && cycle === "annual" && !localFormatted && (
                   <div className="mt-1 text-xs text-muted-foreground">
                     ${(priceNum / 12).toFixed(0)}/mo effective
+                  </div>
+                )}
+                {!isFree && localFormatted && localCurrency && localCurrency !== "USD" && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Billed in {localCurrency} — auto-detected for your region
                   </div>
                 )}
                 <p className="mt-2 text-sm text-muted-foreground">{t.tagline}</p>
