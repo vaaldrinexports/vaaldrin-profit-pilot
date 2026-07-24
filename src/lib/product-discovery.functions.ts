@@ -254,7 +254,13 @@ export const discoverProducts = createServerFn({ method: "POST" })
   .handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const admin = supabaseAdmin;
-  const result = await runProductDiscovery(admin);
+  const { data: globalOrg } = await admin
+    .from("organizations")
+    .select("id")
+    .eq("slug", "vaaldrin-global")
+    .maybeSingle();
+  if (!globalOrg?.id) throw new Error("Global MI org (vaaldrin-global) missing.");
+  const result = await runProductDiscovery(admin, globalOrg.id as string);
   const now = new Date().toISOString();
   await admin.from("mi_source_health").update({
     last_attempt_at: now,
@@ -266,3 +272,4 @@ export const discoverProducts = createServerFn({ method: "POST" })
   }).eq("source_key", "discovery.trends");
   return result;
 });
+
