@@ -55,7 +55,7 @@ async function markHealth(
 }
 
 // ----- FX collector -----
-async function collectFx(admin: any): Promise<CollectorResult> {
+async function collectFx(admin: any, orgId: string): Promise<CollectorResult> {
   const t0 = Date.now();
   try {
     const res = await fetch("https://open.er-api.com/v6/latest/USD");
@@ -63,6 +63,7 @@ async function collectFx(admin: any): Promise<CollectorResult> {
     const json: any = await res.json();
     if (json.result !== "success") throw new Error(json["error-type"] ?? "unknown");
     const rows = FX_CURRENCIES.filter((c) => c !== "USD").map((c) => ({
+      org_id: orgId,
       signal_type: "fx_rate",
       value: Number(json.rates[c]),
       source: "open.er-api.com",
@@ -71,6 +72,7 @@ async function collectFx(admin: any): Promise<CollectorResult> {
     }));
     // INR/USD as its own row for convenience
     rows.push({
+      org_id: orgId,
       signal_type: "fx_rate",
       value: Number(json.rates.INR),
       source: "open.er-api.com",
@@ -84,6 +86,7 @@ async function collectFx(admin: any): Promise<CollectorResult> {
     return { source_key: "fx.erapi", ok: false, records: 0, duration_ms: Date.now() - t0, error: String(e?.message ?? e) };
   }
 }
+
 
 // ----- Weather collector -----
 async function collectWeather(admin: any, countries: { iso2: string }[]): Promise<CollectorResult> {
