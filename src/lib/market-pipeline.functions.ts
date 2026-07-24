@@ -89,7 +89,7 @@ async function collectFx(admin: any, orgId: string): Promise<CollectorResult> {
 
 
 // ----- Weather collector -----
-async function collectWeather(admin: any, countries: { iso2: string }[]): Promise<CollectorResult> {
+async function collectWeather(admin: any, countries: { iso2: string }[], orgId: string): Promise<CollectorResult> {
   const t0 = Date.now();
   let records = 0;
   const errors: string[] = [];
@@ -104,6 +104,7 @@ async function collectWeather(admin: any, countries: { iso2: string }[]): Promis
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const json: any = await res.json();
           await admin.from("mi_signals").insert({
+            org_id: orgId,
             signal_type: "weather",
             country_iso2: c.iso2,
             value: json.current?.temperature_2m ?? null,
@@ -134,6 +135,7 @@ async function collectWeather(admin: any, countries: { iso2: string }[]): Promis
     return { source_key: "weather.open-meteo", ok: false, records, duration_ms: Date.now() - t0, error: String(e?.message ?? e) };
   }
 }
+
 
 // ----- News (Google RSS) collector -----
 function decodeXml(s: string) {
