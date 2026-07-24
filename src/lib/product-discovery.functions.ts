@@ -146,7 +146,7 @@ Return ONLY the JSON object, no prose.`;
   return cleaned;
 }
 
-export async function runProductDiscovery(admin: any): Promise<CollectorResult> {
+export async function runProductDiscovery(admin: any, orgId: string): Promise<CollectorResult> {
   const t0 = Date.now();
   const firecrawlKey = process.env.FIRECRAWL_API_KEY;
   const aiKey = process.env.LOVABLE_API_KEY;
@@ -184,7 +184,6 @@ export async function runProductDiscovery(admin: any): Promise<CollectorResult> 
     return { source_key: "discovery.trends", ok: true, records: 0, duration_ms: Date.now() - t0, error: "LLM returned no products" };
   }
 
-  // Fetch existing products (case-insensitive) to decide insert vs update.
   const { data: existing } = await admin.from("mi_products").select("id,name,evidence_count,source_count,industry,hs_code");
   const byName = new Map<string, any>();
   for (const row of existing ?? []) byName.set(String(row.name).toLowerCase(), row);
@@ -208,6 +207,7 @@ export async function runProductDiscovery(admin: any): Promise<CollectorResult> 
     } else {
       const code = slugify(d.name) || `p-${Math.random().toString(36).slice(2, 8)}`;
       const { error } = await admin.from("mi_products").insert({
+        org_id: orgId,
         code,
         name: d.name,
         hs_code: d.hs_code,
@@ -225,8 +225,8 @@ export async function runProductDiscovery(admin: any): Promise<CollectorResult> 
     }
   }
 
-  // record a "discovery" signal for traceability
   await admin.from("mi_signals").insert({
+    org_id: orgId,
     signal_type: "product_discovery",
     value: discovered.length,
     source: "Discovery Engine",
@@ -237,6 +237,7 @@ export async function runProductDiscovery(admin: any): Promise<CollectorResult> 
       sample_products: discovered.slice(0, 10).map((d) => d.name),
     },
   });
+
 
   return {
     source_key: "discovery.trends",
