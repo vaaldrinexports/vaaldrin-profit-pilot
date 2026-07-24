@@ -55,7 +55,7 @@ async function markHealth(
 }
 
 // ----- FX collector -----
-async function collectFx(admin: any): Promise<CollectorResult> {
+async function collectFx(admin: any, orgId: string): Promise<CollectorResult> {
   const t0 = Date.now();
   try {
     const res = await fetch("https://open.er-api.com/v6/latest/USD");
@@ -63,6 +63,7 @@ async function collectFx(admin: any): Promise<CollectorResult> {
     const json: any = await res.json();
     if (json.result !== "success") throw new Error(json["error-type"] ?? "unknown");
     const rows = FX_CURRENCIES.filter((c) => c !== "USD").map((c) => ({
+      org_id: orgId,
       signal_type: "fx_rate",
       value: Number(json.rates[c]),
       source: "open.er-api.com",
@@ -71,6 +72,7 @@ async function collectFx(admin: any): Promise<CollectorResult> {
     }));
     // INR/USD as its own row for convenience
     rows.push({
+      org_id: orgId,
       signal_type: "fx_rate",
       value: Number(json.rates.INR),
       source: "open.er-api.com",
@@ -85,8 +87,9 @@ async function collectFx(admin: any): Promise<CollectorResult> {
   }
 }
 
+
 // ----- Weather collector -----
-async function collectWeather(admin: any, countries: { iso2: string }[]): Promise<CollectorResult> {
+async function collectWeather(admin: any, countries: { iso2: string }[], orgId: string): Promise<CollectorResult> {
   const t0 = Date.now();
   let records = 0;
   const errors: string[] = [];
@@ -101,6 +104,7 @@ async function collectWeather(admin: any, countries: { iso2: string }[]): Promis
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const json: any = await res.json();
           await admin.from("mi_signals").insert({
+            org_id: orgId,
             signal_type: "weather",
             country_iso2: c.iso2,
             value: json.current?.temperature_2m ?? null,
@@ -131,6 +135,7 @@ async function collectWeather(admin: any, countries: { iso2: string }[]): Promis
     return { source_key: "weather.open-meteo", ok: false, records, duration_ms: Date.now() - t0, error: String(e?.message ?? e) };
   }
 }
+
 
 // ----- News (Google RSS) collector -----
 function decodeXml(s: string) {
@@ -163,7 +168,7 @@ function parseRss(xml: string) {
   return items;
 }
 
-async function collectNews(admin: any, products: { id: string; name: string }[]): Promise<CollectorResult> {
+async function collectNews(admin: any, products: { id: string; name: string }[], orgId: string): Promise<CollectorResult> {
   const t0 = Date.now();
   let records = 0;
   const errors: string[] = [];
@@ -184,6 +189,7 @@ async function collectNews(admin: any, products: { id: string; name: string }[])
               .from("mi_news")
               .upsert(
                 {
+                  org_id: orgId,
                   product_id: p.id,
                   headline: it.title,
                   url: it.link,
@@ -197,6 +203,7 @@ async function collectNews(admin: any, products: { id: string; name: string }[])
           }
           // also write a "news_volume" signal for demand scoring
           await admin.from("mi_signals").insert({
+            org_id: orgId,
             signal_type: "news_volume",
             product_id: p.id,
             value: items.length,
@@ -222,7 +229,8 @@ async function collectNews(admin: any, products: { id: string; name: string }[])
 }
 
 // ----- Commodity prices via Firecrawl (APEDA / Spices Board) -----
-async function collectCommodityPrices(admin: any, products: { id: string; name: string }[]): Promise<CollectorResult> {
+async function collectCommodityPrices(admin: any, products: { id: string; name: string }[], orgId: string): Promise<CollectorResult> {
+
   const t0 = Date.now();
   const apiKey = process.env.FIRECRAWL_API_KEY;
   if (!apiKey) {
@@ -266,6 +274,7 @@ async function collectCommodityPrices(admin: any, products: { id: string; name: 
           const perKg = Number(json.rawPrice) / divisor;
           if (!Number.isFinite(perKg) || perKg <= 0 || perKg > 100000) continue;
           await admin.from("mi_signals").insert({
+            org_id: orgId,
             signal_type: "commodity_price",
             product_id: p.id,
             value: perKg,
@@ -273,6 +282,7 @@ async function collectCommodityPrices(admin: any, products: { id: string; name: 
             source_url: hit?.url ?? hit?.metadata?.sourceURL ?? null,
             meta: { currency, unit, raw_price: json.rawPrice, as_of: json.asOf ?? null },
           });
+
           records++;
           break;
         }
@@ -291,7 +301,7 @@ async function collectCommodityPrices(admin: any, products: { id: string; name: 
 }
 
 // ----- Score computation from signals -----
-async function computeScores(admin: any, products: { id: string }[], countries: { iso2: string }[]) {
+async function computeScores(admin: any, products: { id: string }[], _countries: { iso2: string }[], orgId: string) {
   const { data: signals } = await admin
     .from("mi_signals")
     .select("*")
@@ -306,14 +316,13 @@ async function computeScores(admin: any, products: { id: string }[], countries: 
     if (!news.length && !prices.length) continue;
     const avgNews = news.length ? news.reduce((a: number, s: any) => a + (s.value ?? 0), 0) / news.length : 0;
     const avgPrice = prices.length ? prices.reduce((a: number, s: any) => a + Number(s.value ?? 0), 0) / prices.length : null;
-    // demand score: normalize news volume (0-30 headlines) → 0-100
     const demand = Math.min(100, Math.round((avgNews / 30) * 100));
-    // trend from first vs last price
     const trend = prices.length >= 2
       ? (Number(prices[0].value) > Number(prices[prices.length - 1].value) ? "rising" : "falling")
       : "stable";
     const opportunity = Math.min(100, Math.round(demand * 0.7 + (prices.length ? 30 : 0)));
     rows.push({
+      org_id: orgId,
       product_id: p.id,
       country_iso2: null,
       demand_score: demand,
@@ -332,11 +341,22 @@ async function computeScores(admin: any, products: { id: string }[], countries: 
 }
 
 // ============ ORCHESTRATOR ============
-// Internal runner — no middleware. Callable from the authenticated server fn
-// below AND from the CRON_SECRET-protected /api/public/hooks/refresh-mi route.
 export async function runRefreshMarketIntelligence(data: { sources?: string[] } = {}) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const admin = supabaseAdmin;
+
+  // Resolve the global MI org — all cross-tenant market intelligence rows are
+  // scoped to this org so RLS policies can grant read access to every user.
+  const { data: globalOrg, error: globalOrgErr } = await admin
+    .from("organizations")
+    .select("id")
+    .eq("slug", "vaaldrin-global")
+    .maybeSingle();
+  if (globalOrgErr || !globalOrg?.id) {
+    throw new Error("Global MI org (vaaldrin-global) missing — cannot attach org_id to intelligence rows.");
+  }
+  const orgId = globalOrg.id as string;
+
   const [{ data: products }, { data: countries }, { data: health }] = await Promise.all([
     admin.from("mi_products").select("id,name"),
     admin.from("mi_countries").select("iso2"),
@@ -352,13 +372,13 @@ export async function runRefreshMarketIntelligence(data: { sources?: string[] } 
   };
 
   const jobs: Promise<CollectorResult>[] = [];
-  if (isDue("fx.erapi")) jobs.push(collectFx(admin));
-  if (isDue("weather.open-meteo") && countries?.length) jobs.push(collectWeather(admin, countries));
-  if (isDue("news.google") && products?.length) jobs.push(collectNews(admin, products));
-  if (isDue("commodity.apeda") && products?.length) jobs.push(collectCommodityPrices(admin, products));
+  if (isDue("fx.erapi")) jobs.push(collectFx(admin, orgId));
+  if (isDue("weather.open-meteo") && countries?.length) jobs.push(collectWeather(admin, countries, orgId));
+  if (isDue("news.google") && products?.length) jobs.push(collectNews(admin, products, orgId));
+  if (isDue("commodity.apeda") && products?.length) jobs.push(collectCommodityPrices(admin, products, orgId));
   if (isDue("discovery.trends")) {
     const { runProductDiscovery } = await import("./product-discovery.functions");
-    jobs.push(runProductDiscovery(admin));
+    jobs.push(runProductDiscovery(admin, orgId));
   }
 
   const results = await Promise.all(jobs);
@@ -366,7 +386,7 @@ export async function runRefreshMarketIntelligence(data: { sources?: string[] } 
 
   let scoresWritten = 0;
   if (products?.length && countries?.length) {
-    try { scoresWritten = await computeScores(admin, products, countries); } catch (e) { console.error(e); }
+    try { scoresWritten = await computeScores(admin, products, countries, orgId); } catch (e) { console.error(e); }
   }
 
   return {
@@ -377,6 +397,7 @@ export async function runRefreshMarketIntelligence(data: { sources?: string[] } 
     at: new Date().toISOString(),
   };
 }
+
 
 export const refreshMarketIntelligence = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
