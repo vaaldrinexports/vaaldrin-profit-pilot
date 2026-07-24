@@ -168,7 +168,7 @@ function parseRss(xml: string) {
   return items;
 }
 
-async function collectNews(admin: any, products: { id: string; name: string }[]): Promise<CollectorResult> {
+async function collectNews(admin: any, products: { id: string; name: string }[], orgId: string): Promise<CollectorResult> {
   const t0 = Date.now();
   let records = 0;
   const errors: string[] = [];
@@ -189,6 +189,7 @@ async function collectNews(admin: any, products: { id: string; name: string }[])
               .from("mi_news")
               .upsert(
                 {
+                  org_id: orgId,
                   product_id: p.id,
                   headline: it.title,
                   url: it.link,
@@ -202,6 +203,7 @@ async function collectNews(admin: any, products: { id: string; name: string }[])
           }
           // also write a "news_volume" signal for demand scoring
           await admin.from("mi_signals").insert({
+            org_id: orgId,
             signal_type: "news_volume",
             product_id: p.id,
             value: items.length,
@@ -227,7 +229,8 @@ async function collectNews(admin: any, products: { id: string; name: string }[])
 }
 
 // ----- Commodity prices via Firecrawl (APEDA / Spices Board) -----
-async function collectCommodityPrices(admin: any, products: { id: string; name: string }[]): Promise<CollectorResult> {
+async function collectCommodityPrices(admin: any, products: { id: string; name: string }[], orgId: string): Promise<CollectorResult> {
+
   const t0 = Date.now();
   const apiKey = process.env.FIRECRAWL_API_KEY;
   if (!apiKey) {
