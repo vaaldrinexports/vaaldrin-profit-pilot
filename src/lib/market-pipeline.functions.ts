@@ -274,6 +274,7 @@ async function collectCommodityPrices(admin: any, products: { id: string; name: 
           const perKg = Number(json.rawPrice) / divisor;
           if (!Number.isFinite(perKg) || perKg <= 0 || perKg > 100000) continue;
           await admin.from("mi_signals").insert({
+            org_id: orgId,
             signal_type: "commodity_price",
             product_id: p.id,
             value: perKg,
@@ -281,6 +282,7 @@ async function collectCommodityPrices(admin: any, products: { id: string; name: 
             source_url: hit?.url ?? hit?.metadata?.sourceURL ?? null,
             meta: { currency, unit, raw_price: json.rawPrice, as_of: json.asOf ?? null },
           });
+
           records++;
           break;
         }
