@@ -687,8 +687,7 @@ export default function Calculator() {
   const generatePDF = async () => {
     if (lockTriggered && docType !== "internal_cost") { toast.error("Margin lock active — adjust pricing first"); return; }
     if (c.validationErrors.length) { toast.error(c.validationErrors[0]); return; }
-    // Free plan → stamp a PREVIEW watermark; paid plans → clean export.
-    setPdfPreviewMode(isFree);
+    setPdfPreviewMode(false);
     try {
       switch (docType) {
         case "quotation":          await generateQuotationPDF(s); break;
@@ -730,11 +729,6 @@ export default function Calculator() {
   };
 
 
-  const navigate = useNavigate();
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth" });
-  };
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
@@ -760,8 +754,6 @@ export default function Calculator() {
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="mx-3 mb-3 h-px bg-border" />
-        <WorkspaceSwitcher />
         <div className="mx-3 mb-3 h-px bg-border" />
         <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
           {[
