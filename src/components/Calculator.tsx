@@ -837,8 +837,6 @@ export default function Calculator() {
                   <DropdownMenuItem onClick={reset} className="text-deep-red focus:text-deep-red">
                     <RotateCcw className="w-4 h-4 mr-2" />Reset all
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -880,8 +878,6 @@ export default function Calculator() {
                   <DropdownMenuItem onClick={reset} className="text-deep-red focus:text-deep-red">
                     <RotateCcw className="w-4 h-4 mr-2" />Reset all
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
