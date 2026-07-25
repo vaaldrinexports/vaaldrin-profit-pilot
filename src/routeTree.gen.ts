@@ -10,55 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as PricingRouteImport } from './routes/pricing'
-import { Route as FeaturesRouteImport } from './routes/features'
-import { Route as ContactRouteImport } from './routes/contact'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AboutRouteImport } from './routes/about'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as LegalTermsRouteImport } from './routes/legal.terms'
-import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
-import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
-import { Route as AuthenticatedInviteTokenRouteImport } from './routes/_authenticated/invite.$token'
-import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
-import { Route as ApiPublicHooksRefreshMiRouteImport } from './routes/api/public/hooks/refresh-mi'
-import { Route as AuthenticatedAppSettingsWorkspaceRouteImport } from './routes/_authenticated/app.settings.workspace'
-import { Route as AuthenticatedAppSettingsBillingRouteImport } from './routes/_authenticated/app.settings.billing'
-import { Route as AuthenticatedAppBillingSuccessRouteImport } from './routes/_authenticated/app.billing.success'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PricingRoute = PricingRouteImport.update({
-  id: '/pricing',
-  path: '/pricing',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FeaturesRoute = FeaturesRouteImport.update({
-  id: '/features',
-  path: '/features',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContactRoute = ContactRouteImport.update({
-  id: '/contact',
-  path: '/contact',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -66,184 +22,31 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LegalTermsRoute = LegalTermsRouteImport.update({
-  id: '/legal/terms',
-  path: '/legal/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LegalPrivacyRoute = LegalPrivacyRouteImport.update({
-  id: '/legal/privacy',
-  path: '/legal/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
-  id: '/app/',
-  path: '/app/',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedInviteTokenRoute =
-  AuthenticatedInviteTokenRouteImport.update({
-    id: '/invite/$token',
-    path: '/invite/$token',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const ApiPublicPaymentsWebhookRoute =
-  ApiPublicPaymentsWebhookRouteImport.update({
-    id: '/api/public/payments/webhook',
-    path: '/api/public/payments/webhook',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksRefreshMiRoute = ApiPublicHooksRefreshMiRouteImport.update({
-  id: '/api/public/hooks/refresh-mi',
-  path: '/api/public/hooks/refresh-mi',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedAppSettingsWorkspaceRoute =
-  AuthenticatedAppSettingsWorkspaceRouteImport.update({
-    id: '/app/settings/workspace',
-    path: '/app/settings/workspace',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAppSettingsBillingRoute =
-  AuthenticatedAppSettingsBillingRouteImport.update({
-    id: '/app/settings/billing',
-    path: '/app/settings/billing',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAppBillingSuccessRoute =
-  AuthenticatedAppBillingSuccessRouteImport.update({
-    id: '/app/billing/success',
-    path: '/app/billing/success',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/auth': typeof AuthRoute
-  '/contact': typeof ContactRoute
-  '/features': typeof FeaturesRoute
-  '/pricing': typeof PricingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/legal/privacy': typeof LegalPrivacyRoute
-  '/legal/terms': typeof LegalTermsRoute
-  '/invite/$token': typeof AuthenticatedInviteTokenRoute
-  '/app/': typeof AuthenticatedAppIndexRoute
-  '/app/billing/success': typeof AuthenticatedAppBillingSuccessRoute
-  '/app/settings/billing': typeof AuthenticatedAppSettingsBillingRoute
-  '/app/settings/workspace': typeof AuthenticatedAppSettingsWorkspaceRoute
-  '/api/public/hooks/refresh-mi': typeof ApiPublicHooksRefreshMiRoute
-  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/auth': typeof AuthRoute
-  '/contact': typeof ContactRoute
-  '/features': typeof FeaturesRoute
-  '/pricing': typeof PricingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/legal/privacy': typeof LegalPrivacyRoute
-  '/legal/terms': typeof LegalTermsRoute
-  '/invite/$token': typeof AuthenticatedInviteTokenRoute
-  '/app': typeof AuthenticatedAppIndexRoute
-  '/app/billing/success': typeof AuthenticatedAppBillingSuccessRoute
-  '/app/settings/billing': typeof AuthenticatedAppSettingsBillingRoute
-  '/app/settings/workspace': typeof AuthenticatedAppSettingsWorkspaceRoute
-  '/api/public/hooks/refresh-mi': typeof ApiPublicHooksRefreshMiRoute
-  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/about': typeof AboutRoute
-  '/auth': typeof AuthRoute
-  '/contact': typeof ContactRoute
-  '/features': typeof FeaturesRoute
-  '/pricing': typeof PricingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/legal/privacy': typeof LegalPrivacyRoute
-  '/legal/terms': typeof LegalTermsRoute
-  '/_authenticated/invite/$token': typeof AuthenticatedInviteTokenRoute
-  '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
-  '/_authenticated/app/billing/success': typeof AuthenticatedAppBillingSuccessRoute
-  '/_authenticated/app/settings/billing': typeof AuthenticatedAppSettingsBillingRoute
-  '/_authenticated/app/settings/workspace': typeof AuthenticatedAppSettingsWorkspaceRoute
-  '/api/public/hooks/refresh-mi': typeof ApiPublicHooksRefreshMiRoute
-  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/about'
-    | '/auth'
-    | '/contact'
-    | '/features'
-    | '/pricing'
-    | '/sitemap.xml'
-    | '/legal/privacy'
-    | '/legal/terms'
-    | '/invite/$token'
-    | '/app/'
-    | '/app/billing/success'
-    | '/app/settings/billing'
-    | '/app/settings/workspace'
-    | '/api/public/hooks/refresh-mi'
-    | '/api/public/payments/webhook'
+  fullPaths: '/' | '/sitemap.xml'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/about'
-    | '/auth'
-    | '/contact'
-    | '/features'
-    | '/pricing'
-    | '/sitemap.xml'
-    | '/legal/privacy'
-    | '/legal/terms'
-    | '/invite/$token'
-    | '/app'
-    | '/app/billing/success'
-    | '/app/settings/billing'
-    | '/app/settings/workspace'
-    | '/api/public/hooks/refresh-mi'
-    | '/api/public/payments/webhook'
-  id:
-    | '__root__'
-    | '/'
-    | '/_authenticated'
-    | '/about'
-    | '/auth'
-    | '/contact'
-    | '/features'
-    | '/pricing'
-    | '/sitemap.xml'
-    | '/legal/privacy'
-    | '/legal/terms'
-    | '/_authenticated/invite/$token'
-    | '/_authenticated/app/'
-    | '/_authenticated/app/billing/success'
-    | '/_authenticated/app/settings/billing'
-    | '/_authenticated/app/settings/workspace'
-    | '/api/public/hooks/refresh-mi'
-    | '/api/public/payments/webhook'
+  to: '/' | '/sitemap.xml'
+  id: '__root__' | '/' | '/sitemap.xml'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AboutRoute: typeof AboutRoute
-  AuthRoute: typeof AuthRoute
-  ContactRoute: typeof ContactRoute
-  FeaturesRoute: typeof FeaturesRoute
-  PricingRoute: typeof PricingRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  LegalPrivacyRoute: typeof LegalPrivacyRoute
-  LegalTermsRoute: typeof LegalTermsRoute
-  ApiPublicHooksRefreshMiRoute: typeof ApiPublicHooksRefreshMiRoute
-  ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -255,48 +58,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pricing': {
-      id: '/pricing'
-      path: '/pricing'
-      fullPath: '/pricing'
-      preLoaderRoute: typeof PricingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/features': {
-      id: '/features'
-      path: '/features'
-      fullPath: '/features'
-      preLoaderRoute: typeof FeaturesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contact': {
-      id: '/contact'
-      path: '/contact'
-      fullPath: '/contact'
-      preLoaderRoute: typeof ContactRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -304,105 +65,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/legal/terms': {
-      id: '/legal/terms'
-      path: '/legal/terms'
-      fullPath: '/legal/terms'
-      preLoaderRoute: typeof LegalTermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/legal/privacy': {
-      id: '/legal/privacy'
-      path: '/legal/privacy'
-      fullPath: '/legal/privacy'
-      preLoaderRoute: typeof LegalPrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/app/': {
-      id: '/_authenticated/app/'
-      path: '/app'
-      fullPath: '/app/'
-      preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/invite/$token': {
-      id: '/_authenticated/invite/$token'
-      path: '/invite/$token'
-      fullPath: '/invite/$token'
-      preLoaderRoute: typeof AuthenticatedInviteTokenRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/api/public/payments/webhook': {
-      id: '/api/public/payments/webhook'
-      path: '/api/public/payments/webhook'
-      fullPath: '/api/public/payments/webhook'
-      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/refresh-mi': {
-      id: '/api/public/hooks/refresh-mi'
-      path: '/api/public/hooks/refresh-mi'
-      fullPath: '/api/public/hooks/refresh-mi'
-      preLoaderRoute: typeof ApiPublicHooksRefreshMiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/app/settings/workspace': {
-      id: '/_authenticated/app/settings/workspace'
-      path: '/app/settings/workspace'
-      fullPath: '/app/settings/workspace'
-      preLoaderRoute: typeof AuthenticatedAppSettingsWorkspaceRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/app/settings/billing': {
-      id: '/_authenticated/app/settings/billing'
-      path: '/app/settings/billing'
-      fullPath: '/app/settings/billing'
-      preLoaderRoute: typeof AuthenticatedAppSettingsBillingRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/app/billing/success': {
-      id: '/_authenticated/app/billing/success'
-      path: '/app/billing/success'
-      fullPath: '/app/billing/success'
-      preLoaderRoute: typeof AuthenticatedAppBillingSuccessRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
   }
 }
 
-interface AuthenticatedRouteRouteChildren {
-  AuthenticatedInviteTokenRoute: typeof AuthenticatedInviteTokenRoute
-  AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
-  AuthenticatedAppBillingSuccessRoute: typeof AuthenticatedAppBillingSuccessRoute
-  AuthenticatedAppSettingsBillingRoute: typeof AuthenticatedAppSettingsBillingRoute
-  AuthenticatedAppSettingsWorkspaceRoute: typeof AuthenticatedAppSettingsWorkspaceRoute
-}
-
-const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedInviteTokenRoute: AuthenticatedInviteTokenRoute,
-  AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
-  AuthenticatedAppBillingSuccessRoute: AuthenticatedAppBillingSuccessRoute,
-  AuthenticatedAppSettingsBillingRoute: AuthenticatedAppSettingsBillingRoute,
-  AuthenticatedAppSettingsWorkspaceRoute:
-    AuthenticatedAppSettingsWorkspaceRoute,
-}
-
-const AuthenticatedRouteRouteWithChildren =
-  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AboutRoute: AboutRoute,
-  AuthRoute: AuthRoute,
-  ContactRoute: ContactRoute,
-  FeaturesRoute: FeaturesRoute,
-  PricingRoute: PricingRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
-  LegalPrivacyRoute: LegalPrivacyRoute,
-  LegalTermsRoute: LegalTermsRoute,
-  ApiPublicHooksRefreshMiRoute: ApiPublicHooksRefreshMiRoute,
-  ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -7,8 +7,6 @@ import {
 } from "@/lib/calculations";
 import { listQuotes, saveQuoteSnapshot, loadQuote, deleteQuote, type SavedQuote } from "@/lib/quote-store";
 import { loadSettings, saveSettings } from "@/lib/settings-store";
-import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "@tanstack/react-router";
 import {
   searchHsCodes, lookupDuty, findCountryByName, COUNTRIES, INDIAN_PORTS, gradesFor,
   type HsCodeEntry,
@@ -26,9 +24,6 @@ import { setPdfPreviewMode } from "@/lib/pdf";
 import logoAsset from "@/assets/vaaldrin-logo.png.asset.json";
 import MarketIntelligence from "@/components/MarketIntelligence";
 import MarketIntelDashboard from "@/components/MarketIntelDashboard";
-import { PlanLock } from "@/components/PlanLock";
-import { useCurrentOrgId } from "@/hooks/useCurrentOrgId";
-import { useEntitlements, canUse } from "@/lib/entitlements";
 
 type DocType =
   | "quotation"
@@ -62,7 +57,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { SIGNATURE_PNG_DATA_URL } from "@/lib/signature";
-import WorkspaceSwitcher from "@/components/WorkspaceSwitcher";
+
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   LineChart, Line, CartesianGrid,
@@ -511,13 +506,6 @@ export default function Calculator() {
   const [fxStatus, setFxStatus] = useState<"loading" | "live" | "cached" | "stale">("loading");
   const [activeTab, setActiveTab] = useState<string>("inputs");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const orgId = useCurrentOrgId();
-  const { data: ent } = useEntitlements(orgId);
-  const isFree = !ent || ent.plan === "free";
-  const isPastDue = ent?.status === "past_due";
-  const miAllowed = canUse(ent, "marketIntelligence");
-  const quoteLimit = ent?.limits.quotesPerMonth ?? null;
-  const quotesUsed = ent?.quotesUsedThisMonth ?? 0;
 
   const fetchLiveFx = async (showToast = false): Promise<boolean> => {
     try {
@@ -699,8 +687,7 @@ export default function Calculator() {
   const generatePDF = async () => {
     if (lockTriggered && docType !== "internal_cost") { toast.error("Margin lock active — adjust pricing first"); return; }
     if (c.validationErrors.length) { toast.error(c.validationErrors[0]); return; }
-    // Free plan → stamp a PREVIEW watermark; paid plans → clean export.
-    setPdfPreviewMode(isFree);
+    setPdfPreviewMode(false);
     try {
       switch (docType) {
         case "quotation":          await generateQuotationPDF(s); break;
@@ -742,11 +729,6 @@ export default function Calculator() {
   };
 
 
-  const navigate = useNavigate();
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth" });
-  };
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
@@ -772,8 +754,6 @@ export default function Calculator() {
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="mx-3 mb-3 h-px bg-border" />
-        <WorkspaceSwitcher />
         <div className="mx-3 mb-3 h-px bg-border" />
         <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
           {[
@@ -857,8 +837,6 @@ export default function Calculator() {
                   <DropdownMenuItem onClick={reset} className="text-deep-red focus:text-deep-red">
                     <RotateCcw className="w-4 h-4 mr-2" />Reset all
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -900,8 +878,6 @@ export default function Calculator() {
                   <DropdownMenuItem onClick={reset} className="text-deep-red focus:text-deep-red">
                     <RotateCcw className="w-4 h-4 mr-2" />Reset all
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut}>Sign out</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -1027,34 +1003,6 @@ export default function Calculator() {
           </div>
         )}
 
-        {isPastDue && (
-          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-200 px-4 py-3 flex items-center justify-between gap-3">
-            <div className="text-sm">
-              <span className="font-semibold">Payment failed.</span> Your workspace is in a grace period — update your card to keep access.
-            </div>
-            <Button size="sm" variant="outline" onClick={() => navigate({ to: "/app/settings/billing" })}>
-              Update payment
-            </Button>
-          </div>
-        )}
-
-        {quoteLimit !== null && (
-          <div className={`rounded-xl border px-4 py-3 flex flex-wrap items-center justify-between gap-3 ${
-            quotesUsed >= quoteLimit ? "border-red-500/40 bg-red-500/10 text-red-200"
-              : quotesUsed / quoteLimit >= 0.8 ? "border-gold/40 bg-gold/10 text-gold"
-              : "border-border bg-card/60 text-muted-foreground"
-          }`}>
-            <div className="text-sm">
-              <span className="font-semibold">{quotesUsed} / {quoteLimit}</span> quotes used this month on the {ent?.plan === "free" ? "Free" : ent?.plan === "pro" ? "Pro" : "Business"} plan.
-              {quotesUsed >= quoteLimit && " Limit reached — saving new quotes is disabled until you upgrade."}
-            </div>
-            {isFree && (
-              <Button size="sm" className="bg-[#A61D24] hover:bg-[#8a181e] text-white" onClick={() => navigate({ to: "/pricing" })}>
-                Upgrade
-              </Button>
-            )}
-          </div>
-        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
           <TabsList className="lg:hidden grid grid-cols-4 md:grid-cols-8 w-full h-auto p-1.5 rounded-2xl gap-1.5 bg-card border border-border">
@@ -1163,18 +1111,11 @@ export default function Calculator() {
             </GroupCard>
 
 
-            <PlanLock
-              requiredPlan="pro"
-              featureName="Market Intelligence"
-              description="See live procurement benchmarks, mandi rates and margin guidance for your product."
-              locked={!miAllowed}
-            >
-              <MarketIntelligence
-                productName={s.productName}
-                supplierPricePerKg={s.supplierPricePerUnit}
-                uom={s.uom}
-              />
-            </PlanLock>
+            <MarketIntelligence
+              productName={s.productName}
+              supplierPricePerKg={s.supplierPricePerUnit}
+              uom={s.uom}
+            />
 
             <GroupCard icon={Coins} title="Product cost" subtitle="What you pay your supplier — the foundation of pricing">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1802,14 +1743,7 @@ export default function Calculator() {
           </TabsContent>
 
           <TabsContent value="market-intel" className="space-y-5">
-            <PlanLock
-              requiredPlan="pro"
-              featureName="Global Market Intelligence"
-              description="AI-ranked signals, dynamic country tracking, and product discovery across global markets."
-              locked={!miAllowed}
-            >
-              <MarketIntelDashboard />
-            </PlanLock>
+            <MarketIntelDashboard />
           </TabsContent>
 
           {/* ADMIN — Banking tariff editor */}
