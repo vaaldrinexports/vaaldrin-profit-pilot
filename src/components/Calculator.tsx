@@ -57,7 +57,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { SIGNATURE_PNG_DATA_URL } from "@/lib/signature";
-import WorkspaceSwitcher from "@/components/WorkspaceSwitcher";
+
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   LineChart, Line, CartesianGrid,
