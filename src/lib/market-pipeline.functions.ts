@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
  * Phase 2 pipeline — live/latest-available market intelligence collectors.
@@ -400,12 +399,10 @@ export async function runRefreshMarketIntelligence(data: { sources?: string[] } 
 
 
 export const refreshMarketIntelligence = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((data: { sources?: string[] } | undefined) => data ?? {})
   .handler(async ({ data }) => runRefreshMarketIntelligence(data));
 
 export const getMarketHealth = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
   .handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin.from("mi_source_health").select("*").order("category");
