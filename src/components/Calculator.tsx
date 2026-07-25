@@ -1111,18 +1111,11 @@ export default function Calculator() {
             </GroupCard>
 
 
-            <PlanLock
-              requiredPlan="pro"
-              featureName="Market Intelligence"
-              description="See live procurement benchmarks, mandi rates and margin guidance for your product."
-              locked={!miAllowed}
-            >
-              <MarketIntelligence
-                productName={s.productName}
-                supplierPricePerKg={s.supplierPricePerUnit}
-                uom={s.uom}
-              />
-            </PlanLock>
+            <MarketIntelligence
+              productName={s.productName}
+              supplierPricePerKg={s.supplierPricePerUnit}
+              uom={s.uom}
+            />
 
             <GroupCard icon={Coins} title="Product cost" subtitle="What you pay your supplier — the foundation of pricing">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
