@@ -1003,34 +1003,6 @@ export default function Calculator() {
           </div>
         )}
 
-        {isPastDue && (
-          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-200 px-4 py-3 flex items-center justify-between gap-3">
-            <div className="text-sm">
-              <span className="font-semibold">Payment failed.</span> Your workspace is in a grace period — update your card to keep access.
-            </div>
-            <Button size="sm" variant="outline" onClick={() => navigate({ to: "/app/settings/billing" })}>
-              Update payment
-            </Button>
-          </div>
-        )}
-
-        {quoteLimit !== null && (
-          <div className={`rounded-xl border px-4 py-3 flex flex-wrap items-center justify-between gap-3 ${
-            quotesUsed >= quoteLimit ? "border-red-500/40 bg-red-500/10 text-red-200"
-              : quotesUsed / quoteLimit >= 0.8 ? "border-gold/40 bg-gold/10 text-gold"
-              : "border-border bg-card/60 text-muted-foreground"
-          }`}>
-            <div className="text-sm">
-              <span className="font-semibold">{quotesUsed} / {quoteLimit}</span> quotes used this month on the {ent?.plan === "free" ? "Free" : ent?.plan === "pro" ? "Pro" : "Business"} plan.
-              {quotesUsed >= quoteLimit && " Limit reached — saving new quotes is disabled until you upgrade."}
-            </div>
-            {isFree && (
-              <Button size="sm" className="bg-[#A61D24] hover:bg-[#8a181e] text-white" onClick={() => navigate({ to: "/pricing" })}>
-                Upgrade
-              </Button>
-            )}
-          </div>
-        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
           <TabsList className="lg:hidden grid grid-cols-4 md:grid-cols-8 w-full h-auto p-1.5 rounded-2xl gap-1.5 bg-card border border-border">
