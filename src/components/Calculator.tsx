@@ -506,13 +506,6 @@ export default function Calculator() {
   const [fxStatus, setFxStatus] = useState<"loading" | "live" | "cached" | "stale">("loading");
   const [activeTab, setActiveTab] = useState<string>("inputs");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const orgId = useCurrentOrgId();
-  const { data: ent } = useEntitlements(orgId);
-  const isFree = !ent || ent.plan === "free";
-  const isPastDue = ent?.status === "past_due";
-  const miAllowed = canUse(ent, "marketIntelligence");
-  const quoteLimit = ent?.limits.quotesPerMonth ?? null;
-  const quotesUsed = ent?.quotesUsedThisMonth ?? 0;
 
   const fetchLiveFx = async (showToast = false): Promise<boolean> => {
     try {
