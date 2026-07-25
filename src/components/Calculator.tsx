@@ -1743,14 +1743,7 @@ export default function Calculator() {
           </TabsContent>
 
           <TabsContent value="market-intel" className="space-y-5">
-            <PlanLock
-              requiredPlan="pro"
-              featureName="Global Market Intelligence"
-              description="AI-ranked signals, dynamic country tracking, and product discovery across global markets."
-              locked={!miAllowed}
-            >
-              <MarketIntelDashboard />
-            </PlanLock>
+            <MarketIntelDashboard />
           </TabsContent>
 
           {/* ADMIN — Banking tariff editor */}
