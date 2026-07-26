@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireCronSecret } from "./require-cron-secret";
 
 /**
  * Live market price scraper — uses Firecrawl web search + LLM-powered
