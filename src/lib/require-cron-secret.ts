@@ -1,4 +1,4 @@
-import { getWebRequest } from "@tanstack/react-start/server";
+import { getRequest } from "@tanstack/react-start/server";
 
 /**
  * Gates a server function to callers that present the shared CRON_SECRET
