@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireCronSecret } from "./require-cron-secret";
 
 /**
  * Phase 5 — Dynamic Product Discovery Engine.
@@ -250,6 +251,7 @@ export async function runProductDiscovery(admin: any, orgId: string): Promise<Co
 // Standalone endpoint for the UI "Discover Products" button.
 export const discoverProducts = createServerFn({ method: "POST" })
   .handler(async () => {
+  requireCronSecret();
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const admin = supabaseAdmin;
   const { data: globalOrg } = await admin

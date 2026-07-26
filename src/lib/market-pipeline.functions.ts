@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireCronSecret } from "./require-cron-secret";
 
 /**
  * Phase 2 pipeline — live/latest-available market intelligence collectors.
@@ -400,10 +401,14 @@ export async function runRefreshMarketIntelligence(data: { sources?: string[] } 
 
 export const refreshMarketIntelligence = createServerFn({ method: "POST" })
   .inputValidator((data: { sources?: string[] } | undefined) => data ?? {})
-  .handler(async ({ data }) => runRefreshMarketIntelligence(data));
+  .handler(async ({ data }) => {
+    requireCronSecret();
+    return runRefreshMarketIntelligence(data);
+  });
 
 export const getMarketHealth = createServerFn({ method: "GET" })
   .handler(async () => {
+  requireCronSecret();
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin.from("mi_source_health").select("*").order("category");
   if (error) throw error;

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireCronSecret } from "./require-cron-secret";
 
 /**
  * Live market price scraper — uses Firecrawl web search + LLM-powered
@@ -134,6 +135,7 @@ async function searchOneMarket(
 export const fetchLiveBenchmark = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => MarketInput.parse(data))
   .handler(async ({ data }): Promise<LiveBenchmarkResult> => {
+    requireCronSecret();
     const apiKey = process.env.FIRECRAWL_API_KEY;
     if (!apiKey) {
       return {
