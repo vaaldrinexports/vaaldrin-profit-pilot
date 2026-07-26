@@ -12,7 +12,7 @@ export function requireCronSecret() {
   if (!expected) {
     throw new Response("Server misconfigured: CRON_SECRET not set", { status: 500 });
   }
-  const req = getWebRequest();
+  const req = getRequest();
   const provided = req?.headers.get("x-cron-secret") ?? "";
   if (provided !== expected) {
     throw new Response("Unauthorized", { status: 401 });
