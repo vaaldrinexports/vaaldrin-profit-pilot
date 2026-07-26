@@ -135,6 +135,7 @@ async function searchOneMarket(
 export const fetchLiveBenchmark = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => MarketInput.parse(data))
   .handler(async ({ data }): Promise<LiveBenchmarkResult> => {
+    requireCronSecret();
     const apiKey = process.env.FIRECRAWL_API_KEY;
     if (!apiKey) {
       return {
