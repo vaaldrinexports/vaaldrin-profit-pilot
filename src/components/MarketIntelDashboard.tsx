@@ -376,7 +376,7 @@ export default function MarketIntelDashboard() {
                     <span>·</span>
                     <span>{relTime(n.published_at ?? n.captured_at)}</span>
                   </div>
-                </a>
+                </SafeLink>
               );
             })}
             {!news.data?.length && <p className="p-6 text-center text-xs text-muted-foreground">No news yet. Refresh to fetch.</p>}

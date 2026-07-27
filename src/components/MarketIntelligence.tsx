@@ -302,7 +302,7 @@ export default function MarketIntelligence({
                             className="inline-flex text-emerald-700 hover:text-emerald-900"
                           >
                             <ExternalLink className="w-3 h-3" />
-                          </a>
+                          </SafeLink>
                         ) : (
                           <span className="text-muted-foreground text-[10px]">—</span>
                         )}
