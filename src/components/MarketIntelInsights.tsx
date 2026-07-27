@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, ChevronRight, Download, Flame, Info, Search, TrendingDown, TrendingUp } from "lucide-react";
+import { SafeLink } from "@/components/SafeLink";
 
 // ============ Types ============
 type Product = { id: string; code: string; name: string; hs_code: string | null; category: string | null };
@@ -424,7 +425,7 @@ export default function MarketIntelInsights() {
                             <ul className="space-y-2 text-xs">
                               {c.news.map((n) => (
                                 <li key={n.id} className="break-words">
-                                  <a href={n.url ?? "#"} target="_blank" rel="noreferrer" className="hover:underline">{n.headline}</a>
+                                  <SafeLink href={n.url} className="hover:underline">{n.headline}</SafeLink>
                                   <div className="text-muted-foreground">{n.source} · {relTime(n.published_at)}</div>
                                 </li>
                               ))}
@@ -501,7 +502,7 @@ export default function MarketIntelInsights() {
                           <h4 className="mb-2 mt-4 text-xs font-semibold uppercase text-muted-foreground">Related news</h4>
                           {p.newsSample.length === 0 ? <p className="text-xs text-muted-foreground">No news captured.</p> :
                             <ul className="space-y-1 text-xs">
-                              {p.newsSample.map((n) => <li key={n.id} className="break-words"><a href={n.url ?? "#"} target="_blank" rel="noreferrer" className="hover:underline">{n.headline}</a></li>)}
+                              {p.newsSample.map((n) => <li key={n.id} className="break-words"><SafeLink href={n.url} className="hover:underline">{n.headline}</SafeLink></li>)}
                             </ul>}
                         </div>
                       </div>

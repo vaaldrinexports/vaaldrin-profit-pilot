@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { RefreshCw, TrendingUp, TrendingDown, Minus, Info, BarChart3, ExternalLink, Radio } from "lucide-react";
 import { fetchLiveBenchmark, type LiveQuote } from "@/lib/market-scraper.functions";
 import {
+import { SafeLink } from "@/components/SafeLink";
   findBenchmark, regionalAverage, lowestQuote, highestQuote, primaryRate,
   assessVariance, trendFromPct, statusFromTrend, recommendation,
   type ProductBenchmark, type MarketQuote,
@@ -295,10 +296,8 @@ export default function MarketIntelligence({
                       <div className="shrink-0 text-right">
                         <div className="font-semibold tabular-nums">{fmtINR(q.ratePerKg)}/kg</div>
                         {isLiveRow && l?.sourceUrl ? (
-                          <a
+                          <SafeLink
                             href={l.sourceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
                             title={l.sourceTitle ?? l.sourceUrl}
                             className="inline-flex text-emerald-700 hover:text-emerald-900"
                           >
