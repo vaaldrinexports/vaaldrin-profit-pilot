@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, TrendingUp, TrendingDown, Minus, Info, BarChart3, ExternalLink, Radio } from "lucide-react";
 import { fetchLiveBenchmark, type LiveQuote } from "@/lib/market-scraper.functions";
-import {
 import { SafeLink } from "@/components/SafeLink";
+import {
   findBenchmark, regionalAverage, lowestQuote, highestQuote, primaryRate,
   assessVariance, trendFromPct, statusFromTrend, recommendation,
   type ProductBenchmark, type MarketQuote,
