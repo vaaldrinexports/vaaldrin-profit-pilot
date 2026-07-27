@@ -1,4 +1,5 @@
 import type { CalculatorState } from "@/lib/calculations";
+import { safeJsonParse } from "@/lib/safe-json";
 
 export type AnySettings = Partial<CalculatorState>;
 
@@ -7,8 +8,7 @@ const KEY = "vaaldrin.settings.v1";
 export async function loadSettings(): Promise<AnySettings | null> {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as AnySettings) : null;
+    return safeJsonParse<AnySettings>(localStorage.getItem(KEY));
   } catch {
     return null;
   }
