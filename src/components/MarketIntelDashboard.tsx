@@ -11,6 +11,7 @@ import { ArrowDown, ArrowRight, ArrowUp, CheckCircle2, ExternalLink, Globe2, Loa
 import { refreshMarketIntelligence, getMarketHealth } from "@/lib/market-pipeline.functions";
 import { discoverProducts } from "@/lib/product-discovery.functions";
 import MarketIntelInsights from "./MarketIntelInsights";
+import { SafeLink } from "@/components/SafeLink";
 
 type Product = {
   id: string; code: string; name: string; hs_code: string | null; category: string | null;
@@ -315,9 +316,9 @@ export default function MarketIntelDashboard() {
                     <InfoCell label="Updated">{relTime(r.score?.computed_at ?? r.product.last_seen_at ?? r.price?.captured_at ?? null)}</InfoCell>
                     <InfoCell label="Source">
                       {r.price?.source_url ? (
-                        <a href={r.price.source_url} target="_blank" rel="noreferrer" className="block min-w-0 break-words text-primary hover:underline">
+                        <SafeLink href={r.price.source_url} className="block min-w-0 break-words text-primary hover:underline">
                           {r.price.source ?? "source"} <ExternalLink className="inline h-3 w-3 align-[-2px]" />
-                        </a>
+                        </SafeLink>
                       ) : r.product.discovered_from ? (
                         <span className="break-words text-muted-foreground">{r.product.discovered_from}</span>
                       ) : <span className="text-muted-foreground">—</span>}
@@ -367,7 +368,7 @@ export default function MarketIntelDashboard() {
             {(news.data ?? []).slice(0, 20).map((n) => {
               const p = (products.data ?? []).find((x) => x.id === n.product_id);
               return (
-                <a key={n.id} href={n.url ?? "#"} target="_blank" rel="noreferrer" className="block px-4 py-3 hover:bg-muted/30">
+                <SafeLink key={n.id} href={n.url} className="block px-4 py-3 hover:bg-muted/30">
                   <div className="text-sm font-medium leading-snug">{n.headline}</div>
                   <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
                     {p && <Badge variant="outline" className="text-[10px]">{p.name}</Badge>}
@@ -375,7 +376,7 @@ export default function MarketIntelDashboard() {
                     <span>·</span>
                     <span>{relTime(n.published_at ?? n.captured_at)}</span>
                   </div>
-                </a>
+                </SafeLink>
               );
             })}
             {!news.data?.length && <p className="p-6 text-center text-xs text-muted-foreground">No news yet. Refresh to fetch.</p>}

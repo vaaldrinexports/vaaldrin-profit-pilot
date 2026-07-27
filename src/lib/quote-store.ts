@@ -1,5 +1,6 @@
 import type { CalculatorState } from "@/lib/calculations";
 import { compute, getBuyerQuote } from "@/lib/calculations";
+import { safeJsonParse } from "@/lib/safe-json";
 
 export interface SavedQuote {
   id: string;
@@ -21,14 +22,8 @@ const KEY = "vaaldrin.quotes.v1";
 
 function readAll(): SavedQuote[] {
   if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? (arr as SavedQuote[]) : [];
-  } catch {
-    return [];
-  }
+  const arr = safeJsonParse<unknown>(localStorage.getItem(KEY));
+  return Array.isArray(arr) ? (arr as SavedQuote[]) : [];
 }
 
 function writeAll(list: SavedQuote[]): void {

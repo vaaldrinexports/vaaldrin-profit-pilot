@@ -17,6 +17,14 @@ function safeStr(v: unknown, maxLen = 500): string {
   const s = String(v).replace(PDF_HOSTILE, "").trim();
   return s.length > maxLen ? s.slice(0, maxLen) + "…" : s;
 }
+// Filenames are derived from a user-typed quotation number. Strip path
+// separators, control chars and reserved characters so a value like
+// "../../etc/passwd" or "a\u0000b" can never escape the download name.
+function safeFileName(base: string, fallback: string): string {
+  const cleaned = safeStr(base, 80).replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^[-.]+/, "").slice(0, 80);
+  return cleaned || fallback;
+}
+
 function sanitizeStateForPdf(s: CalculatorState): CalculatorState {
   const out: any = { ...s };
   for (const k of Object.keys(out)) {
@@ -538,7 +546,7 @@ export async function generateQuotationPDF(s: CalculatorState) {
 
   drawSignatureBlock(doc, W, placeSignatureY(doc, yTCcur + 20, H), "For " + (s.companyName || "Vaaldrin Exports"));
   finalizeDoc(doc, W, H, margin, "E&OE — Errors & Omissions Excepted");
-  doc.save(`${s.quotationNumber || "quotation"}.pdf`);
+  doc.save(`${safeFileName(s.quotationNumber, "quotation")}.pdf`);
 }
 
 // ============================================================
@@ -620,7 +628,7 @@ export async function generateProformaInvoicePDF(s: CalculatorState) {
 
   drawSignatureBlock(doc, W, placeSignatureY(doc, yDecl + 20, H), "For " + (s.companyName || "Vaaldrin Exports"));
   finalizeDoc(doc, W, H, margin);
-  doc.save(`proforma-${s.quotationNumber}.pdf`);
+  doc.save(`proforma-${safeFileName(s.quotationNumber, "draft")}.pdf`);
 }
 
 // ============================================================
@@ -727,7 +735,7 @@ export async function generateCommercialInvoicePDF(s: CalculatorState) {
 
   drawSignatureBlock(doc, W, placeSignatureY(doc, yDecl + 24, H), "For " + (s.companyName || "Vaaldrin Exports"));
   finalizeDoc(doc, W, H, margin);
-  doc.save(`commercial-invoice-${s.quotationNumber}.pdf`);
+  doc.save(`commercial-invoice-${safeFileName(s.quotationNumber, "draft")}.pdf`);
 }
 
 // ============================================================
@@ -796,7 +804,7 @@ export async function generatePackingListPDF(s: CalculatorState) {
 
   drawSignatureBlock(doc, W, placeSignatureY(doc, lastY(doc) + 24, H), "For " + (s.companyName || "Vaaldrin Exports"));
   finalizeDoc(doc, W, H, margin);
-  doc.save(`packing-list-${s.quotationNumber}.pdf`);
+  doc.save(`packing-list-${safeFileName(s.quotationNumber, "draft")}.pdf`);
 }
 
 // ============================================================
@@ -907,7 +915,7 @@ export async function generateInternalCostSheetPDF(s: CalculatorState) {
   });
 
   finalizeDoc(doc, W, H, margin, "FOR INTERNAL USE ONLY");
-  doc.save(`cost-sheet-${s.quotationNumber}.pdf`);
+  doc.save(`cost-sheet-${safeFileName(s.quotationNumber, "draft")}.pdf`);
 }
 
 // ============================================================
@@ -1016,7 +1024,7 @@ export async function generatePurchaseOrderPDF(s: CalculatorState) {
 
   drawSignatureBlock(doc, W, placeSignatureY(doc, yPoT + 20, H), `Authorized By — ${s.companyName || "Vaaldrin Exports"}`);
   finalizeDoc(doc, W, H, margin);
-  doc.save(`purchase-order-${s.quotationNumber}.pdf`);
+  doc.save(`purchase-order-${safeFileName(s.quotationNumber, "draft")}.pdf`);
 }
 
 // ============================================================
@@ -1112,5 +1120,5 @@ export async function generateSalesContractPDF(s: CalculatorState) {
 
 
   finalizeDoc(doc, W, H, margin);
-  doc.save(`sales-contract-${s.quotationNumber}.pdf`);
+  doc.save(`sales-contract-${safeFileName(s.quotationNumber, "draft")}.pdf`);
 }

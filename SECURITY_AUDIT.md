@@ -20,6 +20,55 @@
 
 ---
 
+## Phase 8 — Full-App VAPT Sweep (website, fields, URLs, API, PDFs, quotations, documents)
+
+**Scanners:** security scanner → 0 findings · dependency scan → 0 high/critical · Supabase linter → 1 platform-managed WARN (extension in public, accepted).
+
+### FIXED — CRITICAL: Privilege escalation on `public.org_members`
+The `Owners/admins add members` INSERT policy OR'd an unconditional
+`user_id = auth.uid()` clause alongside the invitation-guarded policy, so any
+authenticated user could insert themselves into ANY organization with ANY role
+(including `owner`). Policy rewritten to owner/admin-only; self-service joins now
+flow exclusively through the invitation-guarded policy. DELETE also tightened so an
+owner row cannot be self-removed.
+
+### FIXED — XSS: untrusted URLs rendered as links (stored/DOM XSS vector)
+News headlines and price-source URLs originate from Firecrawl scrapes and LLM
+normalization — fully attacker-influenceable. They were bound straight into `href`,
+so a `javascript:` / `data:text/html` URL was a one-click script execution. Added
+`src/lib/safe-url.ts` (`safeHttpUrl`, http(s)-only, 2 KB cap) and `src/components/SafeLink.tsx`,
+which renders plain text when the URL is hostile and always sets
+`rel="noopener noreferrer nofollow"` (blocks reverse-tabnabbing). Applied to all 5 untrusted
+link sites in `MarketIntelDashboard`, `MarketIntelInsights`, `MarketIntelligence`.
+
+### FIXED — CSP tightened + COOP/CORP
+Removed the dead Paddle script/frame/child allowances left over from the SaaS layer
+(no third-party script origin is permitted any more). `connect-src` changed from
+blanket `https:` to an explicit allowlist (Supabase, open.er-api.com, api.open-meteo.com)
+so injected script cannot exfiltrate to an attacker host. `img-src` no longer allows
+arbitrary `https:`. Added `worker-src`, `upgrade-insecure-requests`,
+`Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`.
+
+### FIXED — Path traversal in document filenames
+All 7 PDF generators derived the download filename from the user-typed quotation
+number. Added `safeFileName()` (alphanumeric/`._-` only, 80-char cap, leading dot/dash
+stripped) so values like `../../etc/passwd` or embedded NULs cannot escape the name.
+
+### FIXED — Prototype pollution via persisted state
+`quote-store` and `settings-store` read attacker-plantable JSON out of localStorage and
+spread it into application state. Added `src/lib/safe-json.ts` — recursively strips
+`__proto__` / `constructor` / `prototype` before the object reaches state.
+
+### Verified (no change needed)
+- **Field-wise:** every financial input passes the central `num()` clamp `[0, 1e12]`, rejecting NaN/Infinity/negatives/overflow.
+- **API:** all four MI server functions gated by timing-checked `CRON_SECRET`; Zod `inputValidator` on the scraper; service-role client only dynamically imported inside handlers; no secret read at module scope.
+- **Documents:** `sanitizeStateForPdf` strips bidi/RTL overrides, zero-width chars and control chars from every string on every generator.
+- **DOM:** only two `dangerouslySetInnerHTML` uses — the SSR theme bootstrap and shadcn chart CSS variables; neither takes user input.
+- **Auth/session:** no login surface remains; no tokens in localStorage; no `anon` policies on MI tables.
+- Typecheck clean, 7/7 unit tests pass, app renders with zero console errors.
+
+---
+
 ## Phase 7 — Business-Logic, IDOR, Documents, Audit
 
 ### FIXED — Business-logic input hardening (`src/lib/calculations.ts`)

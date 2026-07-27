@@ -56,10 +56,15 @@ function applySecurityHeaders(response: Response): Response {
     "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
   );
   h.set("X-DNS-Prefetch-Control", "off");
-  // CSP now ENFORCING (Phase 7). 'unsafe-inline' on script-src stays for the
-  // SSR theme bootstrap; harden further with a nonce once every inline script
-  // is inventoried. frame-ancestors 'none' + X-Frame-Options: DENY block
-  // clickjacking regardless. connect-src includes wss: for Vite HMR in dev.
+  h.set("Cross-Origin-Opener-Policy", "same-origin");
+  h.set("Cross-Origin-Resource-Policy", "same-origin");
+  // CSP is ENFORCING. Paddle/SaaS directives were removed with the billing
+  // layer — no third-party script origin is allowed any more. 'unsafe-inline'
+  // on script-src remains only for the SSR theme bootstrap and the framework's
+  // hydration payload; frame-ancestors 'none' + X-Frame-Options: DENY block
+  // clickjacking regardless. connect-src is an explicit allowlist of the only
+  // origins the browser is ever supposed to talk to (backend + the two public
+  // data APIs), so an injected script cannot exfiltrate to an attacker host.
   if (!h.has("Content-Security-Policy") && !h.has("Content-Security-Policy-Report-Only")) {
     h.set(
       "Content-Security-Policy",
@@ -69,17 +74,27 @@ function applySecurityHeaders(response: Response): Response {
         "frame-ancestors 'none'",
         "form-action 'self'",
         "object-src 'none'",
-        "img-src 'self' data: blob: https:",
+        "img-src 'self' data: blob:",
         "font-src 'self' data: https://fonts.gstatic.com",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "script-src 'self' 'unsafe-inline' https://cdn.paddle.com https://*.paddle.com",
-        "connect-src 'self' https: wss:",
-        "frame-src 'self' https://*.paddle.com https://buy.paddle.com https://checkout.paddle.com https://sandbox-buy.paddle.com https://sandbox-checkout.paddle.com",
-        "child-src 'self' https://*.paddle.com",
+        "script-src 'self' 'unsafe-inline'",
+        "worker-src 'self' blob:",
+        [
+          "connect-src 'self'",
+          "https://*.supabase.co",
+          "wss://*.supabase.co",
+          "https://open.er-api.com",
+          "https://api.open-meteo.com",
+          "ws:",
+          "wss:",
+        ].join(" "),
+        "frame-src 'self'",
+        "child-src 'self' blob:",
+        "upgrade-insecure-requests",
       ].join("; "),
-
     );
   }
+
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers: h });
 }
 
