@@ -73,7 +73,10 @@ export default function MarketIntelligence({
 
   const liveByMarket = useMemo(() => {
     const m = new Map<string, LiveQuote>();
-    live.data?.quotes.forEach((q) => m.set(q.market.toLowerCase(), q));
+    const quotes = Array.isArray(live.data?.quotes) ? live.data!.quotes : [];
+    quotes.forEach((q) => {
+      if (q && typeof q.market === "string") m.set(q.market.toLowerCase(), q);
+    });
     return m;
   }, [live.data]);
 
