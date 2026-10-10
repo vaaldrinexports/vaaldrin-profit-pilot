@@ -886,7 +886,7 @@ export function applyScenario(s: CalculatorState, scenario: string): CalculatorS
     case "packaging+5":
       next.pouchCost *= 1.05; next.labelCost *= 1.05; next.cartonCost *= 1.05; next.palletCost *= 1.05; next.otherPackaging *= 1.05; break;
     case "bank-2":
-      next.actualBankUsdRate *= 0.98; next.actualBankEurRate *= 0.98; break;
+      next.actualBankUsdRate *= 0.98; next.actualBankEurRate *= 0.98; next.actualBankGbpRate *= 0.98; next.actualBankAedRate *= 0.98; break;
   }
   return next;
 }
