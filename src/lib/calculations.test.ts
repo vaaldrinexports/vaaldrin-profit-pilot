@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compute, getBuyerQuote, defaultState, evaluatePrice } from "./calculations";
+import { compute, getBuyerQuote, defaultState, evaluatePrice, computeBankingCharges, defaultBankingTariff, applyScenario } from "./calculations";
 
 const sample = {
   ...defaultState,
@@ -78,5 +78,44 @@ describe("currency display invariants", () => {
     const exact = result.recommendedPrice / state.actualBankGbpRate;
     expect(quote.unitPrice).toBe(Math.round(exact * 10000) / 10000);
     expect(quote.totalContractValue).toBeCloseTo(exact * state.quantity, 2);
+  });
+});
+
+describe("hyper-accuracy checks", () => {
+  it("bank charges match the exact quoted contract value", () => {
+    for (const incoterm of ["EXW", "FOB", "CFR", "CIF"] as const) {
+      for (const paymentMethod of ["SWIFT", "DP", "LC"] as const) {
+        const s = { ...sample, incoterm, paymentMethod, minProfitAmount: 50_000 };
+        const r = compute(s);
+        const foreign = r.recommendedPrice * s.quantity / s.actualBankUsdRate;
+        const expected = computeBankingCharges(s, foreign).total;
+        expect(r.bankingTotal).toBeCloseTo(expected, 4);
+      }
+    }
+  });
+
+  it("each Incoterm price uses its own bank charges", () => {
+    const r = compute({ ...sample, incoterm: "FOB" });
+    for (const [term, price] of [["EXW", r.exwPrice], ["CFR", r.cfrPrice], ["CIF", r.cifPrice]] as const) {
+      const solo = compute({ ...sample, incoterm: term });
+      expect(price).toBeCloseTo(solo.recommendedPrice, 6);
+    }
+  });
+
+  it("matches a hand-worked FOB example", () => {
+    const s = { ...defaultState, quantity: 1000, supplierPricePerUnit: 100, contingencyPct: 0,
+      targetProfitPct: 10, minProfitPct: 0, paymentMethod: "SWIFT" as const,
+      bankingTariff: { ...defaultBankingTariff, forex_spread_percent: 0, correspondent_bank_fee_usd: 0, inward_remittance_charge: 1000, gst_percent: 0 } };
+    const r = compute(s);
+    // cost = 100,000 + 1,000 bank = 101,000 → break-even 101/kg → target 111.1/kg
+    expect(r.protectedCost).toBeCloseTo(101_000, 6);
+    expect(r.recommendedPrice).toBeCloseTo(111.1, 6);
+    expect(r.netProfit).toBeCloseTo(10_100, 6);
+  });
+
+  it("Bank −2% scenario lowers every currency", () => {
+    const n = applyScenario(sample, "bank-2");
+    expect(n.actualBankGbpRate).toBeCloseTo(sample.actualBankGbpRate * 0.98, 8);
+    expect(n.actualBankAedRate).toBeCloseTo(sample.actualBankAedRate * 0.98, 8);
   });
 });
