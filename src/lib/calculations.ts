@@ -605,75 +605,68 @@ export function computeCoreINR(s: CalculatorState): Computed {
     CFR: cfrDirectCost,
     CIF: cifDirectCost,
   };
-  const selectedDirect = directCostByIncoterm[s.incoterm];
   const rodtepRate = (num(s.rodtepPct) + num(s.dutyDrawbackPct)) / 100;
   const otherInc = num(s.otherIncentives);
   const contingencyRate = num(s.contingencyPct) / 100;
   const targetRate = num(s.targetProfitPct) / 100;
+  const minRate = num(s.minProfitPct) / 100;
+  const minAmount = num(s.minProfitAmount);
 
-  // Banking depends on revenue, and revenue depends on banking → fixed-point iteration.
-  // Converges in 2-4 passes; cap at 12 with a tight tolerance for export-grade accuracy.
-  let bankingTotal = 0;
-  let banking: BankingBreakdown = computeBankingCharges(s, 0);
-  for (let i = 0; i < 12; i++) {
-    const totalCostIter = selectedDirect + bankingTotal + miscTotal;
-    const incIter = Math.min(totalCostIter, supplierTotal * rodtepRate + otherInc);
-    const effIter = totalCostIter - incIter;
-    const protIter = effIter * (1 + contingencyRate);
-    const targetPriceIter = (protIter / divisor) * (1 + targetRate);
-    const revenueIter = targetPriceIter * q;
-    const foreignIter = revenueIter / contractRate;
-    const nextBanking = computeBankingCharges(s, foreignIter);
-    const delta = Math.abs(nextBanking.total - bankingTotal);
-    banking = nextBanking;
-    bankingTotal = nextBanking.total;
-    if (delta < 0.01) break;
-  }
+  // Full price chain for one Incoterm given a banking-charge amount.
+  const chain = (direct: number, bankingTotal: number) => {
+    const totalCost = direct + bankingTotal + miscTotal;
+    const incentiveValue = Math.min(totalCost, supplierTotal * rodtepRate + otherInc);
+    const effectiveCost = totalCost - incentiveValue;
+    const contingencyAmount = effectiveCost * contingencyRate;
+    const protectedCost = effectiveCost + contingencyAmount;
+    const breakEven = protectedCost / divisor;
+    const walk = breakEven * 1.02;
+    const minimum = Math.max(walk * 1.01, breakEven * (1 + minRate), (protectedCost + minAmount) / divisor);
+    const target = Math.max(minimum * 1.01, breakEven * (1 + targetRate));
+    return { totalCost, incentiveValue, effectiveCost, contingencyAmount, protectedCost, breakEven, walk, minimum, target };
+  };
 
-  const sharedCost = bankingTotal + miscTotal;
-  // Only costs applicable to the selected Incoterm enter the quoted deal.
-  const totalCost = selectedDirect + sharedCost;
+  // Banking depends on the quoted value and the quoted value depends on banking.
+  // Solve each Incoterm independently by fixed-point iteration against the
+  // FINAL quoted price (after minimum/target rules), so bank charges always
+  // match the exact contract value that is quoted.
+  const solveTerm = (term: Incoterm) => {
+    const direct = directCostByIncoterm[term];
+    let banking: BankingBreakdown = computeBankingCharges(s, 0);
+    let bankingTotal = banking.total;
+    for (let i = 0; i < 50; i++) {
+      const c = chain(direct, bankingTotal);
+      const next = computeBankingCharges(s, (c.target * q) / contractRate);
+      const delta = Math.abs(next.total - bankingTotal);
+      banking = next;
+      bankingTotal = next.total;
+      if (delta < 1e-6) break;
+    }
+    return { banking, bankingTotal, ...chain(direct, bankingTotal) };
+  };
 
-  const incentiveValue = Math.min(totalCost,
-    (supplierTotal * (num(s.rodtepPct) + num(s.dutyDrawbackPct)) / 100) + num(s.otherIncentives));
-
-  const effectiveCost = totalCost - incentiveValue;
-
-  const contingencyAmount = effectiveCost * num(s.contingencyPct) / 100;
+  const solved: Record<Incoterm, ReturnType<typeof solveTerm>> = {
+    EXW: solveTerm("EXW"),
+    FOB: solveTerm("FOB"),
+    CFR: solveTerm("CFR"),
+    CIF: solveTerm("CIF"),
+  };
+  const sel = solved[s.incoterm];
+  const banking = sel.banking;
+  const bankingTotal = sel.bankingTotal;
+  const totalCost = sel.totalCost;
+  const incentiveValue = sel.incentiveValue;
+  const effectiveCost = sel.effectiveCost;
+  const contingencyAmount = sel.contingencyAmount;
   // Forex rates and the informational forex buffer never alter INR economics.
-  // Exporters may explicitly include a realized spread in currencyConversion.
   const forexBufferAmount = 0;
-  const protectedCost = effectiveCost + contingencyAmount;
+  const protectedCost = sel.protectedCost;
 
-  const bufferRate = num(s.contingencyPct) / 100;
-  const incentiveRatio = totalCost > 0 ? incentiveValue / totalCost : 0;
-  const protectedFor = (directCost: number) => {
-    const applicableTotal = directCost + sharedCost;
-    const applicableEffective = applicableTotal * (1 - incentiveRatio);
-    return applicableEffective * (1 + bufferRate);
-  };
-  const protectedByIncoterm: Record<Incoterm, number> = {
-    EXW: protectedFor(exwDirectCost),
-    FOB: protectedFor(fobDirectCost),
-    CFR: protectedFor(cfrDirectCost),
-    CIF: protectedFor(cifDirectCost),
-  };
-  // Override the selected value with the exact audited path to avoid drift.
-  protectedByIncoterm[s.incoterm] = protectedCost;
+  const walkFor = (term: Incoterm) => solved[term].walk;
+  const minimumFor = (term: Incoterm) => solved[term].minimum;
+  const targetFor = (term: Incoterm) => solved[term].target;
 
-  const breakEvenFor = (term: Incoterm) => protectedByIncoterm[term] / divisor;
-  const walkFor = (term: Incoterm) => breakEvenFor(term) * 1.02;
-  const minimumFor = (term: Incoterm) => Math.max(
-    walkFor(term) * 1.01,
-    breakEvenFor(term) * (1 + num(s.minProfitPct) / 100),
-    (protectedByIncoterm[term] + num(s.minProfitAmount)) / divisor,
-  );
-  const targetFor = (term: Incoterm) => Math.max(
-    minimumFor(term) * 1.01,
-    breakEvenFor(term) * (1 + num(s.targetProfitPct) / 100),
-  );
-
-  const breakEvenPrice = breakEvenFor(s.incoterm);
+  const breakEvenPrice = sel.breakEven;
   const walkExw = walkFor("EXW");
   const walkFob = walkFor("FOB");
   const walkCfr = walkFor("CFR");
@@ -686,7 +679,7 @@ export function computeCoreINR(s: CalculatorState): Computed {
   const fobPrice = targetFor("FOB");
   const cfrPrice = targetFor("CFR");
   const cifPrice = targetFor("CIF");
-  const targetSellingPrice = targetFor(s.incoterm);
+  const targetSellingPrice = sel.target;
   // Recommendation equals the approved target: no undocumented discount is applied.
   const recommendedPrice = targetSellingPrice;
   const expectedRevenue = recommendedPrice * q;
